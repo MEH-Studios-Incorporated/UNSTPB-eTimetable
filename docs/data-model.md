@@ -60,13 +60,15 @@ Activity
 
 A student's timetable is never stored as such. It is computed from the
 activities whose audience contains their group (national) or from the
-activities they picked (Erasmus).
+activities they picked (Erasmus), plus their extra slots.
 
 ## People and announcements
 
 Student
 : id, email, password hash, display name, enrollment (national or Erasmus),
-  group or half-group (national), picked activity ids (Erasmus), preferred
+  group or half-group (national), picked activity ids (Erasmus), extra
+  slots (an activity id, with a date when it is a one-time visit, used by
+  national students to attend or recover another group's lab), preferred
   language, push tokens with their platform.
 
 Admin

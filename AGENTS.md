@@ -12,7 +12,8 @@ Android and iOS. Multimedia Entertainment Hub LLC (MEH) owns it in full and
 develops it on commission from FAIMA, the Faculty of Entrepreneurship,
 Business Engineering and Management (Facultatea de Antreprenoriat, Ingineria
 și Managementul Afacerilor). What it has to do is in `docs/brief.md`, how it
-is built in `docs/architecture.md`, the data in `docs/data-model.md`. Read
+is built in `docs/architecture.md`, the data in `docs/data-model.md`, the
+screens in `docs/screens.md` and the look in `docs/design.md`. Read
 them before changing anything that touches the data model, sync or the
 screens.
 
