@@ -60,7 +60,9 @@ Activity
 
 A student's timetable is never stored as such. It is computed from the
 activities whose audience contains their group (national) or from the
-activities they picked (Erasmus), plus their extra slots.
+activities they picked (Erasmus), plus their extra slots. A national student
+who has not chosen a half-group sees the labs of both halves of their group
+and picks.
 
 ## People and announcements
 
@@ -89,6 +91,18 @@ Announcement
   clashing slot named.
 - Where a professor is: the activity or office hour happening now, else the
   next one today.
+
+## On the phone
+
+`shared/` keeps an offline copy in SQLite (`Etimetable.sq`): the dataset as
+one JSON document with its `ETag` and the time it was last checked,
+announcements with a read flag, and the profile with a flag for changes
+not yet sent to the server. The statements stay within SQLite 3.18, the
+version on Android 8.
+
+The sample semester used by the tests is in
+`shared/src/commonTest/.../SampleData.kt`: invented names on FAIMA's code
+formats, with Wednesday 28 October 2026 in week 5, as on the mockups.
 
 ## API (version 1)
 
