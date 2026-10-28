@@ -48,8 +48,8 @@ Running things:
 # Android: install on the running emulator or a connected phone
 ./gradlew :androidApp:installDebug
 
-# Server on http://localhost:8080 (the emulator reaches it as 10.0.2.2)
-./gradlew :server:run
+# Server on http://localhost:8080, reachable from emulators and USB phones
+tools/dev-server.sh
 
 # Server and PostgreSQL in Docker
 cp deploy/.env.example deploy/.env
@@ -60,7 +60,12 @@ docker compose -f deploy/docker-compose.yml up --build
 cd iosApp && xcodegen generate && open iosApp.xcodeproj
 ```
 
-The app's first screen says whether it reaches the server. A different
+The app's first screen says whether it reaches the server. Debug builds
+talk to `127.0.0.1:8080` on the device, which `tools/dev-server.sh` forwards
+to your machine with `adb reverse`. Use it rather than `./gradlew
+:server:run` alone: the emulator's Wi-Fi network cannot reach the host at
+`10.0.2.2`, and a phone on USB cannot reach your machine at all without
+the forward. A different
 server address is passed as `-PapiBaseUrl=https://...`; release versions
 come from the tag as `-PappVersion=1.2.3`.
 

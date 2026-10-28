@@ -3,6 +3,7 @@
 
 package net.mehstudios.etimetable.android
 
+import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -45,6 +46,7 @@ fun HomeScreen(serverUrl: String) {
         state = try {
             ServerState.Ok(client.health().version)
         } catch (e: Exception) {
+            Log.w("eTimetable", "Health check against $serverUrl failed", e)
             ServerState.Unreachable
         } finally {
             client.close()
@@ -94,5 +96,5 @@ private fun HomeContent(serverUrl: String, state: ServerState, onRetry: () -> Un
 @Preview
 @Composable
 private fun HomePreview() {
-    EtTheme { HomeContent("http://10.0.2.2:8080", ServerState.Ok("0.1.0"), onRetry = {}) }
+    EtTheme { HomeContent("http://127.0.0.1:8080", ServerState.Ok("0.1.0"), onRetry = {}) }
 }

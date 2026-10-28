@@ -11,9 +11,9 @@ val versionCodeFromName = version.toString().split('.').map { it.toIntOrNull() ?
     .let { (major, minor, patch) -> major * 10_000 + minor * 100 + patch }
     .coerceAtLeast(1)
 
-// The emulator reaches the host machine at 10.0.2.2. Release builds get the
-// university's server address through -PapiBaseUrl.
-val apiBaseUrl = providers.gradleProperty("apiBaseUrl").getOrElse("http://10.0.2.2:8080")
+// Development builds reach the server through `adb reverse` (tools/dev-server.sh).
+// Release builds get the university's server address through -PapiBaseUrl.
+val apiBaseUrl = providers.gradleProperty("apiBaseUrl").getOrElse("http://127.0.0.1:8080")
 
 android {
     namespace = "net.mehstudios.etimetable.android"
