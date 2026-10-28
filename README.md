@@ -9,7 +9,7 @@ working offline once the timetable has synced.
 Developed and owned by Multimedia Entertainment Hub LLC, on commission from
 FAIMA, UNSTPB.
 
-Status: planning. There is no app to install yet.
+Status: early development. The project skeleton builds and runs; the timetable itself is not there yet.
 
 ## What it does
 
@@ -53,8 +53,14 @@ and looks like something the faculty would put its name on.
 
 ## What works
 
-Nothing yet. The requirements are in [docs/brief.md](docs/brief.md) and the
-planned design in [docs/architecture.md](docs/architecture.md), including
+- The Android app starts, uses the design's colours and font, and checks
+  that it can reach the server.
+- The server answers `GET /api/v1/health` and runs from a Docker image.
+- The iOS app builds on CI and shows the app name from the shared Kotlin
+  code. Nobody on the team has a Mac yet, so it has not run on a device.
+
+Everything else is still to come. The requirements are in
+[docs/brief.md](docs/brief.md) and the planned design in [docs/architecture.md](docs/architecture.md), including
 the questions that are still open.
 
 ## Install

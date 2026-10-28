@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Copyright (c) 2026 Multimedia Entertainment Hub LLC
+  SPDX-License-Identifier: LicenseRef-Proprietary
+-->
+<resources>
+    <color name="background">#FAFAF9</color>
+    <color name="launcher_background">#292929</color>
+</resources>

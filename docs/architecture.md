@@ -59,6 +59,11 @@ admin bootstrap account, push credentials. During development each of us
 runs it locally with the same compose file. Nothing runs on MS:NET
 infrastructure.
 
+The Gradle build runs outside the image (`./gradlew :server:installDist`),
+because configuring the project also configures the Android modules, which
+need the Android SDK. `server/Dockerfile` only copies the result onto a
+distroless Java 21 base.
+
 Release builds publish the image as
 `ghcr.io/meh-studios-incorporated/unstpb-etimetable-server:vX.Y.Z`.
 

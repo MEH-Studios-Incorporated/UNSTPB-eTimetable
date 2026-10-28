@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Copyright (c) 2026 Multimedia Entertainment Hub LLC
+  SPDX-License-Identifier: LicenseRef-Proprietary
+-->
+<resources>
+    <string name="home_subtitle">Orarul, profesorii și anunțurile FAIMA</string>
+    <string name="server_label">Serverul de dezvoltare</string>
+    <string name="server_checking">Se verifică %1$s</string>
+    <string name="server_ok">Conectat, versiunea serverului %1$s</string>
+    <string name="server_error">%1$s nu răspunde</string>
+    <string name="retry">Încearcă din nou</string>
+</resources>

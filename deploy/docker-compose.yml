@@ -1,0 +1,38 @@
+# Copyright (c) 2026 Multimedia Entertainment Hub LLC
+# SPDX-License-Identifier: LicenseRef-Proprietary
+#
+# Development and deployment setup: the server and PostgreSQL.
+#   cp deploy/.env.example deploy/.env    (then edit it)
+#   ./gradlew :server:installDist
+#   docker compose -f deploy/docker-compose.yml up --build
+name: etimetable
+
+services:
+  server:
+    image: ${ETT_IMAGE:-ghcr.io/meh-studios-incorporated/unstpb-etimetable-server:latest}
+    build:
+      context: ../server
+    env_file: .env
+    ports:
+      - "${ETT_PUBLIC_PORT:-8080}:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${ETT_DB_NAME:-etimetable}
+      POSTGRES_USER: ${ETT_DB_USER:-etimetable}
+      POSTGRES_PASSWORD: ${ETT_DB_PASSWORD:?set ETT_DB_PASSWORD in deploy/.env}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  db-data:

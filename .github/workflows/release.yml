@@ -9,15 +9,44 @@ on:
 
 permissions:
   contents: write
+  packages: write
 
 jobs:
   release:
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ github.token }}
+      IMAGE: ghcr.io/meh-studios-incorporated/unstpb-etimetable-server
     steps:
       - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: gradle/actions/setup-gradle@v6
       - name: Release notes
         run: tools/release-notes.sh "$GITHUB_REF_NAME" >notes.md
+      - name: Build
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ETT_KEYSTORE_BASE64 }}
+          ETT_KEYSTORE_PASSWORD: ${{ secrets.ETT_KEYSTORE_PASSWORD }}
+          ETT_KEY_ALIAS: ${{ secrets.ETT_KEY_ALIAS }}
+          ETT_KEY_PASSWORD: ${{ secrets.ETT_KEY_PASSWORD }}
+          API_BASE_URL: ${{ vars.ETT_API_BASE_URL }}
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 -d >"$RUNNER_TEMP/release.jks"
+            export ETT_KEYSTORE_FILE="$RUNNER_TEMP/release.jks"
+          else
+            echo "::notice::ETT_KEYSTORE_BASE64 is not set; the APK is unsigned"
+          fi
+          ./gradlew -PappVersion="${GITHUB_REF_NAME#v}" ${API_BASE_URL:+-PapiBaseUrl="$API_BASE_URL"} \
+            :androidApp:assembleRelease :server:installDist
+          cp androidApp/build/outputs/apk/release/androidApp-release*.apk "etimetable-$GITHUB_REF_NAME.apk"
+      - name: Publish the server image
+        run: |
+          echo "$GH_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+          docker build -t "$IMAGE:${GITHUB_REF_NAME#v}" -t "$IMAGE:latest" server
+          docker push --all-tags "$IMAGE"
       - name: Publish the release
-        run: gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes-file notes.md
+        run: gh release create "$GITHUB_REF_NAME" "etimetable-$GITHUB_REF_NAME.apk" --title "$GITHUB_REF_NAME" --notes-file notes.md
