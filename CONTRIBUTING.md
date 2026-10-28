@@ -48,7 +48,10 @@ Running things:
 # Android: install on the running emulator or a connected phone
 ./gradlew :androidApp:installDebug
 
-# Server on http://localhost:8080, reachable from emulators and USB phones
+# Development server on http://localhost:8080, reachable from emulators and
+# USB phones. It runs its own PostgreSQL (data in server/build/dev-postgres;
+# delete that folder to start over) and fills an empty database with the
+# sample semester from SampleData.
 tools/dev-server.sh
 
 # Server and PostgreSQL in Docker

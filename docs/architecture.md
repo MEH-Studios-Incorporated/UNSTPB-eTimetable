@@ -29,7 +29,7 @@ framework `shared/` produces.
 | iOS UI | SwiftUI |
 | iOS widget | WidgetKit, reading the app's database through an App Group |
 | Server | Ktor on the JVM (Java 21) |
-| Server database | PostgreSQL, Exposed for queries, Flyway for migrations |
+| Server database | PostgreSQL through JDBC and HikariCP, Flyway for migrations |
 | Admin dashboard | HTML rendered by the server (kotlinx.html) with htmx |
 | Push | Firebase Cloud Messaging HTTP v1 for Android, APNs for iOS |
 | Packaging | One Docker image for the server, `docker compose` with PostgreSQL |
@@ -49,6 +49,20 @@ Why:
   and avoids a second build chain.
 - Widgets are native on both platforms and read the same database as the
   app, so they work offline too.
+
+## Server storage
+
+A semester and everything in it (groups, subjects, rooms, activities and
+so on) is stored as rows of JSON documents in the shared model's format,
+one row per item, with a version number that changes on every edit. The
+dataset endpoint reads them, builds the response once per version and
+answers `304 Not Modified` while the version stays the same. One faculty has
+a few thousand rows at most and the app always reads a semester whole, so
+this keeps the server code small; plain JDBC is enough for the handful of
+queries, without an ORM.
+
+Students are a separate table, with Argon2id password hashes and session
+tokens of which only a SHA-256 is stored.
 
 ## Who runs the server
 

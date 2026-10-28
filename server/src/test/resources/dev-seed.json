@@ -1,0 +1,423 @@
+{
+    "semester": {
+        "id": "2026-1",
+        "name": {
+            "ro": "Semestrul 1, 2026-2027",
+            "en": "Semester 1, 2026-2027"
+        },
+        "firstDay": "2026-09-28",
+        "lastDay": "2027-01-15",
+        "breaks": [
+            {
+                "name": {
+                    "ro": "Ziua Națională",
+                    "en": "National Day"
+                },
+                "firstDay": "2026-12-01",
+                "lastDay": "2026-12-01"
+            },
+            {
+                "name": {
+                    "ro": "Vacanța de iarnă",
+                    "en": "Winter break"
+                },
+                "firstDay": "2026-12-21",
+                "lastDay": "2027-01-03"
+            }
+        ],
+        "parityOverrides": []
+    },
+    "programmes": [
+        {
+            "id": "iedeee",
+            "code": "IEDEEE",
+            "name": {
+                "ro": "Inginerie economică în domeniul electric",
+                "en": "Inginerie economică în domeniul electric"
+            },
+            "level": "BACHELOR",
+            "language": "ro"
+        }
+    ],
+    "series": [
+        {
+            "id": "e4",
+            "programmeId": "iedeee",
+            "year": 4,
+            "name": "E"
+        }
+    ],
+    "groups": [
+        {
+            "id": "1541E",
+            "seriesId": "e4",
+            "code": "1541E"
+        },
+        {
+            "id": "1542E",
+            "seriesId": "e4",
+            "code": "1542E"
+        }
+    ],
+    "halfGroups": [
+        {
+            "id": "1541E/A",
+            "groupId": "1541E",
+            "suffix": "A"
+        },
+        {
+            "id": "1541E/B",
+            "groupId": "1541E",
+            "suffix": "B"
+        },
+        {
+            "id": "1542E/A",
+            "groupId": "1542E",
+            "suffix": "A"
+        },
+        {
+            "id": "1542E/B",
+            "groupId": "1542E",
+            "suffix": "B"
+        }
+    ],
+    "subjects": [
+        {
+            "id": "micro",
+            "code": "MICRO",
+            "name": {
+                "ro": "Microeconomie",
+                "en": "Microeconomics"
+            },
+            "programmeId": "iedeee",
+            "year": 4
+        },
+        {
+            "id": "contab",
+            "code": "CONTAB",
+            "name": {
+                "ro": "Contabilitate financiară",
+                "en": "Financial accounting"
+            },
+            "programmeId": "iedeee",
+            "year": 4
+        },
+        {
+            "id": "calit",
+            "code": "CALIT",
+            "name": {
+                "ro": "Managementul calității",
+                "en": "Quality management"
+            },
+            "programmeId": "iedeee",
+            "year": 4
+        },
+        {
+            "id": "mkt",
+            "code": "MKT",
+            "name": {
+                "ro": "Marketing",
+                "en": "Marketing"
+            },
+            "programmeId": "iedeee",
+            "year": 4
+        }
+    ],
+    "professors": [
+        {
+            "id": "marinescu",
+            "title": "Conf. dr.",
+            "name": "Ioana Marinescu",
+            "email": null,
+            "officeRoomId": null,
+            "officeHours": [
+                {
+                    "slot": {
+                        "isoDay": 3,
+                        "start": "14:00",
+                        "end": "16:00",
+                        "weeks": {
+                            "type": "all"
+                        }
+                    },
+                    "roomId": "ec210"
+                }
+            ]
+        },
+        {
+            "id": "ilie",
+            "title": "As. dr.",
+            "name": "Radu Ilie",
+            "email": null,
+            "officeRoomId": null,
+            "officeHours": []
+        }
+    ],
+    "buildings": [
+        {
+            "id": "an",
+            "code": "AN",
+            "name": "Corpul AN",
+            "address": null,
+            "latitude": null,
+            "longitude": null
+        },
+        {
+            "id": "bn",
+            "code": "BN",
+            "name": "Corpul BN",
+            "address": null,
+            "latitude": null,
+            "longitude": null
+        },
+        {
+            "id": "ec",
+            "code": "EC",
+            "name": "Corpul EC",
+            "address": null,
+            "latitude": null,
+            "longitude": null
+        }
+    ],
+    "rooms": [
+        {
+            "id": "an015",
+            "buildingId": "an",
+            "code": "AN 015",
+            "capacity": null
+        },
+        {
+            "id": "bn212a",
+            "buildingId": "bn",
+            "code": "BN 212 a",
+            "capacity": null
+        },
+        {
+            "id": "bn212b",
+            "buildingId": "bn",
+            "code": "BN 212 b",
+            "capacity": null
+        },
+        {
+            "id": "ec004",
+            "buildingId": "ec",
+            "code": "EC 004",
+            "capacity": null
+        },
+        {
+            "id": "ec210",
+            "buildingId": "ec",
+            "code": "EC 210",
+            "capacity": null
+        }
+    ],
+    "activities": [
+        {
+            "id": "micro-c",
+            "subjectId": "micro",
+            "type": "COURSE",
+            "slot": {
+                "isoDay": 3,
+                "start": "08:00",
+                "end": "10:00",
+                "weeks": {
+                    "type": "all"
+                }
+            },
+            "professorId": "marinescu",
+            "roomId": "an015",
+            "audience": {
+                "seriesIds": [
+                    "e4"
+                ],
+                "groupIds": [],
+                "halfGroupIds": []
+            },
+            "openToErasmus": true
+        },
+        {
+            "id": "contab-s",
+            "subjectId": "contab",
+            "type": "SEMINAR",
+            "slot": {
+                "isoDay": 3,
+                "start": "10:00",
+                "end": "11:30",
+                "weeks": {
+                    "type": "all"
+                }
+            },
+            "professorId": null,
+            "roomId": "ec004",
+            "audience": {
+                "seriesIds": [],
+                "groupIds": [
+                    "1541E"
+                ],
+                "halfGroupIds": []
+            },
+            "openToErasmus": false
+        },
+        {
+            "id": "calit-l-1541A",
+            "subjectId": "calit",
+            "type": "LAB",
+            "slot": {
+                "isoDay": 3,
+                "start": "12:00",
+                "end": "14:00",
+                "weeks": {
+                    "type": "all"
+                }
+            },
+            "professorId": "ilie",
+            "roomId": "bn212b",
+            "audience": {
+                "seriesIds": [],
+                "groupIds": [],
+                "halfGroupIds": [
+                    "1541E/A"
+                ]
+            },
+            "openToErasmus": false
+        },
+        {
+            "id": "calit-l-1541B",
+            "subjectId": "calit",
+            "type": "LAB",
+            "slot": {
+                "isoDay": 3,
+                "start": "14:00",
+                "end": "16:00",
+                "weeks": {
+                    "type": "all"
+                }
+            },
+            "professorId": "ilie",
+            "roomId": "bn212b",
+            "audience": {
+                "seriesIds": [],
+                "groupIds": [],
+                "halfGroupIds": [
+                    "1541E/B"
+                ]
+            },
+            "openToErasmus": false
+        },
+        {
+            "id": "calit-l-1542A",
+            "subjectId": "calit",
+            "type": "LAB",
+            "slot": {
+                "isoDay": 4,
+                "start": "08:00",
+                "end": "10:00",
+                "weeks": {
+                    "type": "all"
+                }
+            },
+            "professorId": "ilie",
+            "roomId": "bn212a",
+            "audience": {
+                "seriesIds": [],
+                "groupIds": [],
+                "halfGroupIds": [
+                    "1542E/A"
+                ]
+            },
+            "openToErasmus": false
+        },
+        {
+            "id": "calit-l-1542B",
+            "subjectId": "calit",
+            "type": "LAB",
+            "slot": {
+                "isoDay": 5,
+                "start": "10:00",
+                "end": "12:00",
+                "weeks": {
+                    "type": "all"
+                }
+            },
+            "professorId": "ilie",
+            "roomId": "bn212a",
+            "audience": {
+                "seriesIds": [],
+                "groupIds": [],
+                "halfGroupIds": [
+                    "1542E/B"
+                ]
+            },
+            "openToErasmus": true
+        },
+        {
+            "id": "calit-c",
+            "subjectId": "calit",
+            "type": "COURSE",
+            "slot": {
+                "isoDay": 4,
+                "start": "12:00",
+                "end": "14:00",
+                "weeks": {
+                    "type": "all"
+                }
+            },
+            "professorId": null,
+            "roomId": "an015",
+            "audience": {
+                "seriesIds": [
+                    "e4"
+                ],
+                "groupIds": [],
+                "halfGroupIds": []
+            },
+            "openToErasmus": false
+        },
+        {
+            "id": "mkt-p-1541",
+            "subjectId": "mkt",
+            "type": "PROJECT",
+            "slot": {
+                "isoDay": 3,
+                "start": "16:00",
+                "end": "18:00",
+                "weeks": {
+                    "type": "odd"
+                }
+            },
+            "professorId": null,
+            "roomId": null,
+            "audience": {
+                "seriesIds": [],
+                "groupIds": [
+                    "1541E"
+                ],
+                "halfGroupIds": []
+            },
+            "openToErasmus": false
+        },
+        {
+            "id": "mkt-p-1542",
+            "subjectId": "mkt",
+            "type": "PROJECT",
+            "slot": {
+                "isoDay": 3,
+                "start": "16:00",
+                "end": "18:00",
+                "weeks": {
+                    "type": "even"
+                }
+            },
+            "professorId": null,
+            "roomId": null,
+            "audience": {
+                "seriesIds": [],
+                "groupIds": [
+                    "1542E"
+                ],
+                "halfGroupIds": []
+            },
+            "openToErasmus": false
+        }
+    ]
+}

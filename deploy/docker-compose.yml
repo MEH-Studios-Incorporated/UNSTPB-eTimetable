@@ -12,7 +12,10 @@ services:
     image: ${ETT_IMAGE:-ghcr.io/meh-studios-incorporated/unstpb-etimetable-server:latest}
     build:
       context: ../server
-    env_file: .env
+    environment:
+      ETT_DB_URL: jdbc:postgresql://db:5432/${ETT_DB_NAME:-etimetable}
+      ETT_DB_USER: ${ETT_DB_USER:-etimetable}
+      ETT_DB_PASSWORD: ${ETT_DB_PASSWORD:?set ETT_DB_PASSWORD in deploy/.env}
     ports:
       - "${ETT_PUBLIC_PORT:-8080}:8080"
     depends_on:
