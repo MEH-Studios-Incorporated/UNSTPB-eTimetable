@@ -13,23 +13,49 @@ same.
 
 ## Building
 
-There is no app code yet. Once there is, this section lists the exact
-commands. The plan, so you can set up early:
+You need:
 
-- Shared module and Android: JDK 21 and Android Studio (or the Android SDK
-  command line tools). Builds run through the Gradle wrapper in the
-  repository.
-- Server: Docker with the compose plugin, to run the server and PostgreSQL
-  from `deploy/docker-compose.yml`.
-- iOS: a Mac with the current Xcode. Without a Mac you can still work on the
-  shared module and the Android app; CI builds iOS on a macOS runner.
+- JDK 17 or newer to start Gradle. The build itself uses JDK 21, which
+  Gradle downloads when the machine does not have it. Android Studio's
+  bundled JDK works (`export JAVA_HOME=/opt/android-studio/jbr` on Arch).
+- The Android SDK with platform 37 (`ANDROID_HOME`, or `sdk.dir` in an
+  ignored `local.properties`). Android Studio installs it on first start.
+- For the server image: Docker with the compose plugin.
+- For iOS: a Mac with the current Xcode and XcodeGen
+  (`brew install xcodegen`). Without a Mac you can still work on everything
+  else; CI builds the iOS app on a macOS runner.
 
-The checks CI runs today work on any Linux or macOS machine:
+The checks CI runs on Linux:
 
 ```sh
+./gradlew ktlintCheck :shared:allTests :server:test :androidApp:lintDebug :androidApp:assembleDebug
 tools/check-writing.sh
 shellcheck tools/*.sh
 ```
+
+`./gradlew ktlintFormat` fixes most style problems by itself.
+
+Running things:
+
+```sh
+# Android: install on the running emulator or a connected phone
+./gradlew :androidApp:installDebug
+
+# Server on http://localhost:8080 (the emulator reaches it as 10.0.2.2)
+./gradlew :server:run
+
+# Server and PostgreSQL in Docker
+cp deploy/.env.example deploy/.env
+./gradlew :server:installDist
+docker compose -f deploy/docker-compose.yml up --build
+
+# iOS (macOS)
+cd iosApp && xcodegen generate && open iosApp.xcodeproj
+```
+
+The app's first screen says whether it reaches the server. A different
+server address is passed as `-PapiBaseUrl=https://...`; release versions
+come from the tag as `-PappVersion=1.2.3`.
 
 ## Reporting a problem
 

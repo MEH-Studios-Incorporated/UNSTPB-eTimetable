@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Copyright (c) 2026 Multimedia Entertainment Hub LLC
+  SPDX-License-Identifier: LicenseRef-Proprietary
+-->
+<resources>
+    <string name="app_name" translatable="false">eTimetable</string>
+    <string name="home_subtitle">FAIMA timetable, professors and announcements</string>
+    <string name="server_label">Development server</string>
+    <string name="server_checking">Checking %1$s</string>
+    <string name="server_ok">Connected, server version %1$s</string>
+    <string name="server_error">No answer from %1$s</string>
+    <string name="retry">Try again</string>
+</resources>

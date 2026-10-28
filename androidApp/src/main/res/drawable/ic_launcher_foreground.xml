@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Copyright (c) 2026 Multimedia Entertainment Hub LLC
+  SPDX-License-Identifier: LicenseRef-Proprietary
+-->
+<!-- Placeholder icon: a calendar page with today's slot in maple red. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="3"
+        android:pathData="M38,36h32a4,4 0 0 1 4,4v30a4,4 0 0 1 -4,4h-32a4,4 0 0 1 -4,-4v-30a4,4 0 0 1 4,-4zM34,46h40M44,31v9M64,31v9" />
+    <path
+        android:fillColor="#D92A21"
+        android:pathData="M42,53h12v6h-12z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M58,53h8v6h-8zM42,63h8v6h-8zM54,63h12v6h-12z" />
+</vector>

@@ -11,9 +11,12 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  # the required check; once the apps exist it also needs the Android and iOS jobs
-  build:
+  checks:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -30,3 +33,66 @@ jobs:
           CHANGELOG=build/CHANGELOG.md tools/release-notes.sh v0.0.0 >/dev/null
           latest=$(sed -n 's/^## \(v[0-9][^ ]*\).*/\1/p' CHANGELOG.md | head -n 1)
           if [ -n "$latest" ]; then tools/release-notes.sh "$latest" >/dev/null; fi
+
+  jvm:
+    name: android and server
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: gradle/actions/setup-gradle@v6
+      - name: Lint and test
+        run: ./gradlew ktlintCheck :shared:allTests :server:test :androidApp:lintDebug :androidApp:assembleDebug
+      # the release workflow's steps, signed with a throwaway key
+      - name: Release dry run
+        run: |
+          keytool -genkeypair -keystore "$RUNNER_TEMP/ci.jks" -storepass throwaway -keypass throwaway \
+            -alias ci -keyalg RSA -keysize 2048 -validity 1 -dname CN=CI -noprompt
+          ETT_KEYSTORE_FILE="$RUNNER_TEMP/ci.jks" ETT_KEYSTORE_PASSWORD=throwaway \
+          ETT_KEY_ALIAS=ci ETT_KEY_PASSWORD=throwaway \
+            ./gradlew -PappVersion=0.0.1 :androidApp:assembleRelease :server:installDist
+          apksigner=$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -n 1)
+          "$apksigner" verify androidApp/build/outputs/apk/release/androidApp-release.apk
+      - name: Server image answers
+        run: |
+          docker build -t etimetable-server:ci server
+          docker run -d --name ett -p 8080:8080 etimetable-server:ci
+          for _ in $(seq 1 30); do curl -sf localhost:8080/api/v1/health && break; sleep 1; done
+          curl -sf localhost:8080/api/v1/health | grep -q '"version":"0.0.1"'
+          docker rm -f ett
+
+  ios:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: gradle/actions/setup-gradle@v6
+      - name: Shared tests on the simulator
+        run: ./gradlew :shared:iosSimulatorArm64Test
+      - name: Build the app for the simulator
+        run: |
+          brew install xcodegen
+          cd iosApp
+          xcodegen generate
+          xcodebuild -project iosApp.xcodeproj -target iosApp -configuration Debug \
+            -sdk iphonesimulator ARCHS=arm64 CODE_SIGNING_ALLOWED=NO build
+
+  # The required check. A skipped job counts as passed for GitHub, so this
+  # job runs always and fails unless every job above succeeded.
+  build:
+    needs: [checks, jvm, ios]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: All jobs passed
+        env:
+          RESULTS: ${{ needs.checks.result }} ${{ needs.jvm.result }} ${{ needs.ios.result }}
+        run: |
+          echo "$RESULTS"
+          test "$RESULTS" = "success success success"
