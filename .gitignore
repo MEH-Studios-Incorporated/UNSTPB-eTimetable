@@ -1,0 +1,30 @@
+# Gradle and Kotlin
+.gradle/
+.kotlin/
+build/
+local.properties
+
+# Android
+*.apk
+*.aab
+*.jks
+*.keystore
+captures/
+
+# Xcode
+xcuserdata/
+DerivedData/
+*.xcuserstate
+*.ipa
+*.dSYM.zip
+
+# Editors and OS
+.idea/
+*.iml
+.vscode/
+.DS_Store
+
+# Local settings and credentials (committed as *.example where needed)
+.env
+*.local
+.claude/settings.local.json
