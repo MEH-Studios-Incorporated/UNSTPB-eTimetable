@@ -1,7 +1,10 @@
 # Brief
 
 What FAIMA asked for, written down so every contributor works from the same
-list. Multimedia Entertainment Hub LLC builds the app on commission.
+list. FAIMA is the Faculty of Entrepreneurship, Business Engineering and
+Management (Facultatea de Antreprenoriat, Ingineria și Managementul
+Afacerilor) of UNSTPB. Multimedia Entertainment Hub LLC builds the app on
+commission and owns it.
 
 ## Students and profiles
 

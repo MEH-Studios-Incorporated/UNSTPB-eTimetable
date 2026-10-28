@@ -6,9 +6,10 @@ file headers and how a pull request gets merged.
 
 ## Getting access
 
-Collaborators are added by the maintainer and push branches to this
-repository directly. Anyone else forks it and opens a pull request from the
-fork; the flow is the same.
+Collaborators, mostly developers at Multimedia Entertainment Hub LLC (MEH),
+are added by the maintainer and push branches to this repository directly.
+Anyone else forks it and opens a pull request from the fork; the flow is the
+same.
 
 ## Building
 
@@ -46,8 +47,7 @@ the subject involved, and a screenshot of what looks wrong.
 ## Code style
 
 - Every source file starts with the copyright header from `AGENTS.md`
-  section 5. You may add your own copyright line under it in files you
-  write.
+  section 5, naming Multimedia Entertainment Hub LLC.
 - Kotlin follows the official Kotlin style, Swift the Swift API design
   guidelines. Linters are added to CI together with the first code.
 - Comments say what is not obvious from the code, briefly. No change logs
@@ -57,7 +57,11 @@ the subject involved, and a screenshot of what looks wrong.
 
 ## License of contributions
 
-The project is all rights reserved (see [LICENSE](LICENSE)). By sending a
-contribution you agree that it is published under the same terms, and you
-give Mihnea Gîrbăcică (Mihnea8848) the right to use, change, distribute and
-relicense it as part of this project. You keep the copyright to your changes.
+The project is owned by Multimedia Entertainment Hub LLC and all rights are
+reserved (see [LICENSE](LICENSE)).
+
+- MEH developers: your work here is covered by your agreement with MEH.
+- Anyone else: by sending a contribution you transfer its copyright to MEH.
+  Where the law does not allow that, you give MEH a permanent, worldwide,
+  royalty-free right to use, change, distribute and relicense it, with no
+  obligation to name you.

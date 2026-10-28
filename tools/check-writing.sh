@@ -1,5 +1,5 @@
 #!/bin/sh
-# Copyright (c) 2026 Mihnea Gîrbăcică (Mihnea8848)
+# Copyright (c) 2026 Multimedia Entertainment Hub LLC
 # SPDX-License-Identifier: LicenseRef-Proprietary
 #
 # Checks tracked text files against the writing rules in AGENTS.md.
