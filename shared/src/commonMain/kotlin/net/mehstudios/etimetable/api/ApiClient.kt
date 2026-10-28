@@ -11,7 +11,7 @@ import io.ktor.client.request.get
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 
-/** Talks to the eTimetable server at [baseUrl], for example `http://10.0.2.2:8080`. */
+/** Talks to the eTimetable server at [baseUrl], for example `http://127.0.0.1:8080`. */
 class ApiClient(engine: HttpClientEngine, private val baseUrl: String) {
     private val http = HttpClient(engine) {
         install(ContentNegotiation) {
