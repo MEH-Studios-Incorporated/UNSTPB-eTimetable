@@ -1,0 +1,57 @@
+-- Copyright (c) 2026 Multimedia Entertainment Hub LLC
+-- SPDX-License-Identifier: LicenseRef-Proprietary
+--
+-- The offline copy. Data is kept as JSON documents: the dataset is a few
+-- hundred kilobytes and always read whole. Statements stay within SQLite
+-- 3.18 (Android 8), so no UPSERT.
+
+CREATE TABLE dataset_cache (
+    id INTEGER NOT NULL PRIMARY KEY CHECK (id = 1),
+    etag TEXT,
+    json TEXT NOT NULL,
+    checked_at INTEGER NOT NULL
+);
+
+selectDataset:
+SELECT etag, json, checked_at FROM dataset_cache WHERE id = 1;
+
+saveDataset:
+INSERT OR REPLACE INTO dataset_cache (id, etag, json, checked_at) VALUES (1, ?, ?, ?);
+
+markDatasetChecked:
+UPDATE dataset_cache SET checked_at = ? WHERE id = 1;
+
+CREATE TABLE announcement (
+    id TEXT NOT NULL PRIMARY KEY,
+    published_at INTEGER NOT NULL,
+    pinned INTEGER NOT NULL,
+    read INTEGER NOT NULL DEFAULT 0,
+    json TEXT NOT NULL
+);
+
+insertAnnouncementIfNew:
+INSERT OR IGNORE INTO announcement (id, published_at, pinned, read, json) VALUES (?, ?, ?, 0, ?);
+
+updateAnnouncement:
+UPDATE announcement SET published_at = ?, pinned = ?, json = ? WHERE id = ?;
+
+selectAnnouncements:
+SELECT json, read FROM announcement ORDER BY pinned DESC, published_at DESC;
+
+markAnnouncementRead:
+UPDATE announcement SET read = 1 WHERE id = ?;
+
+countUnread:
+SELECT count(*) FROM announcement WHERE read = 0;
+
+CREATE TABLE profile (
+    id INTEGER NOT NULL PRIMARY KEY CHECK (id = 1),
+    json TEXT NOT NULL,
+    dirty INTEGER NOT NULL
+);
+
+selectProfile:
+SELECT json, dirty FROM profile WHERE id = 1;
+
+saveProfile:
+INSERT OR REPLACE INTO profile (id, json, dirty) VALUES (1, ?, ?);

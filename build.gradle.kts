@@ -8,6 +8,7 @@ plugins {
     alias(libs.plugins.kotlin.compose) apply false
     alias(libs.plugins.android.application) apply false
     alias(libs.plugins.android.kmp.library) apply false
+    alias(libs.plugins.sqldelight) apply false
     alias(libs.plugins.ktlint) apply false
 }
 
@@ -18,4 +19,8 @@ val appVersion = providers.gradleProperty("appVersion").getOrElse("0.0.0")
 subprojects {
     version = appVersion
     apply(plugin = "org.jlleitschuh.gradle.ktlint")
+    extensions.configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
+        // generated sources, such as SQLDelight's queries
+        filter { exclude { it.file.path.contains("${File.separator}build${File.separator}") } }
+    }
 }
