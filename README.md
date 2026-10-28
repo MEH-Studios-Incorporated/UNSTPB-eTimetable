@@ -55,7 +55,11 @@ and looks like something the faculty would put its name on.
 
 - The Android app starts, uses the design's colours and font, and checks
   that it can reach the server.
-- The server answers `GET /api/v1/health` and runs from a Docker image.
+- The server stores semesters, announcements and student accounts in
+  PostgreSQL and serves them over its API, with Erasmus overlaps checked on
+  the server too. It runs from a Docker image next to PostgreSQL.
+- The shared Kotlin code computes timetables, week numbers and clashes, and
+  keeps an offline copy on the phone.
 - The iOS app builds on CI and shows the app name from the shared Kotlin
   code. Nobody on the team has a Mac yet, so it has not run on a device.
 

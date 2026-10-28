@@ -56,13 +56,18 @@ jobs:
             ./gradlew -PappVersion=0.0.1 :androidApp:assembleRelease :server:installDist
           apksigner=$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -n 1)
           "$apksigner" verify androidApp/build/outputs/apk/release/androidApp-release.apk
-      - name: Server image answers
+      - name: Server and database start with docker compose
+        env:
+          ETT_IMAGE: etimetable-server:ci
         run: |
-          docker build -t etimetable-server:ci server
-          docker run -d --name ett -p 8080:8080 etimetable-server:ci
-          for _ in $(seq 1 30); do curl -sf localhost:8080/api/v1/health && break; sleep 1; done
+          cp deploy/.env.example deploy/.env
+          sed -i 's/^ETT_DB_PASSWORD=.*/ETT_DB_PASSWORD=ci-only-password/' deploy/.env
+          docker compose -f deploy/docker-compose.yml up -d --build
+          for _ in $(seq 1 60); do curl -sf localhost:8080/api/v1/health && break; sleep 2; done
+          docker compose -f deploy/docker-compose.yml logs server | tail -n 20
           curl -sf localhost:8080/api/v1/health | grep -q '"version":"0.0.1"'
-          docker rm -f ett
+          test "$(curl -s -o /dev/null -w '%{http_code}' localhost:8080/api/v1/dataset)" = 404
+          docker compose -f deploy/docker-compose.yml down -v
 
   ios:
     runs-on: macos-latest

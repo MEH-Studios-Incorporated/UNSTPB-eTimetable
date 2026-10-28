@@ -31,4 +31,4 @@ else
     echo "adb not found at $adb; devices will not reach the server" >&2
 fi
 
-./gradlew :server:run
+./gradlew :server:runDev
