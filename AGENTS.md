@@ -12,9 +12,9 @@ Android and iOS. Multimedia Entertainment Hub LLC (MEH) owns it in full and
 develops it on commission from FAIMA, the Faculty of Entrepreneurship,
 Business Engineering and Management (Facultatea de Antreprenoriat, Ingineria
 și Managementul Afacerilor). What it has to do is in `docs/brief.md`, how it
-is built in
-`docs/architecture.md`. Read both before changing anything that touches the
-data model, sync or the screens.
+is built in `docs/architecture.md`, the data in `docs/data-model.md`. Read
+them before changing anything that touches the data model, sync or the
+screens.
 
 Product rules that are easy to get wrong:
 
@@ -27,9 +27,14 @@ Product rules that are easy to get wrong:
   stops the pick and says which slot it clashes with.
 - After the first sync the app works offline: timetable, professors,
   subjects and already downloaded announcements.
-- No self-hosted server, and nothing runs on MS:NET infrastructure. GitHub
-  (repositories, Pages, Actions) is allowed. Any other outside service needs
-  the maintainer's approval first (section 10).
+- The server is a product we ship, not a service we run. It is one Docker
+  image (plus PostgreSQL) that UNSTPB deploys wherever it chooses. During
+  development it runs on our own machines with `docker compose`. Nothing
+  runs on MS:NET infrastructure. The only outside services are the push
+  gateways (Firebase Cloud Messaging for Android, Apple's push service for
+  iOS); anything else needs the maintainer's approval first (section 10).
+- The server must keep working with only the variables in
+  `deploy/.env.example` set. No hard-coded hosts, keys or MEH accounts.
 - Design: the Multimedia Entertainment Hub palette (mehstudios.net), adapted
   to FAIMA's colors. The web prototype FAIMA showed us tells which screens
   exist, not how they look; do not copy its layout. The timetable view takes

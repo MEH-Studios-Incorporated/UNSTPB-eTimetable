@@ -19,6 +19,8 @@ commands. The plan, so you can set up early:
 - Shared module and Android: JDK 21 and Android Studio (or the Android SDK
   command line tools). Builds run through the Gradle wrapper in the
   repository.
+- Server: Docker with the compose plugin, to run the server and PostgreSQL
+  from `deploy/docker-compose.yml`.
 - iOS: a Mac with the current Xcode. Without a Mac you can still work on the
   shared module and the Android app; CI builds iOS on a macOS runner.
 

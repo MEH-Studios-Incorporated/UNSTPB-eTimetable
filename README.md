@@ -53,16 +53,21 @@ A Kotlin Multiplatform module holds the data model, the sync and the
 schedule logic (overlap checks, week parity, "what is next"), with a local
 SQLite database so everything works offline. The Android app and widget are
 written with Jetpack Compose and Glance, the iOS app and widget with SwiftUI
-and WidgetKit, and both call the shared module directly. There is no server
-of our own. Details in [docs/architecture.md](docs/architecture.md).
+and WidgetKit, and both call the shared module directly. A Kotlin server,
+shipped as a Docker image the university runs itself, serves the timetable,
+holds student accounts, sends push notifications and has the dashboard where
+the faculty enters each semester's timetable. Details in
+[docs/architecture.md](docs/architecture.md).
 
 ## Roadmap
 
-1. Decide where the timetable data lives and how announcements are pushed.
-2. Shared module: data model, sync, offline store, overlap check.
-3. Android app and widget.
-4. iOS app and widget.
-5. A way for the faculty to edit timetables and post announcements.
+1. Design: screens and colors, agreed before any UI code.
+2. Project skeleton and CI for the apps and the server.
+3. Shared module: data model, week rules, overlap check, offline store.
+4. Server: API, accounts, admin dashboard, Docker image.
+5. Android app and widget, then push notifications.
+6. iOS app and widget.
+7. First release: Android build, server image and deployment notes.
 
 ## Contributing
 
