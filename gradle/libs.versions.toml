@@ -3,7 +3,7 @@
 
 [versions]
 kotlin = "2.4.21"
-agp = "9.5.0"
+agp = "9.4.1"
 ktlint-plugin = "14.2.0"
 compose-bom = "2026.09.00"
 activity-compose = "1.13.0"
