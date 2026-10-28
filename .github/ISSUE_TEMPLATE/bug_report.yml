@@ -1,0 +1,36 @@
+name: Bug report
+description: Something does not work or shows wrong information
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what happened instead. Screenshots help.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: App version
+      placeholder: v0.1.0
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Phone and OS version
+      placeholder: Pixel 8, Android 16 / iPhone 15, iOS 26.1
+    validations:
+      required: true
+  - type: input
+    id: profile
+    attributes:
+      label: Enrollment and group
+      description: National or Erasmus, and your group or the subject involved.
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Any error message the app showed, copied as text.
+      render: text

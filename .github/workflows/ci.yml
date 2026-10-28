@@ -1,0 +1,30 @@
+# Copyright (c) 2026 Mihnea Gîrbăcică (Mihnea8848)
+# SPDX-License-Identifier: LicenseRef-Proprietary
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  # the required check; once the apps exist it also needs the Android and iOS jobs
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Writing rules
+        run: tools/check-writing.sh
+      - name: Lint shell scripts
+        run: shellcheck tools/*.sh
+      - name: Release notes dry run
+        run: |
+          mkdir -p build
+          printf '# Changelog\n\n## v0.0.0\n\nTest release.\n' >build/CHANGELOG.md
+          CHANGELOG=build/CHANGELOG.md tools/release-notes.sh v0.0.0 >/dev/null
+          latest=$(sed -n 's/^## \(v[0-9][^ ]*\).*/\1/p' CHANGELOG.md | head -n 1)
+          if [ -n "$latest" ]; then tools/release-notes.sh "$latest" >/dev/null; fi
