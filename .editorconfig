@@ -14,6 +14,8 @@ indent_size = 4
 max_line_length = 120
 ktlint_code_style = intellij_idea
 ktlint_function_naming_ignore_when_annotated_with = Composable
+# kotlinx.html has one builder function per HTML element
+ij_kotlin_packages_to_use_import_on_demand = kotlinx.html.**
 
 [*.swift]
 indent_size = 4

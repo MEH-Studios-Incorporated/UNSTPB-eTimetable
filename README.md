@@ -58,6 +58,9 @@ and looks like something the faculty would put its name on.
 - The server stores semesters, announcements and student accounts in
   PostgreSQL and serves them over its API, with Erasmus overlaps checked on
   the server too. It runs from a Docker image next to PostgreSQL.
+- The faculty's dashboard at `/admin`: semesters and their holidays, the
+  timetable imported from one spreadsheet (and exported back to it),
+  announcements and dashboard accounts.
 - The shared Kotlin code computes timetables, week numbers and clashes, and
   keeps an offline copy on the phone.
 - The iOS app builds on CI and shows the app name from the shared Kotlin

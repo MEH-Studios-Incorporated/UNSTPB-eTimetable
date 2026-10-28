@@ -1,0 +1,11 @@
+﻿id;programme;programme_name;year;series;audience;subject_code;subject_ro;subject_en;type;day;start;end;weeks;professor;professor_email;room;erasmus
+micro-c;IEDEEE;Inginerie economică în domeniul electric;4;E;;micro;Microeconomie;Microeconomics;curs;miercuri;08:00;10:00;toate;Conf. dr. Ioana Marinescu;;AN 015;da
+contab-s;IEDEEE;Inginerie economică în domeniul electric;4;E;1541E;contab;Contabilitate financiară;Financial accounting;seminar;miercuri;10:00;11:30;toate;;;EC 004;nu
+calit-l-1541A;IEDEEE;Inginerie economică în domeniul electric;4;E;1541E/A;calit;Managementul calității;Quality management;laborator;miercuri;12:00;14:00;toate;As. dr. Radu Ilie;;BN 212 b;nu
+calit-l-1541B;IEDEEE;Inginerie economică în domeniul electric;4;E;1541E/B;calit;Managementul calității;Quality management;laborator;miercuri;14:00;16:00;toate;As. dr. Radu Ilie;;BN 212 b;nu
+calit-l-1542A;IEDEEE;Inginerie economică în domeniul electric;4;E;1542E/A;calit;Managementul calității;Quality management;laborator;joi;08:00;10:00;toate;As. dr. Radu Ilie;;BN 212 a;nu
+calit-l-1542B;IEDEEE;Inginerie economică în domeniul electric;4;E;1542E/B;calit;Managementul calității;Quality management;laborator;vineri;10:00;12:00;toate;As. dr. Radu Ilie;;BN 212 a;da
+calit-c;IEDEEE;Inginerie economică în domeniul electric;4;E;;calit;Managementul calității;Quality management;curs;joi;12:00;14:00;toate;;;AN 015;nu
+mkt-p-1541;IEDEEE;Inginerie economică în domeniul electric;4;E;1541E;mkt;Marketing;Marketing;proiect;miercuri;16:00;18:00;impare;;;;nu
+mkt-p-1542;IEDEEE;Inginerie economică în domeniul electric;4;E;1542E;mkt;Marketing;Marketing;proiect;miercuri;16:00;18:00;pare;;;;nu
+;;;;;;;;;consultații;miercuri;14:00;16:00;toate;Conf. dr. Ioana Marinescu;;EC 210;

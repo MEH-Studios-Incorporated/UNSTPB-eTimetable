@@ -11,9 +11,11 @@ docker compose -f deploy/docker-compose.yml up -d
 curl http://localhost:8080/api/v1/health
 ```
 
-The server creates and migrates its tables on every start. Without a
-current semester, `GET /api/v1/dataset` answers 404 `no_semester` until an
-admin publishes one.
+The server creates and migrates its tables on every start. Set
+`ETT_ADMIN_EMAIL` and `ETT_ADMIN_PASSWORD` for the first start: that account
+signs in at `/admin`, changes its password and adds the other accounts.
+Without a current semester, `GET /api/v1/dataset` answers 404 `no_semester`
+until an admin publishes one; `docs/admin.md` explains how.
 
 ## Settings
 
@@ -25,6 +27,8 @@ The compose file passes the database ones to the server.
 | `ETT_PUBLIC_PORT` | 8080 | Port on the host |
 | `ETT_DB_NAME`, `ETT_DB_USER` | etimetable | PostgreSQL database and user |
 | `ETT_DB_PASSWORD` | none, required | PostgreSQL password |
+| `ETT_PUBLIC_URL` | empty | The address people use; `https://` makes the dashboard cookie Secure |
+| `ETT_ADMIN_EMAIL`, `ETT_ADMIN_PASSWORD` | empty | First dashboard account, created only while there is none |
 | `ETT_IMAGE` | the latest release on GHCR | Image to run, for pinning a version |
 
 ## HTTPS and reverse proxies

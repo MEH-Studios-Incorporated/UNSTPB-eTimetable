@@ -13,13 +13,21 @@ import java.io.File
 /**
  * The development server (`./gradlew :server:runDev`): PostgreSQL runs
  * embedded with its data in server/build/dev-postgres, and an empty
- * database gets the sample semester and two announcements.
+ * database gets the sample semester, two announcements and a dashboard
+ * account (DEV_ADMIN_EMAIL, DEV_ADMIN_PASSWORD).
  */
+const val DEV_ADMIN_EMAIL = "admin@etimetable.test"
+const val DEV_ADMIN_PASSWORD = "parola-dev"
+
 fun main() {
+    // A second instance (for example a test run next to your own) needs its own folder and port.
+    val env = System.getenv()
     val postgres = EmbeddedPostgres.builder()
-        .setDataDirectory(File("build/dev-postgres"))
+        .setDataDirectory(File(env["ETT_DEV_DB_DIR"] ?: "build/dev-postgres"))
         .setCleanDataDirectory(false)
-        .setPort(54329)
+        .setPort(env["ETT_DEV_DB_PORT"]?.toIntOrNull() ?: 54329)
+        // the first start creates the data folder, which can take a while
+        .setPGStartupWait(java.time.Duration.ofSeconds(60))
         .start()
     Runtime.getRuntime().addShutdownHook(Thread { postgres.close() })
 
@@ -27,6 +35,9 @@ fun main() {
     migrate(db)
     val services = Services(db)
     runBlocking {
+        if (services.admins.bootstrap(DEV_ADMIN_EMAIL, DEV_ADMIN_PASSWORD)) {
+            println("Dashboard: http://localhost:8080/admin, $DEV_ADMIN_EMAIL / $DEV_ADMIN_PASSWORD")
+        }
         if (services.datasets.current() == null) {
             services.datasets.replace(sampleDataset(), makeCurrent = true)
             services.announcements.publish(

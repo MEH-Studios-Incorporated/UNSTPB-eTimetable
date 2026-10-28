@@ -4,7 +4,15 @@
 package net.mehstudios.etimetable.server
 
 /** Settings read from the environment; `deploy/.env.example` lists them all. */
-data class ServerConfig(val port: Int, val database: DatabaseConfig) {
+data class ServerConfig(
+    val port: Int,
+    val database: DatabaseConfig,
+    /** Address the server is reached at; an https:// one makes the dashboard cookie Secure. */
+    val publicUrl: String? = null,
+    /** First admin account, created only while there is none. */
+    val firstAdminEmail: String? = null,
+    val firstAdminPassword: String? = null,
+) {
     companion object {
         /** From the jar manifest, so it is the release tag; "dev" when run from the IDE. */
         val version: String = ServerConfig::class.java.`package`?.implementationVersion ?: "dev"
@@ -19,6 +27,9 @@ data class ServerConfig(val port: Int, val database: DatabaseConfig) {
                     user = required("ETT_DB_USER"),
                     password = required("ETT_DB_PASSWORD"),
                 ),
+                publicUrl = env["ETT_PUBLIC_URL"]?.takeIf { it.isNotBlank() },
+                firstAdminEmail = env["ETT_ADMIN_EMAIL"],
+                firstAdminPassword = env["ETT_ADMIN_PASSWORD"],
             )
         }
     }

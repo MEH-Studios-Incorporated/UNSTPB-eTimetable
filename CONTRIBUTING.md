@@ -50,9 +50,14 @@ Running things:
 
 # Development server on http://localhost:8080, reachable from emulators and
 # USB phones. It runs its own PostgreSQL (data in server/build/dev-postgres;
-# delete that folder to start over) and fills an empty database with the
-# sample semester from SampleData.
+# delete that folder to start over, with the server stopped) and fills an
+# empty database with the sample semester from SampleData. The dashboard is
+# at http://localhost:8080/admin, admin@etimetable.test / parola-dev.
 tools/dev-server.sh
+
+# A second dev server next to the first needs its own port, folder and
+# PostgreSQL port, or the two share and break one database:
+ETT_PORT=18080 ETT_DEV_DB_DIR=build/dev-postgres-2 ETT_DEV_DB_PORT=54330 ./gradlew :server:runDev
 
 # Server and PostgreSQL in Docker
 cp deploy/.env.example deploy/.env

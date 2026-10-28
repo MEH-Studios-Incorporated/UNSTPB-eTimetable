@@ -28,6 +28,9 @@ class DatasetSnapshot(val semesterId: String, val version: Long, val dataset: Da
     val etag: String get() = "\"$semesterId-$version\""
 }
 
+/** A row of the dashboard's semester list. */
+data class SemesterSummary(val semester: Semester, val isCurrent: Boolean, val activityCount: Int)
+
 class DatasetRepository(private val db: DataSource) {
     @Volatile
     private var cache: DatasetSnapshot? = null
@@ -69,6 +72,45 @@ class DatasetRepository(private val db: DataSource) {
             st.executeBatch()
         }
         if (makeCurrent) {
+            c.update("UPDATE semester SET is_current = FALSE WHERE is_current AND id <> ?", semesterId)
+            c.update("UPDATE semester SET is_current = TRUE WHERE id = ?", semesterId)
+        }
+    }
+
+    suspend fun semesters(): List<SemesterSummary> = db.transaction { c ->
+        c.query(
+            """
+            SELECT s.data, s.is_current,
+                   (SELECT count(*) FROM dataset_item i WHERE i.semester_id = s.id AND i.kind = 'activity')
+            FROM semester s ORDER BY s.data ->> 'firstDay' DESC
+            """.trimIndent(),
+        ) {
+            SemesterSummary(
+                AppJson.decodeFromString(Semester.serializer(), it.getString(1)),
+                it.getBoolean(2),
+                it.getInt(3),
+            )
+        }
+    }
+
+    /** Any semester, current or not. */
+    suspend fun dataset(semesterId: String): Dataset? = db.transaction { c ->
+        if (c.query("SELECT 1 FROM semester WHERE id = ?", semesterId) { 1 }.isEmpty()) null else load(c, semesterId)
+    }
+
+    /** Changes a semester's calendar and keeps its items. */
+    suspend fun saveSemester(semester: Semester) {
+        db.transaction { c ->
+            c.update(
+                "UPDATE semester SET data = ?::jsonb, version = version + 1 WHERE id = ?",
+                AppJson.encodeToString(Semester.serializer(), semester),
+                semester.id,
+            )
+        }
+    }
+
+    suspend fun makeCurrent(semesterId: String) {
+        db.transaction { c ->
             c.update("UPDATE semester SET is_current = FALSE WHERE is_current AND id <> ?", semesterId)
             c.update("UPDATE semester SET is_current = TRUE WHERE id = ?", semesterId)
         }

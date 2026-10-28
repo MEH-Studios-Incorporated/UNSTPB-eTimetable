@@ -16,6 +16,9 @@ services:
       ETT_DB_URL: jdbc:postgresql://db:5432/${ETT_DB_NAME:-etimetable}
       ETT_DB_USER: ${ETT_DB_USER:-etimetable}
       ETT_DB_PASSWORD: ${ETT_DB_PASSWORD:?set ETT_DB_PASSWORD in deploy/.env}
+      ETT_PUBLIC_URL: ${ETT_PUBLIC_URL:-}
+      ETT_ADMIN_EMAIL: ${ETT_ADMIN_EMAIL:-}
+      ETT_ADMIN_PASSWORD: ${ETT_ADMIN_PASSWORD:-}
     ports:
       - "${ETT_PUBLIC_PORT:-8080}:8080"
     depends_on:
