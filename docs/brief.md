@@ -11,8 +11,8 @@ commission and owns it.
 Every student has a profile in the app and picks their enrollment type:
 
 - National students pick their group. Their timetable is the one the
-  faculty publishes for that group, filled in by the faculty (imported
-  automatically or entered through an admin page).
+  faculty publishes for that group, entered by an administrator through the
+  dashboard at the start of the semester.
 - Erasmus students pick their subjects from their learning agreement. They
   can take subjects from several specializations and years, so there is no
   group timetable for them.
@@ -57,6 +57,9 @@ template layouts.
 
 ## Hosting
 
-No server of our own, and nothing on MS:NET infrastructure. GitHub can be
-used where it helps. See [architecture.md](architecture.md) for what that
-means for data and notifications.
+We write the server and ship it as a Docker image; the university decides
+where to run it. During development it runs on our own machines. Nothing
+runs on MS:NET infrastructure. At the start of each semester an
+administrator enters the timetable through the server's dashboard. Reading
+the timetable from FAIMA's website is only a development aid. Details in
+[architecture.md](architecture.md).
