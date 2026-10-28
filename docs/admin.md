@@ -18,8 +18,8 @@ Fiecare își schimbă parola din pagina **Schimbă parola**. O sesiune durează
 ## Un semestru nou
 
 1. **Semestre → Semestru nou.** Codul (de exemplu `2026-2`) rămâne același
-   tot semestrul. Bifează „Copiază grupele, materiile și orarul semestrului
-   curent” dacă orarul seamănă cu cel de acum; altfel semestrul pornește gol.
+   tot semestrul. Bifează "Copiază grupele, materiile și orarul semestrului
+   curent" dacă orarul seamănă cu cel de acum; altfel semestrul pornește gol.
 2. **Calendarul.** Prima și ultima zi de cursuri, apoi vacanțele, câte una pe
    rând:
 
@@ -49,7 +49,7 @@ Fiecare își schimbă parola din pagina **Schimbă parola**. O sesiune durează
 
 Un tabel (Excel, LibreOffice sau Google Sheets) salvat ca CSV, cu un rând pe
 activitate. Cel mai simplu este să descarci orarul actual din pagina
-semestrului („Descarcă orarul actual”), să îl modifici și să îl imporți
+semestrului ("Descarcă orarul actual"), să îl modifici și să îl imporți
 înapoi. Un exemplu complet este în
 [`examples/orar-exemplu.csv`](examples/orar-exemplu.csv).
 
@@ -81,7 +81,7 @@ Rândurile de tip `consultații` au nevoie doar de zi, ore, săptămâni,
 profesor și, opțional, sală. Ele apar la profesor, nu în orarul grupelor.
 
 Excel în română salvează CSV cu punct și virgulă; serverul acceptă și virgulă.
-Diacriticele se păstrează dacă fișierul este salvat ca „CSV UTF-8”.
+Diacriticele se păstrează dacă fișierul este salvat ca "CSV UTF-8".
 
 ## Anunțuri
 
