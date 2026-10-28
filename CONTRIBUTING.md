@@ -35,6 +35,13 @@ shellcheck tools/*.sh
 
 `./gradlew ktlintFormat` fixes most style problems by itself.
 
+Versions live in `gradle/libs.versions.toml`. The Android Gradle Plugin
+must stay at a version the current stable Android Studio supports, or
+Studio cannot sync the project: check the compatibility table at
+https://developer.android.com/build/releases/gradle-plugin before raising
+it. Decline Studio's offers to upgrade versions; change them in a pull
+request instead.
+
 Running things:
 
 ```sh
