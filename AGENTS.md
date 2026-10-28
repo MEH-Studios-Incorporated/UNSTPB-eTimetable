@@ -8,7 +8,11 @@ directly.
 ## 1. The project
 
 UNSTPB eTimetable is a timetable app for FAIMA students at UNSTPB, native on
-Android and iOS. What it has to do is in `docs/brief.md`, how it is built in
+Android and iOS. Multimedia Entertainment Hub LLC (MEH) owns it in full and
+develops it on commission from FAIMA, the Faculty of Entrepreneurship,
+Business Engineering and Management (Facultatea de Antreprenoriat, Ingineria
+și Managementul Afacerilor). What it has to do is in `docs/brief.md`, how it
+is built in
 `docs/architecture.md`. Read both before changing anything that touches the
 data model, sync or the screens.
 
@@ -35,11 +39,13 @@ Product rules that are easy to get wrong:
 
 ## 2. People and roles
 
-- Maintainer: Mihnea Gîrbăcică (Mihnea8848). Owns the repository settings,
-  rulesets, Actions secrets, store accounts, releases, the license and the
-  list of collaborators.
-- Collaborators have write access. They push branches to this repository
-  and open pull requests; no fork needed.
+- Owner: Multimedia Entertainment Hub LLC. The repository lives in its
+  GitHub organization, MEH-Studios-Incorporated.
+- Maintainer: Mihnea Gîrbăcică (Mihnea8848), a developer at MEH. Manages the
+  repository settings, rulesets, Actions secrets, store accounts, releases
+  and the list of collaborators for MEH.
+- Collaborators have write access. Most are MEH developers. They push
+  branches to this repository and open pull requests; no fork needed.
 - Outside contributors fork, as described in `CONTRIBUTING.md`.
 - A coding agent works for the person who runs it. "Your person" below means
   that person. Ask them, not the maintainer, unless the action is one of the
@@ -77,9 +83,9 @@ Write like a person who knows the project, not like a chatbot.
 - Headings in sentence case. No bold scattered through running text.
 - Be concrete: numbers, names, commands, file paths. If something was
   measured, give the measurement and how.
-- The README is written in the first person, the maintainer talking ("I made
-  this because..."). Keep that voice when you edit it, whoever you are.
-  Never "the owner", "the user reported" or "the author".
+- The README is written in the first person plural, the MEH developers
+  talking ("We are building this because..."). Keep that voice when you
+  edit it. Never "the company", "the user reported" or "the authors".
 - Keep the README short. Anything that is not needed to understand, install
   or use the project moves to `docs/`.
 - Code comments are short and factual: what is not obvious and why. No
@@ -94,16 +100,15 @@ Write like a person who knows the project, not like a chatbot.
   comments) starts with:
 
   ```
-  Copyright (c) <year> Mihnea Gîrbăcică (Mihnea8848)
+  Copyright (c) <year> Multimedia Entertainment Hub LLC
   SPDX-License-Identifier: LicenseRef-Proprietary
   ```
 
-  in that language's comment syntax. If you wrote the file, you may add your
-  own copyright line under the first one. Markdown and data files without
-  comments are exempt.
-- The project is all rights reserved (`LICENSE`). Contributions are accepted
-  under the terms in `CONTRIBUTING.md`. Only the maintainer changes the
-  license.
+  in that language's comment syntax, whoever wrote the file. Markdown and
+  data files without comments are exempt.
+- The project is all rights reserved and owned by MEH (`LICENSE`).
+  Contributions are accepted under the terms in `CONTRIBUTING.md`. Only MEH
+  changes the license, through the maintainer.
 
 ## 6. How a change lands
 
@@ -203,7 +208,7 @@ guess; changing them is the maintainer's.
   Repository admins may bypass.
 - Ruleset `release tags` on `refs/tags/v*`: no creation, update or deletion
   except by repository admins.
-- Check them with `gh api repos/Mihnea8848/UNSTPB-eTimetable/rulesets`.
+- Check them with `gh api repos/MEH-Studios-Incorporated/UNSTPB-eTimetable/rulesets`.
 
 ## 10. Ask before doing
 

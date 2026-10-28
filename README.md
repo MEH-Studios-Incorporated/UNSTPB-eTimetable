@@ -6,6 +6,9 @@ and Technology POLITEHNICA Bucharest. It shows your classes, where each
 professor is and the faculty's announcements, on Android and iOS, and keeps
 working offline once the timetable has synced.
 
+Developed and owned by Multimedia Entertainment Hub LLC, on commission from
+FAIMA, UNSTPB.
+
 Status: planning. There is no app to install yet.
 
 ## What it does
@@ -24,13 +27,13 @@ Status: planning. There is no app to install yet.
 - Native apps: Jetpack Compose on Android, SwiftUI on iOS, with the
   timetable logic shared in Kotlin.
 
-## Why I made it
+## Why we are making it
 
-FAIMA asked Multimedia Entertainment Hub LLC for a timetable app, and I am
-building it for MEH. The prototype we were shown had the right screens, but
-it was a web page and looked generated.
+FAIMA asked us, the developers at Multimedia Entertainment Hub, for a
+timetable app. The prototype we were shown had the right screens, but it was
+a web page and looked generated.
 
-I want an app that opens instantly, works in a lecture hall with no signal,
+We want an app that opens instantly, works in a lecture hall with no signal,
 and looks like something the faculty would put its name on.
 
 ## What works
@@ -69,8 +72,9 @@ request flow, and [AGENTS.md](AGENTS.md) the rules every change follows.
 
 ## License
 
-All rights reserved. The source is public so it can be read and reviewed,
-but you may not copy, change, redistribute or publish the app or its code
-without written permission. See [LICENSE](LICENSE).
+Copyright (c) 2026 Multimedia Entertainment Hub LLC. All rights reserved.
+The source is public so it can be read and reviewed, but you may not copy,
+change, redistribute or publish the app or its code without written
+permission from MEH. See [LICENSE](LICENSE).
 
 The UNSTPB and FAIMA names and logos belong to the university.
