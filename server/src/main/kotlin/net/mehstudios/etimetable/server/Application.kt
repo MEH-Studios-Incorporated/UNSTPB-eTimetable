@@ -21,14 +21,21 @@ import io.ktor.server.plugins.statuspages.StatusPages
 import io.ktor.server.request.path
 import io.ktor.server.response.respond
 import io.ktor.server.routing.routing
+import io.ktor.server.sessions.Sessions
+import io.ktor.server.sessions.cookie
+import kotlinx.coroutines.runBlocking
 import net.mehstudios.etimetable.api.ApiError
 import net.mehstudios.etimetable.api.AppJson
 import net.mehstudios.etimetable.api.ErrorCodes
 import net.mehstudios.etimetable.server.accounts.Accounts
+import net.mehstudios.etimetable.server.admin.AdminAccounts
+import net.mehstudios.etimetable.server.admin.AdminCookie
+import net.mehstudios.etimetable.server.admin.adminRoutes
 import net.mehstudios.etimetable.server.announcements.AnnouncementRepository
 import net.mehstudios.etimetable.server.dataset.DatasetRepository
 import net.mehstudios.etimetable.server.db.createDataSource
 import net.mehstudios.etimetable.server.db.migrate
+import org.slf4j.LoggerFactory
 import org.slf4j.event.Level
 import javax.sql.DataSource
 import kotlin.time.Duration.Companion.minutes
@@ -37,16 +44,22 @@ fun main() {
     val config = ServerConfig.fromEnvironment()
     val db = createDataSource(config.database)
     migrate(db)
-    embeddedServer(Netty, port = config.port, host = "0.0.0.0") { module(Services(db)) }.start(wait = true)
+    val services = Services(db)
+    if (runBlocking { services.admins.bootstrap(config.firstAdminEmail, config.firstAdminPassword) }) {
+        LoggerFactory.getLogger("eTimetable").info("Created the first admin account, {}", config.firstAdminEmail)
+    }
+    val secureCookies = config.publicUrl?.startsWith("https://") == true
+    embeddedServer(Netty, port = config.port, host = "0.0.0.0") { module(services, secureCookies) }.start(wait = true)
 }
 
 class Services(val db: DataSource) {
     val datasets = DatasetRepository(db)
     val announcements = AnnouncementRepository(db)
     val accounts = Accounts(db)
+    val admins = AdminAccounts(db)
 }
 
-fun Application.module(services: Services) {
+fun Application.module(services: Services, secureCookies: Boolean = false) {
     install(ContentNegotiation) { json(AppJson) }
     install(Compression) { gzip() }
     install(CallLogging) {
@@ -73,7 +86,17 @@ fun Application.module(services: Services) {
             authenticate { credential -> services.accounts.studentFor(credential.token)?.let(::StudentPrincipal) }
         }
     }
+    install(Sessions) {
+        cookie<AdminCookie>("ett_admin") {
+            cookie.path = "/admin"
+            cookie.httpOnly = true
+            cookie.secure = secureCookies
+            cookie.maxAgeInSeconds = 12 * 60 * 60
+            cookie.extensions["SameSite"] = "Lax"
+        }
+    }
     routing {
         apiRoutes(services)
+        adminRoutes(services)
     }
 }

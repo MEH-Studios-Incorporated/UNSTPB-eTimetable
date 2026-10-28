@@ -60,6 +60,14 @@ class AnnouncementRepository(private val db: DataSource, private val clock: Cloc
         return announcement
     }
 
+    suspend fun setPinned(id: String, pinned: Boolean) {
+        db.transaction { c -> c.update("UPDATE announcement SET pinned = ? WHERE id = ?", pinned, id) }
+    }
+
+    suspend fun delete(id: String) {
+        db.transaction { c -> c.update("DELETE FROM announcement WHERE id = ?", id) }
+    }
+
     private fun toAnnouncement(rs: java.sql.ResultSet) = Announcement(
         id = rs.getString("id"),
         title = rs.getString("title"),

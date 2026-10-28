@@ -25,6 +25,8 @@ dependencies {
     implementation(libs.ktor.server.rate.limit)
     implementation(libs.ktor.server.compression)
     implementation(libs.ktor.server.call.logging)
+    implementation(libs.ktor.server.html.builder)
+    implementation(libs.ktor.server.sessions)
     implementation(libs.ktor.serialization.kotlinx.json)
     implementation(libs.hikari)
     implementation(libs.flyway.core)
