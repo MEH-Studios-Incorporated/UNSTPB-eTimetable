@@ -1,0 +1,142 @@
+<!doctype html>
+<!--
+  Copyright (c) 2026 Multimedia Entertainment Hub LLC
+  SPDX-License-Identifier: LicenseRef-Proprietary
+-->
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<title>Orar, săptămâna</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#1D6FA5}a:hover{color:#155785}
+.tnum{font-variant-numeric:tabular-nums}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; display: flex; flex-direction: column; font-family: 'Libre Franklin', sans-serif; background: #FAFAF9; color: #292929; overflow: hidden">
+
+<header style="padding: 20px 16px 12px; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px">
+<div style="display: flex; flex-direction: column; gap: 4px">
+<h1 style="margin: 0; font-size: 22px; line-height: 28px; font-weight: 600">26 - 30 octombrie</h1>
+<p style="margin: 0; font-size: 13px; line-height: 18px; font-weight: 500; color: #5C5C5A">Săptămâna 5 · impară · 1541E/A</p>
+</div>
+<button aria-label="Profilul meu" style="width: 44px; height: 44px; border-radius: 22px; border: 1px solid #E3E3E0; background: #FFFFFF; color: #292929; font: 600 14px 'Libre Franklin', sans-serif">MG</button>
+</header>
+
+<div style="padding: 0 16px 12px; display: flex; gap: 8px; align-items: center">
+<div role="group" aria-label="Vizualizare" style="display: flex; padding: 3px; border-radius: 8px; background: #F2F2F0; gap: 2px">
+<button style="height: 32px; padding: 0 14px; border: 0; border-radius: 6px; background: transparent; color: #5C5C5A; font: 500 13px 'Libre Franklin', sans-serif">Zi</button>
+<button style="height: 32px; padding: 0 14px; border: 0; border-radius: 6px; background: #FFFFFF; color: #292929; font: 600 13px 'Libre Franklin', sans-serif">Săptămână</button>
+</div>
+<div style="flex-grow: 1"></div>
+<button aria-label="Săptămâna precedentă" style="width: 38px; height: 38px; border: 1px solid #E3E3E0; border-radius: 6px; background: transparent; color: #292929; display: flex; align-items: center; justify-content: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg></button>
+<button aria-label="Săptămâna următoare" style="width: 38px; height: 38px; border: 1px solid #E3E3E0; border-radius: 6px; background: transparent; color: #292929; display: flex; align-items: center; justify-content: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></button>
+</div>
+
+<div style="display: grid; grid-template-columns: 36px repeat(5, minmax(0, 1fr)); padding: 0 8px 6px 0; column-gap: 3px">
+<span></span>
+<sc-for list="{{days}}" as="d" hint-placeholder-count="5">
+<span style="{{d.style}}">{{d.label}}</span>
+</sc-for>
+</div>
+
+<div style="flex-grow: 1; overflow: hidden; display: flex; padding: 10px 8px 0 0">
+<div style="width: 36px; flex-shrink: 0; position: relative">
+<sc-for list="{{hours}}" as="h" hint-placeholder-count="12">
+<span class="tnum" style="{{h.style}}">{{h.label}}</span>
+</sc-for>
+</div>
+<div style="flex-grow: 1; position: relative; padding-left: 3px">
+<sc-for list="{{hours}}" as="h" hint-placeholder-count="12">
+<div style="{{h.line}}"></div>
+</sc-for>
+<div style="position: absolute; top: 0; bottom: 0; left: 3px; right: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); column-gap: 3px">
+<sc-for list="{{cols}}" as="c" hint-placeholder-count="5">
+<div style="position: relative; {{c.bg}}">
+<sc-for list="{{c.blocks}}" as="b" hint-placeholder-count="3">
+<button style="{{b.style}}">
+<span style="font-size: 11px; line-height: 14px; font-weight: 700; color: #292929">{{b.short}}</span>
+<span style="font-size: 11px; line-height: 14px; font-weight: 500; color: #3A3A38">{{b.kind}}</span>
+<span style="font-size: 11px; line-height: 14px; color: #3A3A38">{{b.room}}</span>
+</button>
+</sc-for>
+</div>
+</sc-for>
+</div>
+<div style="position: absolute; top: 152px; left: 0; right: 0; height: 2px; background: transparent">
+<div style="position: absolute; left: 40%; width: 20%; height: 2px; background: #D92A21"></div>
+</div>
+</div>
+</div>
+
+<nav aria-label="Navigare" style="border-top: 1px solid #E3E3E0; background: #FFFFFF; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); padding: 6px 4px 22px">
+<sc-for list="{{tabs}}" as="tab" hint-placeholder-count="4">
+<a href="{{tab.href}}" style="{{tab.style}}">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{tab.icon}}"></path></svg>
+<span style="font-size: 12px; line-height: 16px; font-weight: 600">{{tab.label}}</span>
+<sc-if value="{{tab.badge}}" hint-placeholder-val="{{ false }}"><span style="position: absolute; top: 4px; left: 55%; width: 8px; height: 8px; border-radius: 4px; background: #D92A21"></span></sc-if>
+</a>
+</sc-for>
+</nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const H = 44, start = 8;
+    const days = [['Lu 26', false], ['Ma 27', false], ['Mi 28', true], ['Jo 29', false], ['Vi 30', false]].map(([label, today]) => ({
+      label,
+      style: `text-align: center; font-size: 12px; line-height: 28px; font-weight: ${today ? 700 : 500}; border-radius: 6px; color: ${today ? '#FFFFFF' : '#5C5C5A'}; background: ${today ? '#292929' : 'transparent'}`
+    }));
+    const hours = [];
+    for (let h = start; h <= 19; h++) {
+      const top = (h - start) * H;
+      hours.push({
+        label: String(h).padStart(2, '0'),
+        style: `position: absolute; right: 6px; top: ${top - 7}px; font-size: 11px; line-height: 14px; font-weight: 500; color: #5C5C5A`,
+        line: `position: absolute; left: 0; right: 0; top: ${top}px; height: 1px; background: #E3E3E0`
+      });
+    }
+    const hex = (c, a) => {
+      const n = parseInt(c.slice(1), 16), b = 0xFAFAF9;
+      const mix = (x, y) => Math.round(x * a + y * (1 - a));
+      return `rgb(${mix(n >> 16, b >> 16)}, ${mix((n >> 8) & 255, (b >> 8) & 255)}, ${mix(n & 255, b & 255)})`;
+    };
+    const S = { micro: ['Micro', '#4C6A92'], cont: ['Contab.', '#2F7F7A'], calit: ['Calit.', '#B07A1F'], mkt: ['Mkt.', '#7A4C7F'], stat: ['Statist.', '#4B4F9E'], drept: ['Drept', '#A84B3A'], eng: ['Engleză', '#3F7A4F'], info: ['Inform.', '#6F7F2F'] };
+    const week = [
+      [['stat', 8, 10, 'Curs', 'AN 015'], ['stat', 10, 12, 'Sem.', 'EC 004'], ['drept', 12, 14, 'Curs', 'JA 101'], ['eng', 14, 16, 'Sem.', 'BN 030']],
+      [['info', 8, 10, 'Lab.', 'BN 212 b'], ['cont', 10, 12, 'Curs', 'AN 015'], ['mkt', 12, 14, 'Curs', 'JA 101'], ['drept', 14, 16, 'Sem.', 'EC 105'], ['info', 16, 18, 'Curs', 'AN 015']],
+      [['micro', 8, 10, 'Curs', 'AN 015'], ['cont', 10, 11.5, 'Sem.', 'EC 004'], ['calit', 12, 14, 'Lab.', 'BN 212 b'], ['mkt', 16, 18, 'Proiect', 'JA 101']],
+      [['micro', 10, 12, 'Sem.', 'EC 105'], ['calit', 12, 14, 'Curs', 'AN 015'], ['stat', 14, 16, 'Lab.', 'BN 212 a']],
+      [['eng', 10, 12, 'Curs', 'BN 030']]
+    ];
+    const cols = week.map((list, i) => ({
+      bg: i === 2 ? 'background: rgba(29, 111, 165, 0.05); border-radius: 6px' : '',
+      blocks: list.map(([k, s, e, kind, room]) => ({
+        short: S[k][0], kind, room,
+        style: `position: absolute; left: 0; right: 0; top: ${(s - start) * H + 1}px; height: ${(e - s) * H - 3}px; box-sizing: border-box; border: 0; border-left: 3px solid ${S[k][1]}; border-radius: 4px; padding: 4px 4px 4px 5px; display: flex; flex-direction: column; align-items: flex-start; text-align: left; overflow: hidden; background: ${hex(S[k][1], 0.16)}; font-family: 'Libre Franklin', sans-serif`
+      }))
+    }));
+    const icons = {
+      cal: 'M8 3v4M16 3v4M3 10h18M5 5h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z',
+      book: 'M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3zM5 17a3 3 0 0 1 3-3h11',
+      person: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21c0-4 4-6 8-6s8 2 8 6',
+      bell: 'M6 16v-5a6 6 0 0 1 12 0v5l2 2H4zM10 21h4'
+    };
+    const tabs = [['Orar', 'cal', 'Main.dc.html', true], ['Materii', 'book', 'Subject.dc.html'], ['Profesori', 'person', 'Professors.dc.html'], ['Anunțuri', 'bell', 'Announcements.dc.html', false, true]].map(([label, ic, href, active, badge]) => ({
+      label, href, badge: !!badge, icon: icons[ic],
+      style: `position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 0; min-height: 48px; text-decoration: none; color: ${active ? '#1D6FA5' : '#5C5C5A'}`
+    }));
+    return { days, hours, cols, tabs };
+  }
+}
+</script>
+</body>
+</html>

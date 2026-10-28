@@ -1,0 +1,108 @@
+<!doctype html>
+<!--
+  Copyright (c) 2026 Multimedia Entertainment Hub LLC
+  SPDX-License-Identifier: LicenseRef-Proprietary
+-->
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<title>Widgeturi pe ecranul principal</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.tnum{font-variant-numeric:tabular-nums}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; padding: 28px 16px; display: flex; flex-direction: column; gap: 14px; font-family: 'Libre Franklin', sans-serif; background: #2E3236; color: #292929">
+
+<div style="display: flex; gap: 18px; align-items: flex-start">
+<div style="display: flex; flex-direction: column; gap: 6px; align-items: center">
+<section aria-label="Widget mic" style="width: 170px; height: 170px; box-sizing: border-box; border-radius: 22px; background: #FFFFFF; padding: 14px; display: flex; flex-direction: column; justify-content: space-between">
+<span style="font-size: 12px; font-weight: 600; color: #D92A21">În 25 min</span>
+<span style="display: flex; flex-direction: column; gap: 2px">
+<span class="tnum" style="font-size: 28px; line-height: 32px; font-weight: 600">12:00</span>
+<span style="font-size: 14px; line-height: 18px; font-weight: 600">Managementul calității</span>
+<span style="font-size: 12px; line-height: 16px; color: #5C5C5A">Lab. · BN 212 b</span>
+</span>
+</section>
+<span style="font-size: 12px; font-weight: 500; color: #E8E8E6">Mic</span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px; align-items: center">
+<section aria-label="Widget mic, tema întunecată" style="width: 170px; height: 170px; box-sizing: border-box; border-radius: 22px; background: #141414; padding: 14px; display: flex; flex-direction: column; justify-content: space-between; color: #EDEDED">
+<span style="font-size: 12px; font-weight: 600; color: #F0564C">În 25 min</span>
+<span style="display: flex; flex-direction: column; gap: 2px">
+<span class="tnum" style="font-size: 28px; line-height: 32px; font-weight: 600">12:00</span>
+<span style="font-size: 14px; line-height: 18px; font-weight: 600">Managementul calității</span>
+<span style="font-size: 12px; line-height: 16px; color: #9A9A9A">Lab. · BN 212 b</span>
+</span>
+</section>
+<span style="font-size: 12px; font-weight: 500; color: #E8E8E6">Mic, întunecat</span>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 6px; align-items: center">
+<section aria-label="Widget mediu" style="width: 358px; height: 170px; box-sizing: border-box; border-radius: 22px; background: #FFFFFF; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px">
+<span style="display: flex; justify-content: space-between; font-size: 12px; font-weight: 600; color: #5C5C5A"><span>Miercuri, 28 oct.</span><span>Săpt. 5 · impară</span></span>
+<sc-for list="{{today}}" as="r" hint-placeholder-count="3">
+<span style="display: flex; align-items: center; gap: 10px">
+<span style="{{r.bar}}"></span>
+<span class="tnum" style="width: 42px; font-size: 13px; font-weight: 600">{{r.time}}</span>
+<span style="font-size: 14px; font-weight: 600; flex-grow: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{r.title}}</span>
+<span style="font-size: 12px; color: #5C5C5A; white-space: nowrap">{{r.room}}</span>
+</span>
+</sc-for>
+</section>
+<span style="font-size: 12px; font-weight: 500; color: #E8E8E6">Mediu: restul zilei</span>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 6px; align-items: center">
+<section aria-label="Widget mare" style="width: 358px; height: 376px; box-sizing: border-box; border-radius: 22px; background: #FFFFFF; padding: 16px; display: flex; flex-direction: column; gap: 10px">
+<span style="display: flex; justify-content: space-between; font-size: 12px; font-weight: 600; color: #5C5C5A"><span>Azi</span><span>Săpt. 5 · impară</span></span>
+<sc-for list="{{today}}" as="r" hint-placeholder-count="3">
+<span style="display: flex; gap: 10px">
+<span style="{{r.barTall}}"></span>
+<span style="display: flex; flex-direction: column; gap: 1px; min-width: 0">
+<span class="tnum" style="font-size: 12px; font-weight: 600; color: #5C5C5A">{{r.range}}</span>
+<span style="font-size: 15px; line-height: 20px; font-weight: 600">{{r.title}}</span>
+<span style="font-size: 12px; color: #5C5C5A">{{r.kind}} · {{r.room}}</span>
+</span>
+</span>
+</sc-for>
+<span style="height: 1px; background: #E3E3E0; margin: 2px 0"></span>
+<span style="font-size: 12px; font-weight: 600; color: #5C5C5A">Mâine</span>
+<span style="display: flex; gap: 10px">
+<span style="width: 4px; border-radius: 2px; background: #4C6A92"></span>
+<span style="display: flex; flex-direction: column; gap: 1px">
+<span class="tnum" style="font-size: 12px; font-weight: 600; color: #5C5C5A">10:00 - 12:00</span>
+<span style="font-size: 15px; line-height: 20px; font-weight: 600">Microeconomie</span>
+<span style="font-size: 12px; color: #5C5C5A">Seminar · EC 105</span>
+</span>
+</span>
+</section>
+<span style="font-size: 12px; font-weight: 500; color: #E8E8E6">Mare: azi și începutul zilei de mâine</span>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const today = [
+      ['12:00', '12:00 - 14:00', 'Managementul calității', 'Laborator', 'BN 212 b', '#B07A1F'],
+      ['16:00', '16:00 - 18:00', 'Marketing', 'Proiect', 'JA 101', '#7A4C7F']
+    ].map(([time, range, title, kind, room, c]) => ({
+      time, range, title, kind, room,
+      bar: `width: 4px; height: 20px; border-radius: 2px; background: ${c}; flex-shrink: 0`,
+      barTall: `width: 4px; border-radius: 2px; background: ${c}; flex-shrink: 0`
+    }));
+    return { today };
+  }
+}
+</script>
+</body>
+</html>

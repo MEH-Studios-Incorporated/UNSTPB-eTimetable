@@ -21,6 +21,8 @@ jobs:
         run: tools/check-writing.sh
       - name: Lint shell scripts
         run: shellcheck tools/*.sh
+      - name: Check JavaScript syntax
+        run: for f in tools/render-mockups/*.mjs tools/render-mockups/*.js; do node --check "$f"; done
       - name: Release notes dry run
         run: |
           mkdir -p build

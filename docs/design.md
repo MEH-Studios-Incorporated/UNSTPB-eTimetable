@@ -12,6 +12,9 @@ Entertainment Hub works the same way: black and `rgb(20 20 20)` surfaces, the
 maple red `#d92a21` and the two blues of the MEH mark. The app keeps that:
 neutral surfaces, ink-coloured text, and colour only where it carries
 information (the current time, the subject, a change, something to tap).
+Two of FAIMA's own colours are used on purpose: its near-black `#292929`
+is the text colour in the light theme, and its yellow `#F5C753` marks
+changes to the timetable. Nothing else of the website's look is copied.
 
 Things we do not do: gradients, glows, glass effects, emoji, oversized
 greeting headlines, stat tiles that repeat what the timetable already
@@ -25,17 +28,17 @@ shows, cards inside cards, and illustrations as filler.
 | `surface` | `#FFFFFF` | `#141414` | Sheets, list rows, timetable blocks |
 | `surfaceAlt` | `#F2F2F0` | `#1E1E1E` | Grouped sections, the week grid |
 | `border` | `#E3E3E0` | `#2A2A2A` | Hairlines, 1 px |
-| `text` | `#141414` | `#EDEDED` | Body text |
+| `text` | `#292929` | `#EDEDED` | Body text (FAIMA's near-black) |
 | `textMuted` | `#5C5C5A` | `#9A9A9A` | Secondary text |
 | `primary` | `#1D6FA5` | `#2EBFF6` | Links, selected tab, buttons |
 | `onPrimary` | `#FFFFFF` | `#0A0A0A` | Text on `primary` |
 | `now` | `#D92A21` | `#F0564C` | The current-time line, "live" status, unread marks |
-| `change` | `#F5C753` | `#F5C753` | Background of change notices (text stays `#141414`) |
+| `change` | `#F5C753` | `#F5C753` | Background of change notices, such as a moved room (text `#292929`, 9.1:1) |
 | `error` | `#D92A21` | `#F0564C` | Errors and refused picks |
 
 `primary` is a darker step of the MEH blue `#2689ca`, which only reaches
 3.8:1 on white. Measured contrast (WCAG formula): `text` on `background`
-17.6:1, `textMuted` 6.4:1 (light) and 6.6:1 (dark), `primary` 5.4:1 on
+13.9:1 (light) and 15.7:1 (dark), `textMuted` 6.4:1 (light) and 6.6:1 (dark), `primary` 5.4:1 on
 white and 8.7:1 on `#141414`, `now` 4.9:1 on white and 5.4:1 on `#141414`.
 
 ### Subject colours
@@ -83,6 +86,17 @@ Short and functional: 150 ms for state changes, 250 ms for sheets and
 screen changes, standard platform easing. Nothing animates on its own while
 the student is not touching the screen, apart from the current-time line.
 
+## Logos
+
+- The FAIMA seal appears on the sign-in screen (132 px wide) and on the
+  About screen (72 px). In the dark theme it is shown in white. It is never
+  recoloured, stretched, cropped or placed on a subject colour.
+- The Multimedia Entertainment Hub mark appears only small, next to the
+  copyright line on the About screen and in the sign-in footer.
+- Files are in `design/brand/`. The FAIMA seal is a 250 x 191 PNG taken
+  from faima.upb.ro; we need a vector version from FAIMA before the first
+  store release.
+
 ## Icons
 
 Material Symbols (outlined, weight 400) on Android and in the dashboard, SF
@@ -93,3 +107,19 @@ Symbols on iOS. No custom illustrations.
 Each app follows its platform: Material 3 components and navigation on
 Android, standard SwiftUI navigation and sheets on iOS. The tokens above
 keep them recognisably the same app.
+
+## Mockups
+
+The approved screens are in [`design/mockups/`](../design/mockups/) as PNG
+files, with their sources in `design/mockups/source/`. After changing a
+source, regenerate the images:
+
+```sh
+cd tools/render-mockups && npm install && npx playwright install chromium
+node render.mjs            # all screens
+node render.mjs Main Week  # only these
+```
+
+The mockups use made-up names, rooms and announcements. Only the group code
+format (`1541E`, half-groups A and B) and the building codes follow FAIMA's
+real ones.

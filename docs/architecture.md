@@ -84,7 +84,9 @@ Students sign up with an email address and a password. Nothing is verified
 beyond that: enrollment, group and Erasmus picks are whatever the student
 chooses. Passwords are hashed with Argon2id, and the app keeps a session
 token. Admin accounts are separate, with two roles: admin (everything) and
-editor (timetables and announcements).
+editor (timetables and announcements). If the deployment sets SMTP
+variables, students can reset a forgotten password by email; otherwise an
+admin resets it from the dashboard.
 
 ## Push notifications
 
