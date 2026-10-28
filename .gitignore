@@ -28,3 +28,6 @@ DerivedData/
 .env
 *.local
 .claude/settings.local.json
+
+# Node tooling
+node_modules/

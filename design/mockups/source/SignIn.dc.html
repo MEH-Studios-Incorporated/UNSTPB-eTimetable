@@ -1,0 +1,65 @@
+<!doctype html>
+<!--
+  Copyright (c) 2026 Multimedia Entertainment Hub LLC
+  SPDX-License-Identifier: LicenseRef-Proprietary
+-->
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<title>Conectare</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#1D6FA5}a:hover{color:#155785}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; display: flex; flex-direction: column; font-family: 'Libre Franklin', sans-serif; background: #FAFAF9; color: #292929; overflow: hidden">
+
+<div style="padding: 16px 16px 0; display: flex; justify-content: flex-end">
+<div role="group" aria-label="Limba" style="display: flex; padding: 3px; border-radius: 8px; background: #F2F2F0; gap: 2px">
+<button style="height: 30px; padding: 0 12px; border: 0; border-radius: 6px; background: #FFFFFF; color: #292929; font: 600 13px 'Libre Franklin', sans-serif">RO</button>
+<button style="height: 30px; padding: 0 12px; border: 0; border-radius: 6px; background: transparent; color: #5C5C5A; font: 500 13px 'Libre Franklin', sans-serif">EN</button>
+</div>
+</div>
+
+<div style="padding: 24px 24px 0; display: flex; flex-direction: column; align-items: center; gap: 14px">
+<img src="../../brand/faima-seal.png" alt="Sigiliul FAIMA, Universitatea Națională de Știință și Tehnologie POLITEHNICA București" style="width: 132px; height: auto">
+<div style="display: flex; flex-direction: column; align-items: center; gap: 4px">
+<h1 style="margin: 0; font-size: 26px; line-height: 32px; font-weight: 700; letter-spacing: -0.01em">eTimetable</h1>
+<p style="margin: 0; font-size: 14px; line-height: 20px; color: #5C5C5A; text-align: center">Orarul, profesorii și anunțurile FAIMA</p>
+</div>
+</div>
+
+<form style="padding: 32px 24px 0; display: flex; flex-direction: column; gap: 14px">
+<label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600">Email
+<input type="email" placeholder="nume.prenume@stud.upb.ro" style="height: 48px; box-sizing: border-box; padding: 0 14px; border: 1px solid #D4D4D0; border-radius: 6px; background: #FFFFFF; font: 400 15px 'Libre Franklin', sans-serif; color: #292929">
+</label>
+<label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600">Parolă
+<input type="password" value="parola-test" style="height: 48px; box-sizing: border-box; padding: 0 14px; border: 1px solid #D4D4D0; border-radius: 6px; background: #FFFFFF; font: 400 15px 'Libre Franklin', sans-serif; color: #292929">
+</label>
+<a href="#" style="align-self: flex-end; font-size: 13px; font-weight: 500; padding: 4px 0">Ai uitat parola?</a>
+<a href="Main.dc.html" style="height: 50px; border-radius: 6px; background: #1D6FA5; color: #FFFFFF; font-size: 15px; font-weight: 600; display: flex; align-items: center; justify-content: center; text-decoration: none">Conectează-te</a>
+<button type="button" style="height: 50px; border: 1px solid #D4D4D0; border-radius: 6px; background: #FFFFFF; color: #292929; font: 600 15px 'Libre Franklin', sans-serif">Creează un cont</button>
+</form>
+
+<div style="flex-grow: 1"></div>
+
+<footer style="padding: 0 24px 28px; display: flex; align-items: center; justify-content: center; gap: 10px">
+<img src="../../brand/meh-mark.png" alt="" aria-hidden="true" style="width: 14px; height: auto; filter: invert(1) brightness(0.35)">
+<span style="font-size: 12px; line-height: 16px; color: #5C5C5A; text-align: center">Dezvoltată de Multimedia Entertainment Hub pentru FAIMA, UNSTPB</span>
+</footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

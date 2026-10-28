@@ -1,0 +1,79 @@
+<!doctype html>
+<!--
+  Copyright (c) 2026 Multimedia Entertainment Hub LLC
+  SPDX-License-Identifier: LicenseRef-Proprietary
+-->
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<title>Despre aplicație</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#1D6FA5}a:hover{color:#155785}
+.tnum{font-variant-numeric:tabular-nums}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; display: flex; flex-direction: column; font-family: 'Libre Franklin', sans-serif; background: #FAFAF9; color: #292929; overflow: hidden">
+
+<header style="padding: 12px 16px 0">
+<a href="#" style="display: flex; align-items: center; gap: 4px; height: 44px; width: fit-content; text-decoration: none; font-size: 15px; font-weight: 500; color: #1D6FA5"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg>Profil</a>
+</header>
+
+<section style="padding: 12px 16px 20px; display: flex; align-items: center; gap: 16px">
+<img src="../../brand/faima-seal.png" alt="Sigiliul FAIMA" style="width: 72px; height: auto">
+<div style="display: flex; flex-direction: column; gap: 3px">
+<h1 style="margin: 0; font-size: 22px; line-height: 28px; font-weight: 700">eTimetable</h1>
+<span class="tnum" style="font-size: 13px; color: #5C5C5A">Versiunea 0.1.0</span>
+<span class="tnum" style="font-size: 13px; color: #5C5C5A">Sincronizat azi, 11:20</span>
+</div>
+</section>
+
+<nav aria-label="Informații legale" style="margin: 0 16px; background: #FFFFFF; border: 1px solid #E3E3E0; border-radius: 8px; display: flex; flex-direction: column">
+<sc-for list="{{rows}}" as="r" hint-placeholder-count="5">
+<a href="#" style="{{r.style}}">
+<span style="display: flex; flex-direction: column; gap: 2px">
+<span style="font-size: 15px; line-height: 20px; font-weight: 500">{{r.label}}</span>
+<span style="font-size: 12px; line-height: 16px; color: #5C5C5A">{{r.hint}}</span>
+</span>
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9A9A98" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg>
+</a>
+</sc-for>
+</nav>
+
+<div style="flex-grow: 1"></div>
+
+<footer style="margin: 0 16px 28px; padding-top: 16px; border-top: 1px solid #E3E3E0; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; align-items: center; gap: 10px">
+<img src="../../brand/meh-mark.png" alt="Sigla Multimedia Entertainment Hub" style="width: 18px; height: auto; filter: invert(1) brightness(0.16)">
+<span style="font-size: 13px; line-height: 18px; font-weight: 600">© 2026 Multimedia Entertainment Hub LLC. Toate drepturile rezervate.</span>
+</div>
+<p style="margin: 0; font-size: 12px; line-height: 17px; color: #5C5C5A">Realizată la comanda Facultății de Antreprenoriat, Ingineria și Managementul Afacerilor (FAIMA), Universitatea Națională de Știință și Tehnologie POLITEHNICA București. Numele și siglele FAIMA și UNSTPB aparțin universității.</p>
+</footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const rows = [
+      ['Politica de confidențialitate', 'Ce date păstrăm și de ce'],
+      ['Termeni de utilizare', 'Orarul are caracter informativ'],
+      ['Licențe open source', 'Bibliotecile și fonturile folosite'],
+      ['Raportează o problemă', 'Trimite o descriere și o captură de ecran'],
+      ['Site-ul FAIMA', 'faima.upb.ro']
+    ].map(([label, hint], i, all) => ({
+      label, hint,
+      style: `display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; min-height: 56px; box-sizing: border-box; text-decoration: none; color: #292929; ${i < all.length - 1 ? 'border-bottom: 1px solid #E3E3E0;' : ''}`
+    }));
+    return { rows };
+  }
+}
+</script>
+</body>
+</html>

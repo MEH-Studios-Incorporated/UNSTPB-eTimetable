@@ -13,7 +13,8 @@ develops it on commission from FAIMA, the Faculty of Entrepreneurship,
 Business Engineering and Management (Facultatea de Antreprenoriat, Ingineria
 și Managementul Afacerilor). What it has to do is in `docs/brief.md`, how it
 is built in `docs/architecture.md`, the data in `docs/data-model.md`, the
-screens in `docs/screens.md` and the look in `docs/design.md`. Read
+screens in `docs/screens.md`, the look in `docs/design.md` and the approved
+mockups in `design/mockups/`. Read
 them before changing anything that touches the data model, sync or the
 screens.
 

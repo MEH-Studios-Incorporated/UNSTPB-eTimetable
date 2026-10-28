@@ -1,0 +1,113 @@
+<!doctype html>
+<!--
+  Copyright (c) 2026 Multimedia Entertainment Hub LLC
+  SPDX-License-Identifier: LicenseRef-Proprietary
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Erasmus: pick your slots</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#1D6FA5}a:hover{color:#155785}
+.tnum{font-variant-numeric:tabular-nums}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; display: flex; flex-direction: column; font-family: 'Libre Franklin', sans-serif; background: #FAFAF9; color: #292929; overflow: hidden">
+
+<header style="padding: 12px 16px 16px; display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; align-items: center; justify-content: space-between; height: 44px">
+<a href="#" style="display: flex; align-items: center; gap: 4px; text-decoration: none; font-size: 15px; font-weight: 500; color: #1D6FA5"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg>Subjects</a>
+<span style="font-size: 13px; font-weight: 500; color: #5C5C5A">Step 5 of 6</span>
+</div>
+<div role="progressbar" aria-valuemin="0" aria-valuemax="6" aria-valuenow="5" aria-label="Setup progress" style="height: 4px; border-radius: 2px; background: #E3E3E0">
+<div style="width: 83%; height: 4px; border-radius: 2px; background: #292929"></div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<h1 style="margin: 0; font-size: 22px; line-height: 28px; font-weight: 600">Pick your class times</h1>
+<p style="margin: 0; font-size: 15px; line-height: 21px; color: #5C5C5A">One slot per activity. Slots that clash with what you already picked can't be chosen.</p>
+</div>
+</header>
+
+<div style="flex-grow: 1; overflow: hidden; padding: 0 16px; display: flex; flex-direction: column; gap: 12px">
+
+<section style="background: #FFFFFF; border: 1px solid #E3E3E0; border-radius: 8px; overflow: hidden">
+<div style="padding: 12px 14px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #E3E3E0">
+<span style="width: 10px; height: 10px; border-radius: 3px; background: #4C6A92"></span>
+<span style="font-size: 15px; font-weight: 600; flex-grow: 1">Business Analytics</span>
+<span style="font-size: 12px; color: #5C5C5A">BEM · Year 3</span>
+</div>
+<div style="padding: 10px 14px; display: flex; justify-content: space-between; font-size: 13px; line-height: 18px">
+<span style="color: #5C5C5A">Course</span>
+<span class="tnum" style="font-weight: 600">Mon 10:00 · AN 015</span>
+</div>
+<fieldset style="border: 0; margin: 0; padding: 4px 14px 12px; display: flex; flex-direction: column; gap: 4px">
+<legend style="font-size: 13px; color: #5C5C5A; padding: 6px 0 4px">Lab</legend>
+<sc-for list="{{labsA}}" as="o" hint-placeholder-count="3">
+<label style="{{o.row}}">
+<input type="radio" name="labA" checked="{{o.checked}}" disabled="{{o.disabled}}" style="width: 20px; height: 20px; margin: 0; accent-color: #1D6FA5">
+<span style="display: flex; flex-direction: column; gap: 2px">
+<span class="tnum" style="{{o.textStyle}}">{{o.label}}</span>
+<sc-if value="{{o.disabled}}" hint-placeholder-val="{{ false }}"><span style="font-size: 12px; line-height: 16px; font-weight: 500; color: #D92A21">Clashes with Digital Marketing, course, Tue 14:00</span></sc-if>
+</span>
+</label>
+</sc-for>
+</fieldset>
+</section>
+
+<section style="background: #FFFFFF; border: 1px solid #E3E3E0; border-radius: 8px; overflow: hidden">
+<div style="padding: 12px 14px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #E3E3E0">
+<span style="width: 10px; height: 10px; border-radius: 3px; background: #7A4C7F"></span>
+<span style="font-size: 15px; font-weight: 600; flex-grow: 1">Digital Marketing</span>
+<span style="font-size: 12px; color: #5C5C5A">BEM · Year 2</span>
+</div>
+<div style="padding: 10px 14px; display: flex; justify-content: space-between; font-size: 13px; line-height: 18px">
+<span style="color: #5C5C5A">Course</span>
+<span class="tnum" style="font-weight: 600">Tue 14:00 · JA 101</span>
+</div>
+<div style="padding: 0 14px 12px; display: flex; justify-content: space-between; font-size: 13px; line-height: 18px">
+<span style="color: #5C5C5A">Seminar</span>
+<span class="tnum" style="font-weight: 600">Thu 12:00 · EC 004</span>
+</div>
+</section>
+
+<section style="background: #FFFFFF; border: 1px dashed #C9C9C5; border-radius: 8px; padding: 12px 14px; display: flex; align-items: center; justify-content: space-between">
+<span style="display: flex; flex-direction: column; gap: 2px">
+<span style="font-size: 15px; font-weight: 600">Romanian for Foreigners</span>
+<span style="font-size: 13px; color: #5C5C5A">Not picked yet · 3 slots</span>
+</span>
+<button style="height: 36px; padding: 0 14px; border: 1px solid #1D6FA5; border-radius: 6px; background: #FFFFFF; color: #1D6FA5; font: 600 13px 'Libre Franklin', sans-serif">Choose</button>
+</section>
+</div>
+
+<div style="padding: 12px 16px 28px; border-top: 1px solid #E3E3E0; background: #FFFFFF; display: flex; align-items: center; gap: 12px">
+<span style="font-size: 13px; line-height: 18px; color: #5C5C5A; flex-grow: 1">2 of 3 subjects ready. You can finish the rest later.</span>
+<button style="height: 48px; padding: 0 20px; border: 0; border-radius: 6px; background: #1D6FA5; color: #FFFFFF; font: 600 15px 'Libre Franklin', sans-serif">Continue</button>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const labsA = [
+      { label: 'Tue 14:00 - 16:00 · BN 212 a', disabled: true },
+      { label: 'Wed 08:00 - 10:00 · BN 212 b', checked: true },
+      { label: 'Fri 12:00 - 14:00 · BN 212 a' }
+    ].map(o => ({
+      label: o.label, checked: !!o.checked, disabled: !!o.disabled,
+      row: `display: flex; align-items: flex-start; gap: 10px; min-height: 44px; padding: 10px 10px; border-radius: 6px; box-sizing: border-box; background: ${o.checked ? 'rgba(29, 111, 165, 0.08)' : 'transparent'}`,
+      textStyle: `font-size: 14px; line-height: 20px; font-weight: ${o.checked ? 600 : 500}; color: ${o.disabled ? '#5C5C5A' : '#292929'}`
+    }));
+    return { labsA };
+  }
+}
+</script>
+</body>
+</html>

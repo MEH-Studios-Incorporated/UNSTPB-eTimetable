@@ -1,0 +1,155 @@
+<!doctype html>
+<!--
+  Copyright (c) 2026 Multimedia Entertainment Hub LLC
+  SPDX-License-Identifier: LicenseRef-Proprietary
+-->
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<title>Orar, ziua de azi</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#1D6FA5}a:hover{color:#155785}
+.tnum{font-variant-numeric:tabular-nums}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; display: flex; flex-direction: column; font-family: 'Libre Franklin', sans-serif; background: {{t.bg}}; color: {{t.text}}; overflow: hidden">
+
+<header style="padding: 20px 16px 12px; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px">
+<div style="display: flex; flex-direction: column; gap: 4px">
+<h1 style="margin: 0; font-size: 22px; line-height: 28px; font-weight: 600">Miercuri, 28 octombrie</h1>
+<p style="margin: 0; font-size: 13px; line-height: 18px; font-weight: 500; color: {{t.muted}}">Săptămâna 5 · impară</p>
+</div>
+<button aria-label="Profilul meu" style="width: 44px; height: 44px; border-radius: 22px; border: 1px solid {{t.border}}; background: {{t.surface}}; color: {{t.text}}; font: 600 14px 'Libre Franklin', sans-serif; cursor: pointer">MG</button>
+</header>
+
+<div style="padding: 0 16px 12px; display: flex; gap: 8px; align-items: center">
+<div role="group" aria-label="Vizualizare" style="display: flex; padding: 3px; border-radius: 8px; background: {{t.alt}}; gap: 2px">
+<button style="height: 32px; padding: 0 14px; border: 0; border-radius: 6px; background: {{t.surface}}; color: {{t.text}}; font: 600 13px 'Libre Franklin', sans-serif">Zi</button>
+<button style="height: 32px; padding: 0 14px; border: 0; border-radius: 6px; background: transparent; color: {{t.muted}}; font: 500 13px 'Libre Franklin', sans-serif">Săptămână</button>
+</div>
+<div style="flex-grow: 1"></div>
+<button style="height: 38px; padding: 0 12px; border: 1px solid {{t.border}}; border-radius: 6px; background: transparent; color: {{t.primary}}; font: 600 13px 'Libre Franklin', sans-serif">Azi</button>
+</div>
+
+<nav aria-label="Zilele săptămânii" style="padding: 0 16px 12px; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px">
+<sc-for list="{{days}}" as="d" hint-placeholder-count="5">
+<button style="{{d.style}}">
+<span style="font-size: 12px; line-height: 16px; font-weight: 500">{{d.name}}</span>
+<span class="tnum" style="font-size: 17px; line-height: 22px; font-weight: 600">{{d.num}}</span>
+<span style="{{d.dotStyle}}"></span>
+</button>
+</sc-for>
+</nav>
+
+<section aria-label="Următoarea activitate" style="margin: 0 16px 12px; padding: 12px 14px; border-radius: 8px; background: {{t.surface}}; border: 1px solid {{t.border}}; display: flex; align-items: center; gap: 12px">
+<div style="width: 4px; align-self: stretch; border-radius: 2px; background: #B07A1F"></div>
+<div style="display: flex; flex-direction: column; gap: 2px; flex-grow: 1; min-width: 0">
+<span style="font-size: 12px; line-height: 16px; font-weight: 500; color: {{t.muted}}">Urmează în 25 de minute</span>
+<span style="font-size: 15px; line-height: 21px; font-weight: 600">Managementul calității</span>
+<span style="font-size: 13px; line-height: 18px; color: {{t.muted}}">Laborator · BN 212 b · 1541E/A</span>
+<span style="align-self: flex-start; margin-top: 4px; padding: 2px 8px; border-radius: 4px; background: #F5C753; color: #292929; font-size: 12px; line-height: 16px; font-weight: 600">Sală schimbată, era BN 210</span>
+</div>
+<span class="tnum" style="font-size: 15px; font-weight: 600">12:00</span>
+</section>
+
+<div style="flex-grow: 1; overflow: hidden; padding: 12px 16px 0 0; display: flex">
+<div style="width: 52px; flex-shrink: 0; position: relative; height: 480px">
+<sc-for list="{{hours}}" as="h" hint-placeholder-count="11">
+<span class="tnum" style="{{h.style}}">{{h.label}}</span>
+</sc-for>
+</div>
+<div style="flex-grow: 1; position: relative; height: 480px">
+<sc-for list="{{hours}}" as="h" hint-placeholder-count="11">
+<div style="{{h.line}}"></div>
+</sc-for>
+<sc-for list="{{blocks}}" as="b" hint-placeholder-count="4">
+<button style="{{b.style}}">
+<span style="{{b.bar}}"></span>
+<span style="display: flex; flex-direction: column; gap: 1px; min-width: 0; text-align: left">
+<span style="font-size: 12px; line-height: 16px; font-weight: 500; color: {{t.muted}}">{{b.kind}}</span>
+<span style="font-size: 14px; line-height: 19px; font-weight: 600; color: {{t.text}}">{{b.title}}</span>
+<span class="tnum" style="font-size: 12px; line-height: 16px; color: {{t.muted}}">{{b.meta}}</span>
+</span>
+</button>
+</sc-for>
+<div style="position: absolute; left: -6px; right: 0; top: 172px; display: flex; align-items: center" aria-label="Ora curentă 11:35">
+<span style="width: 9px; height: 9px; border-radius: 5px; background: {{t.now}}"></span>
+<span style="flex-grow: 1; height: 2px; background: {{t.now}}"></span>
+</div>
+</div>
+</div>
+
+<nav aria-label="Navigare" style="border-top: 1px solid {{t.border}}; background: {{t.surface}}; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); padding: 6px 4px 22px">
+<sc-for list="{{tabs}}" as="tab" hint-placeholder-count="4">
+<a href="{{tab.href}}" style="{{tab.style}}">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{tab.icon}}"></path></svg>
+<span style="font-size: 12px; line-height: 16px; font-weight: 600">{{tab.label}}</span>
+<sc-if value="{{tab.badge}}" hint-placeholder-val="{{ false }}"><span style="position: absolute; top: 4px; left: 55%; width: 8px; height: 8px; border-radius: 4px; background: {{t.now}}"></span></sc-if>
+</a>
+</sc-for>
+</nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const dark = this.props.dark ?? false;
+    const t = dark
+      ? { bg: '#0A0A0A', surface: '#141414', alt: '#1E1E1E', border: '#2A2A2A', text: '#EDEDED', muted: '#9A9A9A', primary: '#2EBFF6', now: '#F0564C', tint: 0.2 }
+      : { bg: '#FAFAF9', surface: '#FFFFFF', alt: '#F2F2F0', border: '#E3E3E0', text: '#292929', muted: '#5C5C5A', primary: '#1D6FA5', now: '#D92A21', tint: 0.12 };
+    const days = [['Lu', 26, 4], ['Ma', 27, 5], ['Mi', 28, 4], ['Jo', 29, 3], ['Vi', 30, 1]].map(([name, num, n]) => {
+      const sel = num === 28;
+      return {
+        name, num,
+        style: `height: 64px; border-radius: 8px; border: 1px solid ${sel ? t.text : t.border}; background: ${sel ? t.text : t.surface}; color: ${sel ? t.bg : t.text}; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-family: 'Libre Franklin', sans-serif; cursor: pointer`,
+        dotStyle: `display: flex; gap: 3px; height: 4px; width: ${n * 7 - 3}px; background: repeating-linear-gradient(90deg, ${sel ? t.bg : t.muted} 0 4px, transparent 4px 7px); border-radius: 2px; opacity: 0.7`
+      };
+    });
+    const hours = [];
+    for (let h = 8; h <= 18; h++) {
+      const top = (h - 8) * 48;
+      hours.push({
+        label: `${String(h).padStart(2, '0')}:00`,
+        style: `position: absolute; right: 8px; top: ${top - 8}px; font-size: 12px; line-height: 16px; font-weight: 500; color: ${t.muted}`,
+        line: `position: absolute; left: 0; right: 0; top: ${top}px; height: 1px; background: ${t.border}`
+      });
+    }
+    const hex = (c, a) => {
+      const n = parseInt(c.slice(1), 16), b = parseInt(t.bg.slice(1), 16);
+      const mix = (x, y) => Math.round(x * a + y * (1 - a));
+      return `rgb(${mix(n >> 16, b >> 16)}, ${mix((n >> 8) & 255, (b >> 8) & 255)}, ${mix(n & 255, b & 255)})`;
+    };
+    const blocks = [
+      { s: 8, e: 10, c: '#4C6A92', kind: 'Curs', title: 'Microeconomie', meta: '08:00 · AN 015 · Conf. dr. I. Marinescu', past: true },
+      { s: 10, e: 11.5, c: '#2F7F7A', kind: 'Seminar', title: 'Contabilitate financiară', meta: '10:00 · EC 004 · Lect. dr. A. Dobre', past: true },
+      { s: 12, e: 14, c: '#B07A1F', kind: 'Laborator', title: 'Managementul calității', meta: '12:00 · BN 212 b · As. dr. R. Ilie' },
+      { s: 16, e: 18, c: '#7A4C7F', kind: 'Proiect · săptămâni impare', title: 'Marketing', meta: '16:00 · JA 101 · Prof. dr. M. Stan' }
+    ].map(b => ({
+      ...b,
+      style: `position: absolute; left: 6px; right: 0; top: ${(b.s - 8) * 48 + 2}px; height: ${(b.e - b.s) * 48 - 4}px; box-sizing: border-box; border: 0; border-radius: 8px; padding: 6px 10px 6px 0; display: flex; gap: 10px; align-items: flex-start; overflow: hidden; background: ${hex(b.c, t.tint)}; opacity: ${b.past ? 0.55 : 1}; font-family: 'Libre Franklin', sans-serif; cursor: pointer`,
+      bar: `width: 4px; align-self: stretch; border-radius: 0 2px 2px 0; background: ${b.c}; flex-shrink: 0`
+    }));
+    const icons = {
+      cal: 'M8 3v4M16 3v4M3 10h18M5 5h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z',
+      book: 'M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3zM5 17a3 3 0 0 1 3-3h11',
+      person: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21c0-4 4-6 8-6s8 2 8 6',
+      bell: 'M6 16v-5a6 6 0 0 1 12 0v5l2 2H4zM10 21h4'
+    };
+    const tabs = [['Orar', 'cal', 'Main.dc.html', true], ['Materii', 'book', 'Subject.dc.html'], ['Profesori', 'person', 'Professors.dc.html'], ['Anunțuri', 'bell', 'Announcements.dc.html', false, true]].map(([label, ic, href, active, badge]) => ({
+      label, href, badge: !!badge, icon: icons[ic],
+      style: `position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 0; min-height: 48px; text-decoration: none; color: ${active ? t.primary : t.muted}`
+    }));
+    return { t, days, hours, blocks, tabs };
+  }
+}
+</script>
+</body>
+</html>

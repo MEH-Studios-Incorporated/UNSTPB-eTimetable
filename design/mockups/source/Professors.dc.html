@@ -1,0 +1,99 @@
+<!doctype html>
+<!--
+  Copyright (c) 2026 Multimedia Entertainment Hub LLC
+  SPDX-License-Identifier: LicenseRef-Proprietary
+-->
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<title>Profesori</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#1D6FA5}a:hover{color:#155785}
+.tnum{font-variant-numeric:tabular-nums}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; display: flex; flex-direction: column; font-family: 'Libre Franklin', sans-serif; background: #FAFAF9; color: #292929; overflow: hidden">
+
+<header style="padding: 20px 16px 12px; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; align-items: center; justify-content: space-between">
+<h1 style="margin: 0; font-size: 22px; line-height: 28px; font-weight: 600">Profesori</h1>
+<span class="tnum" style="font-size: 13px; font-weight: 500; color: #5C5C5A">Acum, 11:35</span>
+</div>
+<label style="display: flex; align-items: center; gap: 8px; height: 44px; padding: 0 12px; border: 1px solid #E3E3E0; border-radius: 6px; background: #FFFFFF; color: #5C5C5A">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM20 20l-4-4"></path></svg>
+<input type="search" placeholder="Caută un profesor sau o materie" aria-label="Caută" style="border: 0; outline: 0; flex-grow: 1; background: transparent; font: 400 15px 'Libre Franklin', sans-serif; color: #292929">
+</label>
+<div style="display: flex; gap: 8px">
+<button style="height: 32px; padding: 0 12px; border: 1px solid #292929; border-radius: 16px; background: #292929; color: #FFFFFF; font: 600 13px 'Libre Franklin', sans-serif">Profesorii mei</button>
+<button style="height: 32px; padding: 0 12px; border: 1px solid #E3E3E0; border-radius: 16px; background: #FFFFFF; color: #292929; font: 500 13px 'Libre Franklin', sans-serif">Toți</button>
+</div>
+</header>
+
+<ul style="list-style: none; margin: 0; padding: 0 16px; flex-grow: 1; overflow: hidden; display: flex; flex-direction: column">
+<sc-for list="{{people}}" as="p" hint-placeholder-count="7">
+<li style="border-bottom: 1px solid #E3E3E0">
+<a href="#" style="display: flex; align-items: center; gap: 12px; padding: 12px 0; text-decoration: none; color: #292929; min-height: 48px">
+<span style="width: 40px; height: 40px; border-radius: 20px; background: #F2F2F0; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; color: #5C5C5A; flex-shrink: 0">{{p.initials}}</span>
+<span style="display: flex; flex-direction: column; gap: 3px; min-width: 0; flex-grow: 1">
+<span style="font-size: 15px; line-height: 20px; font-weight: 600">{{p.name}}</span>
+<span style="display: flex; align-items: center; gap: 6px; font-size: 13px; line-height: 18px; color: #3A3A38">
+<span style="{{p.dot}}"></span>{{p.status}}
+</span>
+</span>
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9A9A98" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg>
+</a>
+</li>
+</sc-for>
+</ul>
+
+<nav aria-label="Navigare" style="border-top: 1px solid #E3E3E0; background: #FFFFFF; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); padding: 6px 4px 22px">
+<sc-for list="{{tabs}}" as="tab" hint-placeholder-count="4">
+<a href="{{tab.href}}" style="{{tab.style}}">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{tab.icon}}"></path></svg>
+<span style="font-size: 12px; line-height: 16px; font-weight: 600">{{tab.label}}</span>
+<sc-if value="{{tab.badge}}" hint-placeholder-val="{{ false }}"><span style="position: absolute; top: 4px; left: 55%; width: 8px; height: 8px; border-radius: 4px; background: #D92A21"></span></sc-if>
+</a>
+</sc-for>
+</nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const dotColor = { now: '#D92A21', office: '#1D6FA5', next: '#9A9A98', none: 'transparent' };
+    const people = [
+      ['IM', 'Conf. dr. Ioana Marinescu', 'now', 'Predă acum Microeconomie, AN 015, până la 12:00'],
+      ['RI', 'As. dr. Radu Ilie', 'next', 'Următoarea: 12:00, laborator, BN 212 b'],
+      ['AD', 'Lect. dr. Ana Dobre', 'office', 'Consultații azi, 14:00 - 16:00, EC 210'],
+      ['CV', 'Prof. dr. ing. Cristian Voicu', 'next', 'Joi, 12:00, curs, AN 015'],
+      ['MS', 'Prof. dr. Mihaela Stan', 'next', 'Următoarea: 16:00, proiect, JA 101'],
+      ['DP', 'Ș.l. dr. Dan Pop', 'none', 'Nu mai are ore azi'],
+      ['EG', 'Lect. dr. Elena Georgescu', 'now', 'Predă acum Statistică, BN 030, până la 12:00']
+    ].map(([initials, name, kind, status]) => ({
+      initials, name, status,
+      dot: `width: 8px; height: 8px; border-radius: 4px; flex-shrink: 0; background: ${dotColor[kind]}; border: ${kind === 'none' ? '1px solid #9A9A98' : '0'}; box-sizing: border-box`
+    }));
+    const icons = {
+      cal: 'M8 3v4M16 3v4M3 10h18M5 5h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z',
+      book: 'M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3zM5 17a3 3 0 0 1 3-3h11',
+      person: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21c0-4 4-6 8-6s8 2 8 6',
+      bell: 'M6 16v-5a6 6 0 0 1 12 0v5l2 2H4zM10 21h4'
+    };
+    const tabs = [['Orar', 'cal', 'Main.dc.html'], ['Materii', 'book', 'Subject.dc.html'], ['Profesori', 'person', 'Professors.dc.html', true], ['Anunțuri', 'bell', 'Announcements.dc.html', false, true]].map(([label, ic, href, active, badge]) => ({
+      label, href, badge: !!badge, icon: icons[ic],
+      style: `position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 0; min-height: 48px; text-decoration: none; color: ${active ? '#1D6FA5' : '#5C5C5A'}`
+    }));
+    return { people, tabs };
+  }
+}
+</script>
+</body>
+</html>

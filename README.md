@@ -27,6 +27,21 @@ Status: planning. There is no app to install yet.
 - Native apps: Jetpack Compose on Android, SwiftUI on iOS, with the
   timetable logic shared in Kotlin.
 
+## Screens
+
+These are the approved designs, not screenshots of a finished app yet.
+
+<p>
+<img src="design/mockups/Main.png" width="190" alt="Today: the day's timeline with the next class and a room change">
+<img src="design/mockups/Week.png" width="190" alt="The week view">
+<img src="design/mockups/Subject.png" width="190" alt="A subject's labs, with a clash and an add sheet">
+<img src="design/mockups/Erasmus.png" width="190" alt="Erasmus students picking their lab slots">
+</p>
+
+All ten screens, including dark mode, the widgets and the sign-in and About
+pages, are in [design/mockups](design/mockups). The colours, type and logo
+rules are in [docs/design.md](docs/design.md).
+
 ## Why we are making it
 
 FAIMA asked us, the developers at Multimedia Entertainment Hub, for a

@@ -12,8 +12,11 @@ subject, room or professor anywhere opens its page.
 
 ## First start
 
-1. Language: Română or English (defaults to the phone's language).
-2. Sign up or sign in: email and password.
+1. Sign in or create an account (email and password), with the FAIMA seal
+   above the form and a Română / English switch (defaults to the phone's
+   language). The footer names Multimedia Entertainment Hub and FAIMA.
+2. A forgotten password is reset by email when the server has email
+   configured, otherwise by an admin from the dashboard.
 3. Enrollment: national or Erasmus.
 4. National: programme, year, group, half-group if the group has halves.
    The programmes at FAIMA today are IMA, BEM, IEDEEE, IEICM and IBM.
@@ -69,6 +72,27 @@ Every choice can be changed later from the profile. Nothing is checked.
 Name, email, enrollment, group or picked subjects, language, light or dark
 theme (or the system's), notifications, the time of the last sync, sign
 out, app version.
+
+## About and legal
+
+Opened from the profile. It shows the FAIMA seal, the app version and the
+last sync, then:
+
+- Privacy policy: what the server keeps (email, password hash, name,
+  enrollment, group or picked slots, language, push tokens) and what it
+  does not (location, contacts, analytics or tracking), how to delete the
+  account.
+- Terms of use: the timetable is for information; the faculty's official
+  announcements prevail.
+- Open source licenses: generated at build time from the dependencies,
+  plus Libre Franklin (SIL Open Font License).
+- Report a problem: a form that sends a description and an optional
+  screenshot.
+- FAIMA's website.
+
+The footer reads "© 2026 Multimedia Entertainment Hub LLC. All rights
+reserved.", says the app was commissioned by FAIMA, UNSTPB, and that the
+FAIMA and UNSTPB names and logos belong to the university.
 
 ## Offline
 

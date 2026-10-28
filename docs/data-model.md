@@ -98,6 +98,7 @@ Announcement
 | `GET /api/v1/announcements?before=<id>` | Announcements, newest first, 20 per page. |
 | `POST /api/v1/auth/signup`, `/login`, `/logout` | Session token. |
 | `GET`, `PUT /api/v1/me` | The student's profile. Erasmus picks are checked for overlaps. |
+| `DELETE /api/v1/me` | Deletes the account and everything stored for it. |
 | `PUT`, `DELETE /api/v1/me/push-tokens/<token>` | Register or remove a device. |
 
 The dashboard lives under `/admin` and is not part of the API.

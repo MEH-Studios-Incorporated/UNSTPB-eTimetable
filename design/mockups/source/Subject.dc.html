@@ -1,0 +1,107 @@
+<!doctype html>
+<!--
+  Copyright (c) 2026 Multimedia Entertainment Hub LLC
+  SPDX-License-Identifier: LicenseRef-Proprietary
+-->
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<title>Pagina materiei</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#1D6FA5}a:hover{color:#155785}
+.tnum{font-variant-numeric:tabular-nums}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; display: flex; flex-direction: column; font-family: 'Libre Franklin', sans-serif; background: #FAFAF9; color: #292929; overflow: hidden">
+
+<header style="padding: 12px 16px 16px; display: flex; flex-direction: column; gap: 12px; border-bottom: 1px solid #E3E3E0; background: #FFFFFF">
+<a href="Main.dc.html" style="display: flex; align-items: center; gap: 4px; height: 44px; width: fit-content; text-decoration: none; font-size: 15px; font-weight: 500; color: #1D6FA5"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg>Materii</a>
+<div style="display: flex; gap: 12px; align-items: flex-start">
+<span style="width: 12px; height: 12px; border-radius: 3px; background: #B07A1F; margin-top: 8px; flex-shrink: 0"></span>
+<div style="display: flex; flex-direction: column; gap: 4px">
+<h1 style="margin: 0; font-size: 22px; line-height: 28px; font-weight: 600">Managementul calității</h1>
+<p style="margin: 0; font-size: 13px; line-height: 18px; color: #5C5C5A">IEDEEE · Anul IV · Semestrul 1 · 4 credite</p>
+</div>
+</div>
+<label style="display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; font-size: 15px; font-weight: 500">
+<span style="display: flex; flex-direction: column; gap: 2px">Doar ce se potrivește în orarul meu<span style="font-size: 12px; font-weight: 400; color: #5C5C5A">Ascunde orele care se suprapun</span></span>
+<input type="checkbox" style="width: 44px; height: 26px; accent-color: #1D6FA5; margin: 0">
+</label>
+</header>
+
+<div style="flex-grow: 1; overflow: hidden; padding: 16px; display: flex; flex-direction: column; gap: 20px">
+
+<section style="display: flex; flex-direction: column; gap: 8px">
+<h2 style="margin: 0; font-size: 13px; line-height: 18px; font-weight: 600; color: #5C5C5A">Curs</h2>
+<div style="background: #FFFFFF; border: 1px solid #E3E3E0; border-radius: 8px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px">
+<div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px">
+<span class="tnum" style="font-size: 15px; font-weight: 600">Joi, 12:00 - 14:00</span>
+<span style="font-size: 12px; font-weight: 600; color: #1D6FA5">În orarul tău</span>
+</div>
+<span style="font-size: 13px; line-height: 18px; color: #5C5C5A">AN 015 · Prof. dr. ing. C. Voicu · seria E, toate săptămânile</span>
+</div>
+</section>
+
+<section style="display: flex; flex-direction: column; gap: 8px">
+<h2 style="margin: 0; font-size: 13px; line-height: 18px; font-weight: 600; color: #5C5C5A">Laborator · 4 grupe</h2>
+<div style="background: #FFFFFF; border: 1px solid #E3E3E0; border-radius: 8px; display: flex; flex-direction: column">
+<sc-for list="{{labs}}" as="l" hint-placeholder-count="4">
+<div style="{{l.row}}">
+<div style="display: flex; flex-direction: column; gap: 3px; min-width: 0">
+<span class="tnum" style="font-size: 15px; line-height: 20px; font-weight: 600">{{l.when}}</span>
+<span style="font-size: 13px; line-height: 18px; color: #5C5C5A">{{l.where}}</span>
+<sc-if value="{{l.clash}}" hint-placeholder-val="{{ false }}">
+<span style="font-size: 13px; line-height: 18px; font-weight: 500; color: #D92A21">Se suprapune cu Informatică aplicată (laborator, Mi 14:00)</span>
+</sc-if>
+</div>
+<sc-if value="{{l.mine}}" hint-placeholder-val="{{ false }}">
+<span style="font-size: 12px; font-weight: 600; color: #1D6FA5; white-space: nowrap">Grupa ta</span>
+</sc-if>
+<sc-if value="{{l.add}}" hint-placeholder-val="{{ true }}">
+<button style="height: 36px; padding: 0 14px; border: 1px solid #1D6FA5; border-radius: 6px; background: #FFFFFF; color: #1D6FA5; font: 600 13px 'Libre Franklin', sans-serif; white-space: nowrap">Adaugă</button>
+</sc-if>
+<sc-if value="{{l.clash}}" hint-placeholder-val="{{ false }}">
+<button disabled style="height: 36px; padding: 0 14px; border: 1px solid #E3E3E0; border-radius: 6px; background: #F2F2F0; color: #5C5C5A; font: 600 13px 'Libre Franklin', sans-serif; white-space: nowrap">Adaugă</button>
+</sc-if>
+</div>
+</sc-for>
+</div>
+</section>
+
+<section aria-label="Adaugă laboratorul" style="background: #FFFFFF; border: 1px solid #E3E3E0; border-radius: 8px; padding: 14px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08)">
+<span style="font-size: 15px; font-weight: 600">Adaugi laboratorul de vineri, 10:00?</span>
+<span style="font-size: 13px; line-height: 18px; color: #5C5C5A">Pentru o recuperare alege o singură dată. Grupa ta rămâne aceeași.</span>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+<button style="height: 44px; border: 1px solid #E3E3E0; border-radius: 6px; background: #FFFFFF; color: #292929; font: 600 14px 'Libre Franklin', sans-serif">O dată, 30 oct.</button>
+<button style="height: 44px; border: 0; border-radius: 6px; background: #1D6FA5; color: #FFFFFF; font: 600 14px 'Libre Franklin', sans-serif">Tot semestrul</button>
+</div>
+</section>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const labs = [
+      { when: 'Miercuri, 12:00 - 14:00', where: 'BN 212 b · 1541E/A · As. dr. R. Ilie', mine: true },
+      { when: 'Miercuri, 14:00 - 16:00', where: 'BN 212 b · 1541E/B · As. dr. R. Ilie', clash: true },
+      { when: 'Joi, 08:00 - 10:00', where: 'BN 212 a · 1542E/A · As. dr. R. Ilie', add: true },
+      { when: 'Vineri, 10:00 - 12:00', where: 'BN 212 a · 1542E/B · Ș.l. dr. D. Pop', add: true }
+    ].map((l, i, all) => ({
+      mine: !!l.mine, clash: !!l.clash, add: !!l.add, when: l.when, where: l.where,
+      row: `display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; ${i < all.length - 1 ? 'border-bottom: 1px solid #E3E3E0;' : ''}`
+    }));
+    return { labs };
+  }
+}
+</script>
+</body>
+</html>
