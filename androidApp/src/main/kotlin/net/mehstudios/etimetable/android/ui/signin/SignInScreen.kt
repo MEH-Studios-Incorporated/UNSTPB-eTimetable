@@ -9,7 +9,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -58,6 +57,7 @@ import net.mehstudios.etimetable.android.ui.components.LanguagePicker
 import net.mehstudios.etimetable.android.ui.components.MehCredit
 import net.mehstudios.etimetable.android.ui.components.message
 import net.mehstudios.etimetable.android.ui.theme.ButtonShape
+import net.mehstudios.etimetable.android.ui.theme.LocalDarkTheme
 import net.mehstudios.etimetable.api.ErrorCodes
 import net.mehstudios.etimetable.api.MIN_PASSWORD_LENGTH
 import net.mehstudios.etimetable.api.SignupRequest
@@ -86,7 +86,7 @@ fun SignInScreen(
     var busy by remember { mutableStateOf(false) }
     var lastResult by remember { mutableStateOf<ActionResult?>(null) }
     val scope = rememberCoroutineScope()
-    val dark = isSystemInDarkTheme()
+    val dark = LocalDarkTheme.current
 
     val error = when ((lastResult as? ActionResult.Refused)?.code) {
         PASSWORDS_DIFFER -> stringResource(R.string.error_passwords_differ)

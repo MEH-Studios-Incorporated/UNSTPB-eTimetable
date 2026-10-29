@@ -120,6 +120,9 @@
     <string name="sign_out">Deconectează-te</string>
     <string name="language">Limbă</string>
     <string name="language_phone">Ca telefonul</string>
+    <string name="theme">Temă</string>
+    <string name="theme_light">Luminoasă</string>
+    <string name="theme_dark">Întunecată</string>
     <string name="about">Despre aplicație</string>
     <string name="version">Versiunea %1$s</string>
     <string name="privacy_title">Confidențialitate</string>

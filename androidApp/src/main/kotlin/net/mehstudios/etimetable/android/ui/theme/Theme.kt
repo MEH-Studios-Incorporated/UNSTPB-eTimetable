@@ -10,8 +10,11 @@ import androidx.compose.material3.Shapes
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import net.mehstudios.etimetable.android.data.ThemeMode
 
 private val LightColors = with(LightTokens) {
     lightColorScheme(
@@ -90,12 +93,27 @@ private val EtShapes = Shapes(
     large = RoundedCornerShape(8.dp),
 )
 
+/** Whether the app is drawn dark: the student's choice, or the phone's when they made none. */
+val LocalDarkTheme = staticCompositionLocalOf { false }
+
+/** The theme choice and how to change it, for the switch in the profile. */
+data class ThemeChoice(val mode: ThemeMode, val change: (ThemeMode) -> Unit)
+
+val LocalThemeChoice = staticCompositionLocalOf { ThemeChoice(ThemeMode.SYSTEM) {} }
+
 @Composable
-fun EtTheme(dark: Boolean = isSystemInDarkTheme(), content: @Composable () -> Unit) {
-    MaterialTheme(
-        colorScheme = if (dark) DarkColors else LightColors,
-        typography = EtTypography,
-        shapes = EtShapes,
-        content = content,
-    )
+fun EtTheme(mode: ThemeMode = ThemeMode.SYSTEM, content: @Composable () -> Unit) {
+    val dark = when (mode) {
+        ThemeMode.SYSTEM -> isSystemInDarkTheme()
+        ThemeMode.LIGHT -> false
+        ThemeMode.DARK -> true
+    }
+    CompositionLocalProvider(LocalDarkTheme provides dark) {
+        MaterialTheme(
+            colorScheme = if (dark) DarkColors else LightColors,
+            typography = EtTypography,
+            shapes = EtShapes,
+            content = content,
+        )
+    }
 }

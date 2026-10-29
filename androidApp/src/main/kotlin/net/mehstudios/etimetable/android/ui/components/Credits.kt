@@ -6,7 +6,6 @@ package net.mehstudios.etimetable.android.ui.components
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -30,7 +29,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import net.mehstudios.etimetable.android.R
 import net.mehstudios.etimetable.android.data.AppLocale
+import net.mehstudios.etimetable.android.data.ThemeMode
 import net.mehstudios.etimetable.android.ui.signin.invertInDark
+import net.mehstudios.etimetable.android.ui.theme.LocalDarkTheme
+import net.mehstudios.etimetable.android.ui.theme.LocalThemeChoice
 
 const val MEH_SITE = "https://mehstudios.net/"
 const val SUPPORT_EMAIL = "support@mehstudios.net"
@@ -54,7 +56,7 @@ fun MehCredit(modifier: Modifier = Modifier, small: Boolean = false) {
             Image(
                 painter = painterResource(R.drawable.meh_mark),
                 contentDescription = null,
-                colorFilter = if (isSystemInDarkTheme()) null else invertInDark,
+                colorFilter = if (LocalDarkTheme.current) null else invertInDark,
                 modifier = Modifier.size(if (small) 20.dp else 34.dp),
             )
             Column {
@@ -117,6 +119,33 @@ fun LanguagePicker(modifier: Modifier = Modifier, followPhone: Boolean = true, s
                         language == "ro" -> "Română"
                         else -> "English"
                     },
+                )
+            }
+        }
+    }
+}
+
+/** Same as the phone, light or dark. */
+@Composable
+fun ThemePicker(modifier: Modifier = Modifier) {
+    val choice = LocalThemeChoice.current
+    val options = ThemeMode.entries
+    SingleChoiceSegmentedButtonRow(modifier) {
+        options.forEachIndexed { index, mode ->
+            SegmentedButton(
+                selected = mode == choice.mode,
+                onClick = { choice.change(mode) },
+                shape = SegmentedButtonDefaults.itemShape(index, options.size),
+                icon = {},
+            ) {
+                Text(
+                    stringResource(
+                        when (mode) {
+                            ThemeMode.SYSTEM -> R.string.language_phone
+                            ThemeMode.LIGHT -> R.string.theme_light
+                            ThemeMode.DARK -> R.string.theme_dark
+                        },
+                    ),
                 )
             }
         }

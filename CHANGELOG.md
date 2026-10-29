@@ -25,6 +25,7 @@ Each section is also the text of the matching GitHub release.
   at the top ("Săpt. 5, impară"), or "Vacanță" during a break.
 - Romanian and English inside the app, chosen in the profile or on the
   sign-in screen, whatever the phone's language.
+- Light or dark theme in the profile, or the phone's setting (the default).
 - A page for each professor: where they are now, their office hours and
   their classes this week. Tapping a name on a class opens it.
 - Labs and seminars name their assistant and the professor of the course.

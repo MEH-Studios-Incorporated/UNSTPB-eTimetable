@@ -5,7 +5,6 @@ package net.mehstudios.etimetable.android.ui.components
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -31,6 +30,7 @@ import kotlinx.datetime.isoDayNumber
 import kotlinx.datetime.plus
 import net.mehstudios.etimetable.android.R
 import net.mehstudios.etimetable.android.ui.signin.invertInDark
+import net.mehstudios.etimetable.android.ui.theme.LocalDarkTheme
 import net.mehstudios.etimetable.model.Parity
 import net.mehstudios.etimetable.schedule.TeachingCalendar
 import net.mehstudios.etimetable.schedule.mondayOfWeek
@@ -38,7 +38,7 @@ import net.mehstudios.etimetable.schedule.mondayOfWeek
 /** The seal and the app's name at the top of the main screens; [trailing] sits on the right. */
 @Composable
 fun BrandBar(modifier: Modifier = Modifier, trailing: @Composable RowScope.() -> Unit = {}) {
-    val dark = isSystemInDarkTheme()
+    val dark = LocalDarkTheme.current
     Row(
         modifier.fillMaxWidth().padding(start = 16.dp, end = 12.dp, top = 12.dp, bottom = 4.dp),
         verticalAlignment = Alignment.CenterVertically,

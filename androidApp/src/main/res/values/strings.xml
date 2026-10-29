@@ -119,6 +119,9 @@
     <string name="sign_out">Sign out</string>
     <string name="language">Language</string>
     <string name="language_phone">Same as phone</string>
+    <string name="theme">Theme</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
     <string name="about">About</string>
     <string name="version">Version %1$s</string>
     <string name="privacy_title">Privacy</string>

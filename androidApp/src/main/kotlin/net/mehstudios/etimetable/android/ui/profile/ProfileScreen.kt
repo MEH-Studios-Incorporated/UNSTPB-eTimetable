@@ -4,7 +4,6 @@
 package net.mehstudios.etimetable.android.ui.profile
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -34,9 +33,11 @@ import net.mehstudios.etimetable.android.data.AppState
 import net.mehstudios.etimetable.android.ui.components.LanguagePicker
 import net.mehstudios.etimetable.android.ui.components.LinkText
 import net.mehstudios.etimetable.android.ui.components.MehCredit
+import net.mehstudios.etimetable.android.ui.components.ThemePicker
 import net.mehstudios.etimetable.android.ui.components.longLabel
 import net.mehstudios.etimetable.android.ui.signin.invertInDark
 import net.mehstudios.etimetable.android.ui.theme.ButtonShape
+import net.mehstudios.etimetable.android.ui.theme.LocalDarkTheme
 import net.mehstudios.etimetable.model.Enrollment
 import net.mehstudios.etimetable.schedule.FacultyTimeZone
 
@@ -51,7 +52,7 @@ fun ProfileScreen(
     onSignOut: () -> Unit,
 ) {
     val uri = LocalUriHandler.current
-    val dark = isSystemInDarkTheme()
+    val dark = LocalDarkTheme.current
     val profile = state.profile
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         TextButton(onClick = onBack, modifier = Modifier.padding(start = 4.dp, top = 8.dp)) {
@@ -117,6 +118,12 @@ fun ProfileScreen(
         Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(stringResource(R.string.language), style = MaterialTheme.typography.titleMedium)
             LanguagePicker(Modifier.fillMaxWidth())
+            Text(
+                stringResource(R.string.theme),
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(top = 8.dp),
+            )
+            ThemePicker(Modifier.fillMaxWidth())
         }
 
         HorizontalDivider(Modifier.padding(16.dp))
