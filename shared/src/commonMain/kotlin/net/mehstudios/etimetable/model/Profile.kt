@@ -10,11 +10,15 @@ import kotlinx.serialization.Serializable
 /** What a student chose. Nothing here is checked against official records. */
 @Serializable
 data class Profile(
-    val displayName: String = "",
+    val firstName: String = "",
+    val lastName: String = "",
+    val phone: String = "",
     val language: String = "ro",
     val enrollment: Enrollment? = null,
     val extraSlots: List<ExtraSlot> = emptyList(),
-)
+) {
+    val fullName: String get() = "$firstName $lastName".trim()
+}
 
 @Serializable
 sealed interface Enrollment {

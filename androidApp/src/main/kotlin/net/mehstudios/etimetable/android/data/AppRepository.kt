@@ -64,7 +64,14 @@ class AppRepository(
     val state: StateFlow<AppState> = _state.asStateFlow()
     private val syncLock = Mutex()
 
+    // true once per process: a new process means the app was closed in between
+    private var started = false
+
     suspend fun load() {
+        if (!started) {
+            started = true
+            if (session.token() != null && !session.remember()) withContext(Dispatchers.IO) { signOutLocally() }
+        }
         val token = session.token()
         readStore(signedIn = token != null, email = session.email())
     }
@@ -97,16 +104,16 @@ class AppRepository(
         ok
     }
 
-    suspend fun signIn(email: String, password: String): ActionResult =
-        authenticate(email) { api.login(LoginRequest(email.trim(), password)).token }
+    suspend fun signIn(email: String, password: String, remember: Boolean): ActionResult =
+        authenticate(email, remember) { api.login(LoginRequest(email.trim(), password)).token }
 
-    suspend fun signUp(email: String, password: String, displayName: String): ActionResult =
-        authenticate(email) { api.signup(SignupRequest(email.trim(), password, displayName.trim())).token }
+    suspend fun signUp(form: SignupRequest, remember: Boolean): ActionResult =
+        authenticate(form.email, remember) { api.signup(form).token }
 
-    private suspend fun authenticate(email: String, call: suspend () -> String): ActionResult {
+    private suspend fun authenticate(email: String, remember: Boolean, call: suspend () -> String): ActionResult {
         val result = withContext(Dispatchers.IO) {
             try {
-                session.save(call(), email.trim())
+                session.save(call(), email.trim(), remember)
                 ActionResult.Done
             } catch (e: ResponseException) {
                 e.toRefused()

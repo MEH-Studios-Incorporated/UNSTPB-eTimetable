@@ -55,6 +55,12 @@ Running things:
 # at http://localhost:8080/admin, admin@etimetable.test / parola-dev.
 tools/dev-server.sh
 
+# FAIMA's real timetable instead of the sample one: downloads the faculty's
+# workbooks from Google Sheets and converts them; the dev server imports the
+# result on its next start. Sheet ids as arguments or one per line in the
+# ignored tools/faima-timetable/sheets.local. Needs python3 and curl.
+tools/faima-timetable/update.sh
+
 # A second dev server next to the first needs its own port, folder and
 # PostgreSQL port, or the two share and break one database:
 ETT_PORT=18080 ETT_DEV_DB_DIR=build/dev-postgres-2 ETT_DEV_DB_PORT=54330 ./gradlew :server:runDev

@@ -23,7 +23,9 @@ jobs:
       - name: Writing rules
         run: tools/check-writing.sh
       - name: Lint shell scripts
-        run: shellcheck tools/*.sh
+        run: shellcheck tools/*.sh tools/*/*.sh
+      - name: Check Python syntax
+        run: python3 -m py_compile tools/faima-timetable/*.py
       - name: Check JavaScript syntax
         run: for f in tools/render-mockups/*.mjs tools/render-mockups/*.js; do node --check "$f"; done
       - name: Release notes dry run

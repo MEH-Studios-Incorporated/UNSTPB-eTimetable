@@ -53,7 +53,8 @@ class LocalStoreTest {
 
     @Test
     fun profileWithDirtyFlag() {
-        val profile = Profile(displayName = "Test", enrollment = Enrollment.Erasmus(setOf("micro-c")))
+        val profile =
+            Profile(firstName = "Test", lastName = "Student", enrollment = Enrollment.Erasmus(setOf("micro-c")))
         store.saveProfile(profile, dirty = true)
         assertEquals(StoredProfile(profile, dirty = true), store.profile())
     }

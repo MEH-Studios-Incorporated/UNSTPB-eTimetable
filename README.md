@@ -69,8 +69,8 @@ and looks like something the faculty would put its name on.
 - The iOS app builds on CI and shows the app name from the shared Kotlin
   code. Nobody on the team has a Mac yet, so it has not run on a device.
 
-Known gaps: the app follows the phone's language (no switch in the app
-yet) and shows announcements as plain text, not formatted Markdown.
+Known gap: the app follows the phone's language; there is no switch in the
+app yet.
 
 Everything else is still to come. The requirements are in
 [docs/brief.md](docs/brief.md) and the planned design in

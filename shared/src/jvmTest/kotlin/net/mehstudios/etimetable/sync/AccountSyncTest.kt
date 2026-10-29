@@ -25,7 +25,7 @@ import kotlin.time.Instant
 class AccountSyncTest {
     private val json = headersOf(HttpHeaders.ContentType, "application/json")
     private var serverAnnouncements = listOf<Announcement>()
-    private var serverProfile = Profile(displayName = "Ana")
+    private var serverProfile = Profile(firstName = "Ana", lastName = "Pop")
     private val store = inMemoryStore()
 
     private val engine = MockEngine { request ->
@@ -71,15 +71,15 @@ class AccountSyncTest {
 
     @Test
     fun anOfflineChangeIsSentThenTheServerWins() = runTest {
-        val changed = Profile(displayName = "Ana", enrollment = Enrollment.National("1541E", "1541E/A"))
+        val changed = Profile(firstName = "Ana", lastName = "Pop", enrollment = Enrollment.National("1541E", "1541E/A"))
         store.saveProfile(changed, dirty = true)
         sync.syncProfile("token")
         assertEquals(changed, serverProfile)
         assertEquals(StoredProfile(changed, dirty = false), store.profile())
 
-        serverProfile = serverProfile.copy(displayName = "Ana Pop")
+        serverProfile = serverProfile.copy(lastName = "Popescu")
         sync.syncProfile("token")
-        assertEquals("Ana Pop", store.profile()?.profile?.displayName)
+        assertEquals("Ana Popescu", store.profile()?.profile?.fullName)
     }
 
     @Test

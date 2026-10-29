@@ -4,10 +4,24 @@
 package net.mehstudios.etimetable.android.ui
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Button
@@ -28,8 +42,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
@@ -38,6 +54,7 @@ import net.mehstudios.etimetable.android.R
 import net.mehstudios.etimetable.android.data.ActionResult
 import net.mehstudios.etimetable.android.data.AppContainer
 import net.mehstudios.etimetable.android.data.AppState
+import net.mehstudios.etimetable.android.ui.announcements.AnnouncementScreen
 import net.mehstudios.etimetable.android.ui.announcements.AnnouncementsScreen
 import net.mehstudios.etimetable.android.ui.components.EtIcons
 import net.mehstudios.etimetable.android.ui.components.OfflineBar
@@ -50,7 +67,9 @@ import net.mehstudios.etimetable.schedule.StudentTimetable
 import net.mehstudios.etimetable.schedule.facultyNow
 import kotlin.time.Clock
 
-private enum class Screen { TIMETABLE, ANNOUNCEMENTS, PROFILE }
+private enum class Phase { LOADING, SIGN_IN, WAITING, ONBOARDING, MAIN }
+
+private enum class Tab { TIMETABLE, ANNOUNCEMENTS }
 
 /** Picks the screen from the app state: sign-in, waiting for data, onboarding or the app itself. */
 @Composable
@@ -68,32 +87,51 @@ fun EtRoot(container: AppContainer) {
     // coming back online refreshes at once instead of waiting for the next periodic sync
     LaunchedEffect(online) { if (online && state.loaded) repository.refresh() }
 
+    val phase = when {
+        !state.loaded -> Phase.LOADING
+        !state.signedIn -> Phase.SIGN_IN
+        state.dataset == null -> Phase.WAITING
+        state.profile?.enrollment == null || editingEnrollment -> Phase.ONBOARDING
+        else -> Phase.MAIN
+    }
+
     Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-        val dataset = state.dataset
-        when {
-            !state.loaded -> Unit
-            !state.signedIn -> SignInScreen(signIn = repository::signIn, signUp = repository::signUp)
-            dataset == null -> WaitingForData(state, online, retry = {
-                scope.launch { repository.refresh() }
-            }, signOut = { scope.launch { repository.signOut() } })
-            state.profile?.enrollment == null || editingEnrollment -> OnboardingScreen(
-                dataset = dataset,
-                profile = state.profile,
-                save = { profile ->
-                    repository.saveProfile(profile).also {
-                        if (it == ActionResult.Done || it == ActionResult.SavedOffline) editingEnrollment = false
-                    }
-                },
-                onCancel = if (state.profile?.enrollment != null) ({ editingEnrollment = false }) else null,
-            )
-            else -> MainScreen(
-                state = state,
-                online = online,
-                onChangeEnrollment = { editingEnrollment = true },
-                onSyncNow = { scope.launch { repository.refresh() } },
-                onSignOut = { scope.launch { repository.signOut() } },
-                markRead = { id -> scope.launch { repository.markRead(id) } },
-            )
+        AnimatedContent(
+            targetState = phase,
+            transitionSpec = { fadeIn(tween(250)) togetherWith fadeOut(tween(200)) },
+            label = "phase",
+        ) { current ->
+            when (current) {
+                Phase.LOADING -> Box(Modifier.fillMaxSize())
+                Phase.SIGN_IN -> SignInScreen(signIn = repository::signIn, signUp = repository::signUp)
+                Phase.WAITING -> WaitingForData(state, online, retry = {
+                    scope.launch { repository.refresh() }
+                }, signOut = { scope.launch { repository.signOut() } })
+                Phase.ONBOARDING -> state.dataset?.let { dataset ->
+                    OnboardingScreen(
+                        dataset = dataset,
+                        profile = state.profile,
+                        save = { profile ->
+                            repository.saveProfile(profile).also {
+                                if (it == ActionResult.Done ||
+                                    it == ActionResult.SavedOffline
+                                ) {
+                                    editingEnrollment = false
+                                }
+                            }
+                        },
+                        onCancel = if (state.profile?.enrollment != null) ({ editingEnrollment = false }) else null,
+                    )
+                }
+                Phase.MAIN -> MainScreen(
+                    state = state,
+                    online = online,
+                    onChangeEnrollment = { editingEnrollment = true },
+                    onSyncNow = { scope.launch { repository.refresh() } },
+                    onSignOut = { scope.launch { repository.signOut() } },
+                    markRead = { id -> scope.launch { repository.markRead(id) } },
+                )
+            }
         }
     }
 }
@@ -117,6 +155,11 @@ private fun WaitingForData(state: AppState, online: Boolean, retry: () -> Unit, 
     }
 }
 
+/** Where the main screen is: a tab, the profile over it, or one announcement over it. */
+private data class Place(val tab: Tab, val profile: Boolean = false, val announcementId: String? = null) {
+    val overlay get() = profile || announcementId != null
+}
+
 @Composable
 private fun MainScreen(
     state: AppState,
@@ -127,34 +170,51 @@ private fun MainScreen(
     markRead: (String) -> Unit,
 ) {
     val dataset = state.dataset ?: return
-    var screen by rememberSaveable { mutableStateOf(Screen.TIMETABLE) }
-    var lastTab by rememberSaveable { mutableStateOf(Screen.TIMETABLE) }
+    val profile = state.profile ?: return
+    var tab by rememberSaveable { mutableStateOf(Tab.TIMETABLE) }
+    var showProfile by rememberSaveable { mutableStateOf(false) }
+    var announcementId by rememberSaveable { mutableStateOf<String?>(null) }
+    val place = Place(tab, showProfile, announcementId)
     val now by produceState(Clock.System.facultyNow()) {
         while (true) {
             delay(30_000)
             value = Clock.System.facultyNow()
         }
     }
-    val timetable =
-        remember(dataset, state.profile) { StudentTimetable(dataset, state.profile ?: return@remember null) } ?: return
+    val timetable = remember(dataset, profile) { StudentTimetable(dataset, profile) }
     val unread = state.announcements.count { !it.read }
+    val avatar: @Composable () -> Unit = { Avatar(initials(state)) { showProfile = true } }
 
-    BackHandler(enabled = screen == Screen.PROFILE) { screen = lastTab }
+    BackHandler(enabled = place.overlay) {
+        if (announcementId != null) announcementId = null else showProfile = false
+    }
 
     Scaffold(
-        topBar = { if (!online) OfflineBar(state.checkedAt) },
+        topBar = {
+            AnimatedVisibility(
+                visible = !online,
+                enter = slideInVertically() + fadeIn(),
+                exit =
+                slideOutVertically() + fadeOut(),
+            ) { OfflineBar(state.checkedAt) }
+        },
         bottomBar = {
-            if (screen != Screen.PROFILE) {
+            AnimatedVisibility(
+                visible = !place.overlay,
+                enter = slideInVertically { it } + fadeIn(),
+                exit =
+                slideOutVertically { it } + fadeOut(),
+            ) {
                 NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
                     NavigationBarItem(
-                        selected = screen == Screen.TIMETABLE,
-                        onClick = { screen = Screen.TIMETABLE },
+                        selected = tab == Tab.TIMETABLE,
+                        onClick = { tab = Tab.TIMETABLE },
                         icon = { Icon(EtIcons.Calendar, contentDescription = null) },
                         label = { Text(stringResource(R.string.tab_timetable)) },
                     )
                     NavigationBarItem(
-                        selected = screen == Screen.ANNOUNCEMENTS,
-                        onClick = { screen = Screen.ANNOUNCEMENTS },
+                        selected = tab == Tab.ANNOUNCEMENTS,
+                        onClick = { tab = Tab.ANNOUNCEMENTS },
                         icon = {
                             BadgedBox(badge = {
                                 if (unread >
@@ -172,29 +232,66 @@ private fun MainScreen(
             }
         },
     ) { padding ->
-        Surface(Modifier.fillMaxSize().padding(padding), color = MaterialTheme.colorScheme.background) {
-            when (screen) {
-                Screen.TIMETABLE -> TimetableScreen(dataset, timetable, now, initials(state)) {
-                    lastTab = Screen.TIMETABLE
-                    screen = Screen.PROFILE
+        AnimatedContent(
+            targetState = place,
+            transitionSpec = {
+                when {
+                    // opening a page over a tab slides it in from the right, going back the other way
+                    targetState.overlay && !initialState.overlay ->
+                        (slideInHorizontally(tween(250)) { it / 3 } + fadeIn(tween(250))) togetherWith
+                            fadeOut(tween(150))
+                    !targetState.overlay && initialState.overlay ->
+                        fadeIn(tween(200)) togetherWith
+                            (slideOutHorizontally(tween(250)) { it / 3 } + fadeOut(tween(200)))
+                    else -> fadeIn(tween(200)) togetherWith fadeOut(tween(150))
                 }
-                Screen.ANNOUNCEMENTS -> AnnouncementsScreen(state.announcements, markRead)
-                Screen.PROFILE -> ProfileScreen(state, onBack = {
-                    screen = lastTab
-                }, onChangeEnrollment, onSyncNow, onSignOut)
+            },
+            label = "place",
+            modifier = Modifier.fillMaxSize().padding(padding),
+        ) { target ->
+            Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+                val opened = target.announcementId?.let { id ->
+                    state.announcements.firstOrNull {
+                        it.announcement.id ==
+                            id
+                    }
+                }
+                when {
+                    opened != null -> AnnouncementScreen(opened.announcement, markRead = {
+                        markRead(opened.announcement.id)
+                    }, onBack = {
+                        announcementId =
+                            null
+                    })
+                    target.profile -> ProfileScreen(state, onBack = {
+                        showProfile = false
+                    }, onChangeEnrollment, onSyncNow, onSignOut)
+                    target.tab == Tab.TIMETABLE -> TimetableScreen(dataset, timetable, now, avatar)
+                    else -> AnnouncementsScreen(state.announcements, avatar) { announcementId = it }
+                }
             }
         }
     }
 }
 
-private fun initials(state: AppState): String {
-    val name = state.profile?.displayName?.trim().orEmpty()
-    val letters = if (name.isNotEmpty()) {
-        name.split(' ').filter {
-            it.isNotEmpty()
-        }.take(2).map { it.first() }
-    } else {
-        listOfNotNull(state.email?.firstOrNull())
+@Composable
+private fun Avatar(initials: String, onClick: () -> Unit) {
+    Surface(
+        onClick = onClick,
+        shape = CircleShape,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+        color = MaterialTheme.colorScheme.surface,
+        modifier = Modifier.size(44.dp),
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Text(initials, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold))
+        }
     }
+}
+
+private fun initials(state: AppState): String {
+    val profile = state.profile
+    val letters = listOfNotNull(profile?.firstName?.firstOrNull(), profile?.lastName?.firstOrNull())
+        .ifEmpty { listOfNotNull(state.email?.firstOrNull()) }
     return letters.joinToString("").uppercase()
 }

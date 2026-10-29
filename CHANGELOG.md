@@ -15,3 +15,9 @@ Each section is also the text of the matching GitHub release.
   ones marked.
 - The timetable works offline after the first update and refreshes every
   few hours; times are always Bucharest time, whatever the phone's time zone.
+- Creating an account asks for first name, last name and phone number, and
+  the password twice. "Remember me" keeps you signed in; without it the
+  session ends when the app is closed.
+- Announcements open in full with their formatting (lists, bold, links).
+- Swiping between days, transitions between screens, and the About page
+  with links to mehstudios.net and support@mehstudios.net.

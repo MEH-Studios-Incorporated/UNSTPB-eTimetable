@@ -4,6 +4,7 @@
 package net.mehstudios.etimetable.android.ui.profile
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -27,6 +28,7 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlinx.datetime.toLocalDateTime
 import net.mehstudios.etimetable.android.BuildConfig
@@ -38,6 +40,10 @@ import net.mehstudios.etimetable.android.ui.theme.ButtonShape
 import net.mehstudios.etimetable.model.Enrollment
 import net.mehstudios.etimetable.schedule.FacultyTimeZone
 
+private const val MEH_SITE = "https://mehstudios.net/"
+private const val SUPPORT_EMAIL = "support@mehstudios.net"
+private const val FAIMA_SITE = "https://faima.upb.ro/"
+
 @Composable
 fun ProfileScreen(
     state: AppState,
@@ -48,28 +54,26 @@ fun ProfileScreen(
 ) {
     val uri = LocalUriHandler.current
     val dark = isSystemInDarkTheme()
+    val profile = state.profile
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         TextButton(onClick = onBack, modifier = Modifier.padding(start = 4.dp, top = 8.dp)) {
             Text(stringResource(R.string.back))
         }
-        Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(
-                state.profile?.displayName?.ifBlank {
+                profile?.fullName?.ifBlank {
                     null
                 } ?: stringResource(R.string.profile),
                 style = MaterialTheme.typography.headlineSmall,
             )
-            state.email?.let {
-                Text(stringResource(R.string.signed_in_as, it), color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            val enrollment = when (val e = state.profile?.enrollment) {
+            state.email?.let { Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+            profile?.phone?.ifBlank { null }?.let { Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+            val enrollment = when (val e = profile?.enrollment) {
                 is Enrollment.National -> {
-                    val code =
-                        e.halfGroupId?.let {
-                            state.dataset?.halfGroupsById?.get(it)
-                        }?.let { "${state.dataset?.groupsById?.get(it.groupId)?.code}/${it.suffix}" }
-                            ?: state.dataset?.groupsById?.get(e.groupId)?.code ?: e.groupId
-                    stringResource(R.string.enrolled_group, code)
+                    val dataset = state.dataset
+                    val half = e.halfGroupId?.let { dataset?.halfGroupsById?.get(it) }
+                    val group = dataset?.groupsById?.get(e.groupId)?.code ?: e.groupId
+                    stringResource(R.string.enrolled_group, if (half != null) "$group/${half.suffix}" else group)
                 }
                 is Enrollment.Erasmus -> pluralStringResource(
                     R.plurals.enrolled_erasmus,
@@ -78,7 +82,9 @@ fun ProfileScreen(
                 )
                 null -> null
             }
-            enrollment?.let { Text(it, style = MaterialTheme.typography.titleMedium) }
+            enrollment?.let {
+                Text(it, style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 8.dp))
+            }
             OutlinedButton(shape = ButtonShape, onClick = onChangeEnrollment) {
                 Text(stringResource(R.string.change_enrollment))
             }
@@ -91,18 +97,14 @@ fun ProfileScreen(
             }
             val synced = state.checkedAt?.toLocalDateTime(FacultyTimeZone)
             Text(
-                if (synced ==
-                    null
-                ) {
+                if (synced == null) {
                     stringResource(R.string.never_synced)
                 } else {
-                    stringResource(
-                        R.string.last_sync,
-                        "${synced.date.longLabel()}, ${synced.time.toString().take(5)}",
-                    )
+                    stringResource(R.string.last_sync, "${synced.date.longLabel()}, ${synced.time.toString().take(5)}")
                 },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 8.dp),
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedButton(shape = ButtonShape, onClick = onSyncNow, enabled = !state.syncing) {
@@ -138,25 +140,47 @@ fun ProfileScreen(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            TextButton(onClick = { uri.openUri("https://faima.upb.ro/") }, modifier = Modifier.padding(start = 0.dp)) {
-                Text(stringResource(R.string.faima_site))
-            }
-            HorizontalDivider()
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Link(stringResource(R.string.faima_site)) { uri.openUri(FAIMA_SITE) }
+
+            HorizontalDivider(Modifier.padding(vertical = 6.dp))
+
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                 Image(
                     painter = painterResource(R.drawable.meh_mark),
                     contentDescription = null,
                     colorFilter = if (dark) null else invertInDark,
-                    modifier = Modifier.size(18.dp),
+                    modifier = Modifier.size(34.dp),
                 )
-                Text(stringResource(R.string.copyright), style = MaterialTheme.typography.labelLarge)
+                Column {
+                    Text(
+                        stringResource(R.string.copyright_owner),
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                    )
+                    Text(
+                        stringResource(R.string.copyright_rights),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
+            Link(stringResource(R.string.meh_site)) { uri.openUri(MEH_SITE) }
+            Link(stringResource(R.string.support)) { uri.openUri("mailto:$SUPPORT_EMAIL") }
             Text(
                 stringResource(R.string.commissioned),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.fillMaxWidth().padding(bottom = 32.dp),
+                modifier = Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 32.dp),
             )
         }
     }
+}
+
+@Composable
+private fun Link(text: String, onClick: () -> Unit) {
+    Text(
+        text,
+        style = MaterialTheme.typography.bodyLarge,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier.clickable(onClick = onClick).padding(vertical = 6.dp),
+    )
 }

@@ -5,6 +5,7 @@ package net.mehstudios.etimetable.server.accounts
 
 import io.ktor.http.HttpStatusCode
 import net.mehstudios.etimetable.api.ErrorCodes
+import net.mehstudios.etimetable.api.isValidPhone
 import net.mehstudios.etimetable.model.Dataset
 import net.mehstudios.etimetable.model.Enrollment
 import net.mehstudios.etimetable.model.Profile
@@ -19,6 +20,7 @@ import net.mehstudios.etimetable.server.ApiProblem
  * really belongs to the group is not checked, on purpose (docs/brief.md).
  */
 fun checkProfile(profile: Profile, dataset: Dataset?) {
+    checkContact(profile)
     // before the first semester there is nothing to check against
     if (dataset == null) return
     val calendar = TeachingCalendar(dataset.semester)
@@ -49,6 +51,14 @@ fun checkProfile(profile: Profile, dataset: Dataset?) {
         StudentTimetable(dataset, accepted, calendar).clashFor(activity, extra.date)?.let { clash(it.id, activity.id) }
         accepted = accepted.copy(extraSlots = accepted.extraSlots + extra)
     }
+}
+
+/** First and last name are required, and a phone number that looks like one. */
+fun checkContact(profile: Profile) {
+    if (profile.firstName.isBlank() || profile.lastName.isBlank() || profile.fullName.length > 200) {
+        throw ApiProblem(HttpStatusCode.UnprocessableEntity, ErrorCodes.MISSING_NAME)
+    }
+    if (!isValidPhone(profile.phone)) throw ApiProblem(HttpStatusCode.UnprocessableEntity, ErrorCodes.INVALID_PHONE)
 }
 
 private fun unknown(code: String, id: String): Nothing =

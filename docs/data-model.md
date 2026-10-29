@@ -67,7 +67,8 @@ and picks.
 ## People and announcements
 
 Student
-: id, email, password hash, display name, enrollment (national or Erasmus),
+: id, email, password hash, first name, last name, phone number (all three
+  required, the phone checked only for its shape), enrollment (national or Erasmus),
   group or half-group (national), picked activity ids (Erasmus), extra
   slots (an activity id, with a date when it is a one-time visit, used by
   national students to attend or recover another group's lab), preferred

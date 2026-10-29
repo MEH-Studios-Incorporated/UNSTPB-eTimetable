@@ -16,8 +16,15 @@
     <string name="no_semester">Facultatea nu a publicat încă orarul acestui semestru.</string>
 
     <string name="email">Email</string>
+    <string name="first_name">Prenume</string>
+    <string name="last_name">Nume</string>
+    <string name="phone">Telefon</string>
+    <string name="password_repeat">Repetă parola</string>
+    <string name="remember_me">Ține-mă minte pe acest telefon</string>
+    <string name="error_passwords_differ">Cele două parole nu sunt la fel.</string>
+    <string name="error_missing_name">Completează prenumele și numele.</string>
+    <string name="error_invalid_phone">Acesta nu pare un număr de telefon.</string>
     <string name="password">Parolă</string>
-    <string name="display_name">Nume</string>
     <string name="sign_in">Conectează-te</string>
     <string name="create_account">Creează un cont</string>
     <string name="have_account">Am deja un cont</string>
@@ -82,7 +89,6 @@
     <string name="announcements_empty">Niciun anunț încă.</string>
     <string name="pinned">Fixat</string>
 
-    <string name="signed_in_as">Conectat ca %1$s</string>
     <string name="enrolled_group">Grupa %1$s</string>
     <plurals name="enrolled_erasmus">
         <item quantity="one">Erasmus, %1$d oră</item>
@@ -98,8 +104,11 @@
     <string name="about">Despre aplicație</string>
     <string name="version">Versiunea %1$s</string>
     <string name="privacy_title">Confidențialitate</string>
-    <string name="privacy_text">Serverul păstrează emailul, un hash al parolei, numele, grupa sau orele alese și limba. Nu păstrează locația, contactele sau date despre utilizare. Ștergerea contului le șterge pe toate.</string>
+    <string name="privacy_text">Serverul păstrează emailul, un hash al parolei, numele, numărul de telefon, grupa sau orele alese și limba. Nu păstrează locația, contactele sau date despre utilizare. Ștergerea contului le șterge pe toate.</string>
     <string name="faima_site">Site-ul FAIMA</string>
-    <string name="copyright">© 2026 Multimedia Entertainment Hub LLC. Toate drepturile rezervate.</string>
+    <string name="meh_site">mehstudios.net</string>
+    <string name="support">Suport: support@mehstudios.net</string>
+    <string name="copyright_rights">© 2026. Toate drepturile rezervate.</string>
+    <string name="announcement_from">%1$s · %2$s</string>
     <string name="commissioned">Realizată la comanda Facultății de Antreprenoriat, Ingineria și Managementul Afacerilor (FAIMA), Universitatea Națională de Știință și Tehnologie POLITEHNICA București. Numele și siglele FAIMA și UNSTPB aparțin universității.</string>
 </resources>

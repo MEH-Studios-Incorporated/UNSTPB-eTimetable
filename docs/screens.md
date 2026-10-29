@@ -12,9 +12,12 @@ subject, room or professor anywhere opens its page.
 
 ## First start
 
-1. Sign in or create an account (email and password), with the FAIMA seal
-   above the form and a Română / English switch (defaults to the phone's
-   language). The footer names Multimedia Entertainment Hub and FAIMA.
+1. Sign in with email and password, or create an account with first name,
+   last name, email, phone number and the password typed twice. A "remember
+   me" box keeps the session; without it the session ends when the app is
+   closed. The FAIMA seal sits above the form and the footer names
+   Multimedia Entertainment Hub and FAIMA. The app follows the phone's
+   language; a Română / English switch is planned.
 2. A forgotten password is reset by email when the server has email
    configured, otherwise by an admin from the dashboard.
 3. Enrollment: national or Erasmus.
@@ -63,8 +66,10 @@ Every choice can be changed later from the profile. Nothing is checked.
 
 ## Announcements
 
-- Newest first, pinned ones on top, unread ones marked.
-- The announcement page renders its Markdown text and links.
+- Previews, newest first, pinned ones on top, unread ones marked: title, two
+  lines of text, date and author.
+- Tapping one opens it in full, with its Markdown (paragraphs, lists, bold,
+  italic, links) formatted, and marks it read.
 - A push notification opens the announcement directly.
 
 ## Profile and settings
@@ -78,8 +83,8 @@ out, app version.
 Opened from the profile. It shows the FAIMA seal, the app version and the
 last sync, then:
 
-- Privacy policy: what the server keeps (email, password hash, name,
-  enrollment, group or picked slots, language, push tokens) and what it
+- Privacy policy: what the server keeps (email, password hash, name, phone
+  number, enrollment, group or picked slots, language, push tokens) and what it
   does not (location, contacts, analytics or tracking), how to delete the
   account.
 - Terms of use: the timetable is for information; the faculty's official
@@ -90,9 +95,11 @@ last sync, then:
   screenshot.
 - FAIMA's website.
 
-The footer reads "© 2026 Multimedia Entertainment Hub LLC. All rights
-reserved.", says the app was commissioned by FAIMA, UNSTPB, and that the
-FAIMA and UNSTPB names and logos belong to the university.
+Then the MEH mark next to "Multimedia Entertainment Hub LLC" and "© 2026.
+All rights reserved.", links to https://mehstudios.net/ and to
+support@mehstudios.net, and a line saying the app was commissioned by
+FAIMA, UNSTPB, and that the FAIMA and UNSTPB names and logos belong to the
+university.
 
 ## Offline
 

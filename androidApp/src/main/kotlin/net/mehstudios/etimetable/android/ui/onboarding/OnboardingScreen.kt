@@ -3,6 +3,11 @@
 
 package net.mehstudios.etimetable.android.ui.onboarding
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -50,6 +55,7 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import net.mehstudios.etimetable.android.R
 import net.mehstudios.etimetable.android.data.ActionResult
+import net.mehstudios.etimetable.android.ui.components.BrandBar
 import net.mehstudios.etimetable.android.ui.components.EtIcons
 import net.mehstudios.etimetable.android.ui.components.appLanguage
 import net.mehstudios.etimetable.android.ui.components.label
@@ -103,15 +109,8 @@ fun OnboardingScreen(
 
     Scaffold { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
-            Row(
-                Modifier.fillMaxWidth().padding(start = 4.dp, end = 16.dp, top = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                if (onCancel != null) {
-                    TextButton(onClick = onCancel) { Text(stringResource(R.string.back)) }
-                } else {
-                    Spacer(Modifier.width(12.dp))
-                }
+            BrandBar {
+                if (onCancel != null) TextButton(onClick = onCancel) { Text(stringResource(R.string.back)) }
             }
             Text(
                 stringResource(R.string.onb_title),
@@ -214,7 +213,7 @@ private fun NationalPicker(
                     )
                 }
             }
-            if (programmeId != null) {
+            Reveal(programmeId != null) {
                 Section(stringResource(R.string.onb_year))
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     years.forEach { y ->
@@ -230,7 +229,7 @@ private fun NationalPicker(
                     }
                 }
             }
-            if (year != null) {
+            Reveal(year != null) {
                 Section(stringResource(R.string.onb_group))
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     groups.forEach { g ->
@@ -245,7 +244,7 @@ private fun NationalPicker(
                     }
                 }
             }
-            if (groupId != null && halves.isNotEmpty()) {
+            Reveal(groupId != null && halves.isNotEmpty()) {
                 Section(stringResource(R.string.onb_half))
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     halves.forEach { h ->
@@ -401,6 +400,18 @@ private fun SlotRow(dataset: Dataset, activity: Activity, selected: Boolean, cla
                 )
             }
         }
+    }
+}
+
+/** Slides a step of the form in once the step before it is answered. */
+@Composable
+private fun Reveal(visible: Boolean, content: @Composable () -> Unit) {
+    AnimatedVisibility(
+        visible = visible,
+        enter = expandVertically() + fadeIn(),
+        exit = shrinkVertically() + fadeOut(),
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) { content() }
     }
 }
 
