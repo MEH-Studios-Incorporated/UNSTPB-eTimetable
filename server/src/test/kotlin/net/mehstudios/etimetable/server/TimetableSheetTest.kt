@@ -93,7 +93,7 @@ class TimetableSheetTest {
         val twin = lab.copy(id = "twin", professorId = null)
         val warnings = TimetableSheet.doubleBookings(sample.copy(activities = sample.activities + twin))
         assertEquals(1, warnings.size, warnings.toString())
-        assertTrue("BN 212 b" in warnings.single())
+        assertTrue("BN212b" in warnings.single())
     }
 
     @Test
@@ -107,5 +107,14 @@ class TimetableSheetTest {
         assertEquals("Prof. dr. ing." to "C. Voicu", TimetableSheet.splitTitle("Prof. dr. ing. C. Voicu"))
         assertEquals("Ș.l. dr." to "Dan Pop", TimetableSheet.splitTitle("Ș.l. dr. Dan Pop"))
         assertEquals("" to "Dan Pop", TimetableSheet.splitTitle("Dan Pop"))
+    }
+
+    @Test
+    fun roomsLoseTheSpaceAfterTheBuilding() {
+        assertEquals("BN212b" to "BN", TimetableSheet.roomCode("BN 212 b"))
+        assertEquals("EC004" to "EC", TimetableSheet.roomCode("ec 004"))
+        assertEquals("A139 Polizu" to "A Polizu", TimetableSheet.roomCode("A 139 Polizu"))
+        assertEquals("Sala Sport" to "Sala Sport", TimetableSheet.roomCode("Sala  Sport"))
+        assertEquals("Sala 1" to "Sala 1", TimetableSheet.roomCode("Sala 1"))
     }
 }

@@ -10,7 +10,11 @@ import androidx.compose.material3.Shapes
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import net.mehstudios.etimetable.android.data.ThemeMode
 
 private val LightColors = with(LightTokens) {
     lightColorScheme(
@@ -25,6 +29,24 @@ private val LightColors = with(LightTokens) {
         outline = border,
         outlineVariant = border,
         error = now,
+        primaryContainer = Color(0xFFDCEAF4),
+        onPrimaryContainer = text,
+        secondary = textMuted,
+        onSecondary = surface,
+        secondaryContainer = Color(0xFFE6E6E3),
+        onSecondaryContainer = text,
+        tertiary = primary,
+        onTertiary = onPrimary,
+        surfaceTint = surface,
+        surfaceBright = surface,
+        surfaceDim = surfaceAlt,
+        surfaceContainerLowest = surface,
+        surfaceContainerLow = surface,
+        surfaceContainer = surface,
+        surfaceContainerHigh = surfaceAlt,
+        surfaceContainerHighest = surfaceAlt,
+        inverseSurface = text,
+        inverseOnSurface = background,
     )
 }
 
@@ -41,8 +63,29 @@ private val DarkColors = with(DarkTokens) {
         outline = border,
         outlineVariant = border,
         error = now,
+        primaryContainer = Color(0xFF13384F),
+        onPrimaryContainer = text,
+        secondary = textMuted,
+        onSecondary = surface,
+        secondaryContainer = Color(0xFF2E2E2E),
+        onSecondaryContainer = text,
+        tertiary = primary,
+        onTertiary = onPrimary,
+        surfaceTint = surface,
+        surfaceBright = surfaceAlt,
+        surfaceDim = background,
+        surfaceContainerLowest = background,
+        surfaceContainerLow = surface,
+        surfaceContainer = surface,
+        surfaceContainerHigh = surfaceAlt,
+        surfaceContainerHighest = surfaceAlt,
+        inverseSurface = text,
+        inverseOnSurface = background,
     )
 }
+
+/** Buttons have 6 dp corners (docs/design.md), not Material's pill. */
+val ButtonShape = RoundedCornerShape(6.dp)
 
 private val EtShapes = Shapes(
     small = RoundedCornerShape(6.dp),
@@ -50,12 +93,27 @@ private val EtShapes = Shapes(
     large = RoundedCornerShape(8.dp),
 )
 
+/** Whether the app is drawn dark: the student's choice, or the phone's when they made none. */
+val LocalDarkTheme = staticCompositionLocalOf { false }
+
+/** The theme choice and how to change it, for the switch in the profile. */
+data class ThemeChoice(val mode: ThemeMode, val change: (ThemeMode) -> Unit)
+
+val LocalThemeChoice = staticCompositionLocalOf { ThemeChoice(ThemeMode.SYSTEM) {} }
+
 @Composable
-fun EtTheme(dark: Boolean = isSystemInDarkTheme(), content: @Composable () -> Unit) {
-    MaterialTheme(
-        colorScheme = if (dark) DarkColors else LightColors,
-        typography = EtTypography,
-        shapes = EtShapes,
-        content = content,
-    )
+fun EtTheme(mode: ThemeMode = ThemeMode.SYSTEM, content: @Composable () -> Unit) {
+    val dark = when (mode) {
+        ThemeMode.SYSTEM -> isSystemInDarkTheme()
+        ThemeMode.LIGHT -> false
+        ThemeMode.DARK -> true
+    }
+    CompositionLocalProvider(LocalDarkTheme provides dark) {
+        MaterialTheme(
+            colorScheme = if (dark) DarkColors else LightColors,
+            typography = EtTypography,
+            shapes = EtShapes,
+            content = content,
+        )
+    }
 }

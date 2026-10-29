@@ -32,19 +32,20 @@ class Accounts(private val db: DataSource) {
 
     suspend fun signup(request: SignupRequest): SessionResponse {
         val email = request.email.trim()
-        if (!EMAIL.matches(email) ||
-            email.length > 254
-        ) {
-            throw ApiProblem(HttpStatusCode.UnprocessableEntity, ErrorCodes.INVALID_EMAIL)
-        }
-        if (request.password.length <
-            MIN_PASSWORD_LENGTH
-        ) {
-            throw ApiProblem(HttpStatusCode.UnprocessableEntity, ErrorCodes.WEAK_PASSWORD)
-        }
+        val emailValid = EMAIL.matches(email) && email.length <= 254
+        if (!emailValid) throw ApiProblem(HttpStatusCode.UnprocessableEntity, ErrorCodes.INVALID_EMAIL)
+        val passwordValid = request.password.length >= MIN_PASSWORD_LENGTH
+        if (!passwordValid) throw ApiProblem(HttpStatusCode.UnprocessableEntity, ErrorCodes.WEAK_PASSWORD)
+        val newProfile =
+            Profile(
+                firstName = request.firstName.trim(),
+                lastName = request.lastName.trim(),
+                phone = request.phone.trim(),
+            )
+        checkContact(newProfile)
         val id = UUID.randomUUID()
         val hash = Passwords.hash(request.password)
-        val profile = AppJson.encodeToString(Profile.serializer(), Profile(displayName = request.displayName.trim()))
+        val profile = AppJson.encodeToString(Profile.serializer(), newProfile)
         return db.transaction { c ->
             try {
                 c.update(

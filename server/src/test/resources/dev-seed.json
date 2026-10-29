@@ -183,31 +183,31 @@
         {
             "id": "an015",
             "buildingId": "an",
-            "code": "AN 015",
+            "code": "AN015",
             "capacity": null
         },
         {
             "id": "bn212a",
             "buildingId": "bn",
-            "code": "BN 212 a",
+            "code": "BN212a",
             "capacity": null
         },
         {
             "id": "bn212b",
             "buildingId": "bn",
-            "code": "BN 212 b",
+            "code": "BN212b",
             "capacity": null
         },
         {
             "id": "ec004",
             "buildingId": "ec",
-            "code": "EC 004",
+            "code": "EC004",
             "capacity": null
         },
         {
             "id": "ec210",
             "buildingId": "ec",
-            "code": "EC 210",
+            "code": "EC210",
             "capacity": null
         }
     ],

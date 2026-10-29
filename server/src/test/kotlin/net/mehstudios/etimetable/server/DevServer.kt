@@ -8,13 +8,16 @@ import io.ktor.server.netty.Netty
 import io.zonky.test.db.postgres.embedded.EmbeddedPostgres
 import kotlinx.coroutines.runBlocking
 import net.mehstudios.etimetable.server.db.migrate
+import net.mehstudios.etimetable.server.timetable.TimetableSheet
 import java.io.File
 
 /**
  * The development server (`./gradlew :server:runDev`): PostgreSQL runs
  * embedded with its data in server/build/dev-postgres, and an empty
  * database gets the sample semester, two announcements and a dashboard
- * account (DEV_ADMIN_EMAIL, DEV_ADMIN_PASSWORD).
+ * account (DEV_ADMIN_EMAIL, DEV_ADMIN_PASSWORD). When build/faima-timetable.csv
+ * exists (tools/faima-timetable/update.sh), FAIMA's real timetable replaces
+ * the sample one on every start.
  */
 const val DEV_ADMIN_EMAIL = "admin@etimetable.test"
 const val DEV_ADMIN_PASSWORD = "parola-dev"
@@ -37,6 +40,20 @@ fun main() {
     runBlocking {
         if (services.admins.bootstrap(DEV_ADMIN_EMAIL, DEV_ADMIN_PASSWORD)) {
             println("Dashboard: http://localhost:8080/admin, $DEV_ADMIN_EMAIL / $DEV_ADMIN_PASSWORD")
+        }
+        val faima = File("build/faima-timetable.csv")
+        if (faima.exists()) {
+            // FAIMA's real timetable from tools/faima-timetable/update.sh, on the sample calendar
+            val result = TimetableSheet.import(faima.readText(), sampleDataset().semester)
+            val dataset = result.dataset
+            if (dataset == null) {
+                println("faima-timetable.csv not imported:\n  " + result.errors.joinToString("\n  "))
+            } else {
+                services.datasets.replace(dataset, makeCurrent = true)
+                println(
+                    "Imported FAIMA's timetable: ${dataset.activities.size} activities, ${dataset.groups.size} groups, ${result.warnings.size} double bookings",
+                )
+            }
         }
         if (services.datasets.current() == null) {
             services.datasets.replace(sampleDataset(), makeCurrent = true)

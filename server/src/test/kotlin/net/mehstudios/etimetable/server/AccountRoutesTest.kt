@@ -30,7 +30,7 @@ class AccountRoutesTest {
     private suspend fun HttpClient.signup(email: String = "ana@stud.upb.ro", password: String = "parola-buna") =
         post("/api/v1/auth/signup") {
             contentType(ContentType.Application.Json)
-            setBody(SignupRequest(email, password, "Ana"))
+            setBody(SignupRequest(email, password, "Ana", "Pop", "+40 712 345 678"))
         }
 
     private suspend fun HttpClient.token() = signup().body<SessionResponse>().token
@@ -38,7 +38,7 @@ class AccountRoutesTest {
     private suspend fun HttpClient.putProfile(token: String, profile: Profile) = put("/api/v1/me") {
         bearerAuth(token)
         contentType(ContentType.Application.Json)
-        setBody(profile)
+        setBody(profile.copy(firstName = "Ana", lastName = "Pop", phone = "0712345678"))
     }
 
     @Test
@@ -53,7 +53,8 @@ class AccountRoutesTest {
         val token = login.body<SessionResponse>().token
 
         val profile = client.get("/api/v1/me") { bearerAuth(token) }.body<Profile>()
-        assertEquals("Ana", profile.displayName)
+        assertEquals("Ana Pop", profile.fullName)
+        assertEquals("+40 712 345 678", profile.phone)
     }
 
     @Test
@@ -65,6 +66,17 @@ class AccountRoutesTest {
             ErrorCodes.WEAK_PASSWORD,
             client.signup(email = "b@stud.upb.ro", password = "short").body<ApiError>().code,
         )
+    }
+
+    @Test
+    fun namesAndPhoneAreRequired() = withServer { _, client ->
+        suspend fun signup(first: String, last: String, phone: String) = client.post("/api/v1/auth/signup") {
+            contentType(ContentType.Application.Json)
+            setBody(SignupRequest("ana@stud.upb.ro", "parola-buna", first, last, phone))
+        }.body<ApiError>().code
+        assertEquals(ErrorCodes.MISSING_NAME, signup(" ", "Pop", "0712345678"))
+        assertEquals(ErrorCodes.INVALID_PHONE, signup("Ana", "Pop", "12345"))
+        assertEquals(ErrorCodes.INVALID_PHONE, signup("Ana", "Pop", "call me"))
     }
 
     @Test
@@ -101,7 +113,7 @@ class AccountRoutesTest {
             extraSlots = listOf(ExtraSlot("calit-l-1541B", LocalDate(2026, 10, 28))),
         )
         assertEquals(HttpStatusCode.OK, client.putProfile(token, visit).status)
-        assertEquals(visit, client.get("/api/v1/me") { bearerAuth(token) }.body<Profile>())
+        assertEquals(visit.enrollment, client.get("/api/v1/me") { bearerAuth(token) }.body<Profile>().enrollment)
     }
 
     @Test

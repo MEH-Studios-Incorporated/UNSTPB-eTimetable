@@ -49,6 +49,18 @@ android {
         }
     }
 
+    // The app speaks only these two; libraries' other translations stay out of the APK.
+    androidResources {
+        localeFilters += listOf("en", "ro")
+    }
+
+    // The language is picked inside the app, so every install needs both, not a Play split.
+    bundle {
+        language {
+            enableSplit = false
+        }
+    }
+
     buildFeatures {
         compose = true
         buildConfig = true
@@ -68,6 +80,8 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
+    implementation(libs.androidx.datastore.preferences)
+    implementation(libs.androidx.work.runtime)
     implementation(libs.androidx.core.ktx)
     implementation(libs.ktor.client.okhttp)
     debugImplementation(libs.androidx.compose.ui.tooling)

@@ -12,9 +12,13 @@ subject, room or professor anywhere opens its page.
 
 ## First start
 
-1. Sign in or create an account (email and password), with the FAIMA seal
-   above the form and a Română / English switch (defaults to the phone's
-   language). The footer names Multimedia Entertainment Hub and FAIMA.
+1. Sign in with email and password, or create an account with first name,
+   last name, email, phone number and the password typed twice. A "remember
+   me" box keeps the session; without it the session ends when the app is
+   closed. The FAIMA seal sits above the form; the footer is a small
+   Multimedia Entertainment Hub credit (mark and copyright, no links; those
+   are on the About page). A RO / EN switch in the top
+   corner changes the language before signing in.
 2. A forgotten password is reset by email when the server has email
    configured, otherwise by an admin from the dashboard.
 3. Enrollment: national or Erasmus.
@@ -36,9 +40,19 @@ Every choice can be changed later from the profile. Nothing is checked.
   has something.
 - The header shows the date range, the teaching week number and whether it
   is odd or even. Breaks are labelled as such instead of an empty week.
+- The top bar always shows the current teaching week and its parity
+  ("Săpt. 5, impară"), or "Vacanță" during a break. On Saturday and Sunday
+  it shows the coming week.
+- A class card shows as much as its height allows: two hours or more get
+  type, name on two lines, time, room and professor; an hour gets the name
+  and one line with time, type and room.
 - Swipe between days or weeks; a "today" control jumps back.
 - Tapping an activity opens a sheet: subject, type, time, room and building
-  (with a map link), professor, which weeks it runs, which groups attend.
+  (with a map link), who runs it, which weeks it runs, which groups attend.
+  A course names its professor; a seminar, lab or project names its
+  assistant and, below, the professor of the subject's course for the same
+  series. When the timetable names nobody the sheet says so. Every name
+  opens that professor's page.
 
 ## Subjects
 
@@ -58,18 +72,22 @@ Every choice can be changed later from the profile. Nothing is checked.
 - A searchable list with each professor's current status in one line:
   teaching (subject, room, until when), office hours (room, until when),
   next activity today, or nothing more today.
-- The professor page: status, the week's schedule, office hours, office,
-  email.
+- The professor page: status, the week's schedule (the coming week on a
+  weekend), office hours, office, email.
 
 ## Announcements
 
-- Newest first, pinned ones on top, unread ones marked.
-- The announcement page renders its Markdown text and links.
+- Previews, newest first, pinned ones on top, unread ones marked: title, two
+  lines of text, date and author.
+- Tapping one opens it in full, with its Markdown (paragraphs, lists, bold,
+  italic, links) formatted, and marks it read.
 - A push notification opens the announcement directly.
 
 ## Profile and settings
 
-Name, email, enrollment, group or picked subjects, language, light or dark
+Name, email, enrollment, group or picked subjects, language (same as the
+phone, Română or English; on Android 13 and newer this is the same setting
+as the phone's per-app language), light or dark
 theme (or the system's), notifications, the time of the last sync, sign
 out, app version.
 
@@ -78,8 +96,8 @@ out, app version.
 Opened from the profile. It shows the FAIMA seal, the app version and the
 last sync, then:
 
-- Privacy policy: what the server keeps (email, password hash, name,
-  enrollment, group or picked slots, language, push tokens) and what it
+- Privacy policy: what the server keeps (email, password hash, name, phone
+  number, enrollment, group or picked slots, language, push tokens) and what it
   does not (location, contacts, analytics or tracking), how to delete the
   account.
 - Terms of use: the timetable is for information; the faculty's official
@@ -90,9 +108,11 @@ last sync, then:
   screenshot.
 - FAIMA's website.
 
-The footer reads "© 2026 Multimedia Entertainment Hub LLC. All rights
-reserved.", says the app was commissioned by FAIMA, UNSTPB, and that the
-FAIMA and UNSTPB names and logos belong to the university.
+Then the MEH mark next to "Multimedia Entertainment Hub LLC" and "© 2026.
+All rights reserved.", links to https://mehstudios.net/ and to
+support@mehstudios.net, and a line saying the app was commissioned by
+FAIMA, UNSTPB, and that the FAIMA and UNSTPB names and logos belong to the
+university.
 
 ## Offline
 

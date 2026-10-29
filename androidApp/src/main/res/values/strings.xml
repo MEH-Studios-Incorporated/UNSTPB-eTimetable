@@ -5,10 +5,131 @@
 -->
 <resources>
     <string name="app_name" translatable="false">eTimetable</string>
-    <string name="home_subtitle">FAIMA timetable, professors and announcements</string>
-    <string name="server_label">Development server</string>
-    <string name="server_checking">Checking %1$s</string>
-    <string name="server_ok">Connected, server version %1$s</string>
-    <string name="server_error">No answer from %1$s</string>
+    <string name="brand_subtitle" translatable="false">FAIMA · UNSTPB</string>
+    <string name="tagline">FAIMA timetable, professors and announcements</string>
+    <string name="tab_timetable">Timetable</string>
+    <string name="tab_announcements">Announcements</string>
+    <string name="profile">Profile</string>
+    <string name="back">Back</string>
+    <string name="save">Save</string>
     <string name="retry">Try again</string>
+    <string name="offline_since">Offline. Data from %1$s.</string>
+    <string name="offline_never">Offline. Connect once to download the timetable.</string>
+    <string name="no_semester">The faculty has not published this semester\'s timetable yet.</string>
+
+    <string name="email">Email</string>
+    <string name="first_name">First name</string>
+    <string name="last_name">Last name</string>
+    <string name="phone">Phone</string>
+    <string name="password_repeat">Password again</string>
+    <string name="remember_me">Remember me on this phone</string>
+    <string name="error_passwords_differ">The two passwords are not the same.</string>
+    <string name="error_missing_name">Fill in your first and last name.</string>
+    <string name="error_invalid_phone">This does not look like a phone number.</string>
+    <string name="password">Password</string>
+    <string name="sign_in">Sign in</string>
+    <string name="create_account">Create an account</string>
+    <string name="have_account">I already have an account</string>
+    <string name="faima_seal">FAIMA seal, National University of Science and Technology POLITEHNICA Bucharest</string>
+    <string name="error_wrong_credentials">Wrong email or password.</string>
+    <string name="error_email_taken">There is already an account with this email.</string>
+    <string name="error_invalid_email">This is not a valid email address.</string>
+    <plurals name="error_weak_password">
+        <item quantity="one">The password needs at least %1$d character.</item>
+        <item quantity="other">The password needs at least %1$d characters.</item>
+    </plurals>
+    <string name="error_no_connection">No connection to the server. Try again when you are online.</string>
+    <string name="error_generic">Something went wrong. Try again.</string>
+
+    <string name="onb_title">How do you study at FAIMA?</string>
+    <string name="onb_national">In a group</string>
+    <string name="onb_national_hint">Your timetable is your group\'s.</string>
+    <string name="onb_erasmus">Erasmus</string>
+    <string name="onb_erasmus_hint">You pick subjects from your learning agreement.</string>
+    <string name="onb_programme">Programme</string>
+    <string name="onb_year">Year</string>
+    <string name="onb_year_n">Year %1$d</string>
+    <string name="onb_group">Group</string>
+    <string name="onb_half">Half-group for labs</string>
+    <string name="onb_both_halves">I don\'t know yet</string>
+    <string name="onb_search">Search subjects</string>
+    <plurals name="onb_subjects_picked">
+        <item quantity="one">%1$d slot picked</item>
+        <item quantity="other">%1$d slots picked</item>
+    </plurals>
+    <string name="onb_open_to_erasmus">For Erasmus</string>
+    <string name="onb_clash">Clashes with %1$s</string>
+    <string name="onb_change_hint">You can change this later from your profile.</string>
+
+    <string name="day">Day</string>
+    <string name="week">Week</string>
+    <string name="today">Today</string>
+    <string name="previous_week">Previous week</string>
+    <string name="next_week">Next week</string>
+    <string name="week_odd">Week %1$d · odd</string>
+    <string name="week_even">Week %1$d · even</string>
+    <string name="next_in_minutes">Next, in %1$d min</string>
+    <string name="next_on">Next, %1$s</string>
+    <string name="nothing_today">No classes this day.</string>
+    <string name="type_course">Course</string>
+    <string name="type_seminar">Seminar</string>
+    <string name="type_lab">Lab</string>
+    <string name="type_project">Project</string>
+    <string name="weeks_all">Every week</string>
+    <string name="weeks_odd">Odd weeks</string>
+    <string name="weeks_even">Even weeks</string>
+    <string name="weeks_only">Weeks %1$s</string>
+    <string name="room">Room</string>
+    <string name="weeks">Weeks</string>
+    <string name="role_course">Course professor</string>
+    <string name="role_seminar">Seminar assistant</string>
+    <string name="role_lab">Lab assistant</string>
+    <string name="role_project">Project supervisor</string>
+    <string name="not_listed">Not in the timetable yet</string>
+    <string name="week_short">Week %1$d</string>
+    <string name="parity_odd">odd</string>
+    <string name="parity_even">even</string>
+    <string name="on_break">Break</string>
+    <string name="office_hours">Office hours</string>
+    <string name="office_hours_none">No office hours in the timetable.</string>
+    <string name="prof_now_teaching">Teaching now, until %1$s</string>
+    <string name="prof_now_office">Office hours now, until %1$s</string>
+    <string name="prof_later_today">Free now. Next today at %1$s</string>
+    <string name="prof_done_today">Nothing more today.</string>
+    <string name="prof_this_week">This week</string>
+    <string name="prof_next_week">Next week</string>
+    <string name="prof_week_empty">Nothing in the timetable.</string>
+    <string name="write_email">Send an email</string>
+    <string name="groups">Groups</string>
+    <string name="whole_series">Series %1$s</string>
+
+    <string name="announcements_empty">No announcements yet.</string>
+    <string name="pinned">Pinned</string>
+
+    <string name="enrolled_group">Group %1$s</string>
+    <plurals name="enrolled_erasmus">
+        <item quantity="one">Erasmus, %1$d slot</item>
+        <item quantity="other">Erasmus, %1$d slots</item>
+    </plurals>
+    <string name="change_enrollment">Change group or subjects</string>
+    <string name="last_sync">Last update: %1$s</string>
+    <string name="never_synced">Not updated yet</string>
+    <string name="sync_now">Update now</string>
+    <string name="unsent_changes">Your last change is saved on this phone and will be sent when you are online.</string>
+    <string name="sign_out">Sign out</string>
+    <string name="language">Language</string>
+    <string name="language_phone">Same as phone</string>
+    <string name="theme">Theme</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="about">About</string>
+    <string name="version">Version %1$s</string>
+    <string name="privacy_title">Privacy</string>
+    <string name="privacy_text">The server keeps your email, a hash of your password, your name, your phone number, your group or picked subjects and your language. It keeps no location, contacts or usage tracking. Deleting your account removes all of it.</string>
+    <string name="faima_site">FAIMA website</string>
+    <string name="meh_site">mehstudios.net</string>
+    <string name="copyright_owner" translatable="false">Multimedia Entertainment Hub LLC</string>
+    <string name="copyright_rights">© 2026. All rights reserved.</string>
+    <string name="announcement_from">%1$s · %2$s</string>
+    <string name="commissioned">Commissioned by the Faculty of Entrepreneurship, Business Engineering and Management (FAIMA), National University of Science and Technology POLITEHNICA Bucharest. The FAIMA and UNSTPB names and logos belong to the university.</string>
 </resources>

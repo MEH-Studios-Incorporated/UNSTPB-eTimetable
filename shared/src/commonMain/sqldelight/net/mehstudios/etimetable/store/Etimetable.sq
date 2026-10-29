@@ -44,6 +44,13 @@ UPDATE announcement SET read = 1 WHERE id = ?;
 countUnread:
 SELECT count(*) FROM announcement WHERE read = 0;
 
+-- announcements the faculty deleted from the dashboard
+deleteAnnouncementsExcept:
+DELETE FROM announcement WHERE id NOT IN ?;
+
+deleteAllAnnouncements:
+DELETE FROM announcement;
+
 CREATE TABLE profile (
     id INTEGER NOT NULL PRIMARY KEY CHECK (id = 1),
     json TEXT NOT NULL,
@@ -55,3 +62,6 @@ SELECT json, dirty FROM profile WHERE id = 1;
 
 saveProfile:
 INSERT OR REPLACE INTO profile (id, json, dirty) VALUES (1, ?, ?);
+
+deleteProfile:
+DELETE FROM profile;

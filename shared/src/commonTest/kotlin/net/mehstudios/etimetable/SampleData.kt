@@ -98,11 +98,11 @@ object SampleData {
             Building("ec", "EC", "Corpul EC"),
         ),
         rooms = listOf(
-            Room("an015", "an", "AN 015"),
-            Room("bn212a", "bn", "BN 212 a"),
-            Room("bn212b", "bn", "BN 212 b"),
-            Room("ec004", "ec", "EC 004"),
-            Room("ec210", "ec", "EC 210"),
+            Room("an015", "an", "AN015"),
+            Room("bn212a", "bn", "BN212a"),
+            Room("bn212b", "bn", "BN212b"),
+            Room("ec004", "ec", "EC004"),
+            Room("ec210", "ec", "EC210"),
         ),
         activities = listOf(
             activity(

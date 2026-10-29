@@ -9,7 +9,8 @@ working offline once the timetable has synced.
 Developed and owned by Multimedia Entertainment Hub LLC, on commission from
 FAIMA, UNSTPB.
 
-Status: early development. The project skeleton builds and runs; the timetable itself is not there yet.
+Status: early development. The Android app shows a student's timetable from a
+running server; subjects, professors, push notifications and widgets are next.
 
 ## What it does
 
@@ -53,8 +54,10 @@ and looks like something the faculty would put its name on.
 
 ## What works
 
-- The Android app starts, uses the design's colours and font, and checks
-  that it can reach the server.
+- The Android app: sign-in, choosing a group or Erasmus slots (clashes are
+  refused on the spot), today and week views with the next class and the
+  current time, class details, announcements and the profile. It keeps
+  working offline and updates itself every few hours.
 - The server stores semesters, announcements and student accounts in
   PostgreSQL and serves them over its API, with Erasmus overlaps checked on
   the server too. It runs from a Docker image next to PostgreSQL.
@@ -66,9 +69,13 @@ and looks like something the faculty would put its name on.
 - The iOS app builds on CI and shows the app name from the shared Kotlin
   code. Nobody on the team has a Mac yet, so it has not run on a device.
 
+Known gap: the app follows the phone's language; there is no switch in the
+app yet.
+
 Everything else is still to come. The requirements are in
-[docs/brief.md](docs/brief.md) and the planned design in [docs/architecture.md](docs/architecture.md), including
-the questions that are still open.
+[docs/brief.md](docs/brief.md) and the planned design in
+[docs/architecture.md](docs/architecture.md), including the questions that
+are still open.
 
 ## Install
 

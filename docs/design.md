@@ -88,14 +88,20 @@ the student is not touching the screen, apart from the current-time line.
 
 ## Logos
 
-- The FAIMA seal appears on the sign-in screen (132 px wide) and on the
-  About screen (72 px). In the dark theme it is shown in white. It is never
-  recoloured, stretched, cropped or placed on a subject colour.
-- The Multimedia Entertainment Hub mark appears only small, next to the
-  copyright line on the About screen and in the sign-in footer.
-- Files are in `design/brand/`. The FAIMA seal is a 250 x 191 PNG taken
-  from faima.upb.ro; we need a vector version from FAIMA before the first
-  store release.
+- The FAIMA seal appears on the sign-in screen (168 dp wide, 112 dp while
+  creating an account) and on the About screen (72 dp). In the dark theme it
+  is shown in white. It is never recoloured, stretched, cropped or placed on
+  a subject colour.
+- The Multimedia Entertainment Hub mark appears next to the copyright on
+  the About screen (34 dp, with the site and support links) and, smaller and
+  without links, in the sign-in footer (20 dp).
+- The launcher icon is the white seal on `#292929`, 60 dp wide inside the
+  108 dp adaptive icon, so launchers that cut a circle keep the lettering.
+  The same image is the monochrome (themed) icon.
+- Files are in `design/brand/`: `faima-seal.png` (250 x 191, black) and
+  `faima-seal-white.png` (512 x 505, cut from the 1267 px white logo on
+  faima.upb.ro, without the faculty name under the seal). We still need a
+  vector version from FAIMA before the first store release.
 
 ## Icons
 
