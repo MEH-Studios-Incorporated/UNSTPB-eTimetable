@@ -4,10 +4,102 @@
   SPDX-License-Identifier: LicenseRef-Proprietary
 -->
 <resources>
-    <string name="home_subtitle">Orarul, profesorii și anunțurile FAIMA</string>
-    <string name="server_label">Serverul de dezvoltare</string>
-    <string name="server_checking">Se verifică %1$s</string>
-    <string name="server_ok">Conectat, versiunea serverului %1$s</string>
-    <string name="server_error">%1$s nu răspunde</string>
+    <string name="tagline">Orarul, profesorii și anunțurile FAIMA</string>
+    <string name="tab_timetable">Orar</string>
+    <string name="tab_announcements">Anunțuri</string>
+    <string name="profile">Profil</string>
+    <string name="back">Înapoi</string>
+    <string name="save">Salvează</string>
     <string name="retry">Încearcă din nou</string>
+    <string name="offline_since">Offline. Datele sunt din %1$s.</string>
+    <string name="offline_never">Offline. Conectează-te o dată ca să descarci orarul.</string>
+    <string name="no_semester">Facultatea nu a publicat încă orarul acestui semestru.</string>
+
+    <string name="email">Email</string>
+    <string name="password">Parolă</string>
+    <string name="display_name">Nume</string>
+    <string name="sign_in">Conectează-te</string>
+    <string name="create_account">Creează un cont</string>
+    <string name="have_account">Am deja un cont</string>
+    <string name="footer_credit">Dezvoltată de Multimedia Entertainment Hub pentru FAIMA, UNSTPB</string>
+    <string name="faima_seal">Sigiliul FAIMA, Universitatea Națională de Știință și Tehnologie POLITEHNICA București</string>
+    <string name="error_wrong_credentials">Email sau parolă greșită.</string>
+    <string name="error_email_taken">Există deja un cont cu acest email.</string>
+    <string name="error_invalid_email">Adresa de email nu este validă.</string>
+    <plurals name="error_weak_password">
+        <item quantity="one">Parola trebuie să aibă cel puțin %1$d caracter.</item>
+        <item quantity="few">Parola trebuie să aibă cel puțin %1$d caractere.</item>
+        <item quantity="other">Parola trebuie să aibă cel puțin %1$d de caractere.</item>
+    </plurals>
+    <string name="error_no_connection">Nu ne putem conecta la server. Încearcă din nou când ai internet.</string>
+    <string name="error_generic">Ceva nu a mers. Încearcă din nou.</string>
+
+    <string name="onb_title">Cum studiezi la FAIMA?</string>
+    <string name="onb_national">Într-o grupă</string>
+    <string name="onb_national_hint">Orarul tău este al grupei tale.</string>
+    <string name="onb_erasmus">Erasmus</string>
+    <string name="onb_erasmus_hint">Alegi materiile din contractul de studii.</string>
+    <string name="onb_programme">Specializarea</string>
+    <string name="onb_year">Anul</string>
+    <string name="onb_year_n">Anul %1$d</string>
+    <string name="onb_group">Grupa</string>
+    <string name="onb_half">Semigrupa pentru laboratoare</string>
+    <string name="onb_both_halves">Nu știu încă</string>
+    <string name="onb_search">Caută materii</string>
+    <plurals name="onb_subjects_picked">
+        <item quantity="one">%1$d oră aleasă</item>
+        <item quantity="few">%1$d ore alese</item>
+        <item quantity="other">%1$d de ore alese</item>
+    </plurals>
+    <string name="onb_open_to_erasmus">Pentru Erasmus</string>
+    <string name="onb_clash">Se suprapune cu %1$s</string>
+    <string name="onb_change_hint">Poți schimba asta oricând din profil.</string>
+
+    <string name="day">Zi</string>
+    <string name="week">Săptămână</string>
+    <string name="today">Azi</string>
+    <string name="previous_week">Săptămâna precedentă</string>
+    <string name="next_week">Săptămâna următoare</string>
+    <string name="week_odd">Săptămâna %1$d · impară</string>
+    <string name="week_even">Săptămâna %1$d · pară</string>
+    <string name="next_in_minutes">Urmează în %1$d min</string>
+    <string name="next_on">Urmează %1$s</string>
+    <string name="nothing_today">Nu ai ore în această zi.</string>
+    <string name="type_course">Curs</string>
+    <string name="type_seminar">Seminar</string>
+    <string name="type_lab">Laborator</string>
+    <string name="type_project">Proiect</string>
+    <string name="weeks_all">Toate săptămânile</string>
+    <string name="weeks_odd">Săptămâni impare</string>
+    <string name="weeks_even">Săptămâni pare</string>
+    <string name="weeks_only">Săptămânile %1$s</string>
+    <string name="room">Sala</string>
+    <string name="professor">Profesor</string>
+    <string name="weeks">Săptămâni</string>
+    <string name="groups">Grupe</string>
+    <string name="whole_series">Seria %1$s</string>
+
+    <string name="announcements_empty">Niciun anunț încă.</string>
+    <string name="pinned">Fixat</string>
+
+    <string name="signed_in_as">Conectat ca %1$s</string>
+    <string name="enrolled_group">Grupa %1$s</string>
+    <plurals name="enrolled_erasmus">
+        <item quantity="one">Erasmus, %1$d oră</item>
+        <item quantity="few">Erasmus, %1$d ore</item>
+        <item quantity="other">Erasmus, %1$d de ore</item>
+    </plurals>
+    <string name="change_enrollment">Schimbă grupa sau materiile</string>
+    <string name="last_sync">Actualizat: %1$s</string>
+    <string name="never_synced">Neactualizat încă</string>
+    <string name="sync_now">Actualizează acum</string>
+    <string name="unsent_changes">Ultima modificare e salvată pe telefon și se trimite când ai internet.</string>
+    <string name="sign_out">Deconectează-te</string>
+    <string name="about">Despre aplicație</string>
+    <string name="version">Versiunea %1$s</string>
+    <string name="privacy_title">Confidențialitate</string>
+    <string name="privacy_text">Serverul păstrează emailul, un hash al parolei, numele, grupa sau orele alese și limba. Nu păstrează locația, contactele sau date despre utilizare. Ștergerea contului le șterge pe toate.</string>
+    <string name="faima_site">Site-ul FAIMA</string>
+    <string name="copyright">© 2026 Multimedia Entertainment Hub LLC. Toate drepturile rezervate.</string>
+    <string name="commissioned">Realizată la comanda Facultății de Antreprenoriat, Ingineria și Managementul Afacerilor (FAIMA), Universitatea Națională de Știință și Tehnologie POLITEHNICA București. Numele și siglele FAIMA și UNSTPB aparțin universității.</string>
 </resources>

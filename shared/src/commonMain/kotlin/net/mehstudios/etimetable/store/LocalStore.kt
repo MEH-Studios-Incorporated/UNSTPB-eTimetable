@@ -43,6 +43,19 @@ class LocalStore(driver: SqlDriver) {
         }
     }
 
+    /**
+     * Makes the offline list equal to [announcements], the server's full list:
+     * new ones are added, known ones keep their read state, the rest go.
+     */
+    fun replaceAnnouncements(announcements: List<Announcement>) = queries.transaction {
+        if (announcements.isEmpty()) {
+            queries.deleteAllAnnouncements()
+        } else {
+            queries.deleteAnnouncementsExcept(announcements.map { it.id })
+        }
+        saveAnnouncements(announcements)
+    }
+
     /** Pinned first, then newest first. */
     fun announcements(): List<StoredAnnouncement> = queries.selectAnnouncements().executeAsList().map {
         StoredAnnouncement(AppJson.decodeFromString(it.json), it.read != 0L)
@@ -54,6 +67,12 @@ class LocalStore(driver: SqlDriver) {
 
     fun profile(): StoredProfile? = queries.selectProfile().executeAsOneOrNull()?.let {
         StoredProfile(AppJson.decodeFromString(it.json), it.dirty != 0L)
+    }
+
+    /** Forgets everything tied to the signed-in student; the timetable stays. */
+    fun clearAccount() = queries.transaction {
+        queries.deleteProfile()
+        queries.deleteAllAnnouncements()
     }
 
     /** [dirty] marks changes made offline that still have to reach the server. */

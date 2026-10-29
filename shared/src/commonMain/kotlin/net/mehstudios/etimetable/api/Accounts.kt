@@ -19,6 +19,10 @@ data class SessionResponse(val token: String)
 @Serializable
 data class ApiError(val code: String, val message: String = "", val details: List<String> = emptyList())
 
+/** The [ApiError] in an error response's body, or null when it is not one. */
+fun decodeApiError(body: String): ApiError? =
+    runCatching { AppJson.decodeFromString(ApiError.serializer(), body) }.getOrNull()
+
 /** Values of [ApiError.code]. */
 object ErrorCodes {
     const val BAD_REQUEST = "bad_request"
