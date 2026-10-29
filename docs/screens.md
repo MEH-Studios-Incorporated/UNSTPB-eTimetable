@@ -15,9 +15,9 @@ subject, room or professor anywhere opens its page.
 1. Sign in with email and password, or create an account with first name,
    last name, email, phone number and the password typed twice. A "remember
    me" box keeps the session; without it the session ends when the app is
-   closed. The FAIMA seal sits above the form; the footer is the same
-   Multimedia Entertainment Hub block as on the About page (mark, copyright,
-   mehstudios.net, support@mehstudios.net). A RO / EN switch in the top
+   closed. The FAIMA seal sits above the form; the footer is a small
+   Multimedia Entertainment Hub credit (mark and copyright, no links; those
+   are on the About page). A RO / EN switch in the top
    corner changes the language before signing in.
 2. A forgotten password is reset by email when the server has email
    configured, otherwise by an admin from the dashboard.

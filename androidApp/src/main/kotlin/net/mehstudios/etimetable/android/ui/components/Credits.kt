@@ -21,6 +21,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -34,34 +35,46 @@ import net.mehstudios.etimetable.android.ui.signin.invertInDark
 const val MEH_SITE = "https://mehstudios.net/"
 const val SUPPORT_EMAIL = "support@mehstudios.net"
 
-/** The Multimedia Entertainment Hub block: mark, copyright, site and support address. */
+/**
+ * The Multimedia Entertainment Hub block: mark, copyright, site and support address.
+ * [small] is the quiet footer version, without the links.
+ */
 @Composable
-fun MehCredit(modifier: Modifier = Modifier, centered: Boolean = false) {
+fun MehCredit(modifier: Modifier = Modifier, small: Boolean = false) {
     val uri = LocalUriHandler.current
     Column(
         modifier,
-        horizontalAlignment = if (centered) Alignment.CenterHorizontally else Alignment.Start,
+        horizontalAlignment = if (small) Alignment.CenterHorizontally else Alignment.Start,
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(if (small) 8.dp else 14.dp),
+        ) {
             Image(
                 painter = painterResource(R.drawable.meh_mark),
                 contentDescription = null,
                 colorFilter = if (isSystemInDarkTheme()) null else invertInDark,
-                modifier = Modifier.size(34.dp),
+                modifier = Modifier.size(if (small) 20.dp else 34.dp),
             )
             Column {
                 Text(
                     stringResource(R.string.copyright_owner),
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                    style = if (small) {
+                        MaterialTheme.typography.labelMedium
+                    } else {
+                        MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
+                    },
+                    color = if (small) MaterialTheme.colorScheme.onSurfaceVariant else Color.Unspecified,
                 )
                 Text(
                     stringResource(R.string.copyright_rights),
-                    style = MaterialTheme.typography.bodySmall,
+                    style = if (small) MaterialTheme.typography.labelSmall else MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
+        if (small) return@Column
         Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
             LinkText(stringResource(R.string.meh_site), MaterialTheme.typography.bodyMedium) { uri.openUri(MEH_SITE) }
             LinkText(SUPPORT_EMAIL, MaterialTheme.typography.bodyMedium) { uri.openUri("mailto:$SUPPORT_EMAIL") }

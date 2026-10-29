@@ -137,7 +137,7 @@ fun SignInScreen(
                 painter = painterResource(R.drawable.faima_seal),
                 contentDescription = stringResource(R.string.faima_seal),
                 colorFilter = if (dark) invertInDark else null,
-                modifier = Modifier.width(if (creating) 88.dp else 132.dp),
+                modifier = Modifier.width(if (creating) 112.dp else 168.dp),
             )
             Spacer(Modifier.height(14.dp))
             Text(AppInfo.NAME, style = MaterialTheme.typography.headlineMedium)
@@ -213,7 +213,7 @@ fun SignInScreen(
                 }
             }
             Spacer(Modifier.weight(1f).height(32.dp))
-            MehCredit(Modifier.padding(vertical = 24.dp), centered = true)
+            MehCredit(Modifier.padding(vertical = 20.dp), small = true)
         }
     }
 }
