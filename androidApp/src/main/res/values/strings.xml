@@ -30,7 +30,6 @@
     <string name="sign_in">Sign in</string>
     <string name="create_account">Create an account</string>
     <string name="have_account">I already have an account</string>
-    <string name="footer_credit">Made by Multimedia Entertainment Hub for FAIMA, UNSTPB</string>
     <string name="faima_seal">FAIMA seal, National University of Science and Technology POLITEHNICA Bucharest</string>
     <string name="error_wrong_credentials">Wrong email or password.</string>
     <string name="error_email_taken">There is already an account with this email.</string>
@@ -81,8 +80,26 @@
     <string name="weeks_even">Even weeks</string>
     <string name="weeks_only">Weeks %1$s</string>
     <string name="room">Room</string>
-    <string name="professor">Professor</string>
     <string name="weeks">Weeks</string>
+    <string name="role_course">Course professor</string>
+    <string name="role_seminar">Seminar assistant</string>
+    <string name="role_lab">Lab assistant</string>
+    <string name="role_project">Project supervisor</string>
+    <string name="not_listed">Not in the timetable yet</string>
+    <string name="week_short">Week %1$d</string>
+    <string name="parity_odd">odd</string>
+    <string name="parity_even">even</string>
+    <string name="on_break">Break</string>
+    <string name="office_hours">Office hours</string>
+    <string name="office_hours_none">No office hours in the timetable.</string>
+    <string name="prof_now_teaching">Teaching now, until %1$s</string>
+    <string name="prof_now_office">Office hours now, until %1$s</string>
+    <string name="prof_later_today">Free now. Next today at %1$s</string>
+    <string name="prof_done_today">Nothing more today.</string>
+    <string name="prof_this_week">This week</string>
+    <string name="prof_next_week">Next week</string>
+    <string name="prof_week_empty">Nothing in the timetable.</string>
+    <string name="write_email">Send an email</string>
     <string name="groups">Groups</string>
     <string name="whole_series">Series %1$s</string>
 
@@ -100,13 +117,14 @@
     <string name="sync_now">Update now</string>
     <string name="unsent_changes">Your last change is saved on this phone and will be sent when you are online.</string>
     <string name="sign_out">Sign out</string>
+    <string name="language">Language</string>
+    <string name="language_phone">Same as phone</string>
     <string name="about">About</string>
     <string name="version">Version %1$s</string>
     <string name="privacy_title">Privacy</string>
     <string name="privacy_text">The server keeps your email, a hash of your password, your name, your phone number, your group or picked subjects and your language. It keeps no location, contacts or usage tracking. Deleting your account removes all of it.</string>
     <string name="faima_site">FAIMA website</string>
     <string name="meh_site">mehstudios.net</string>
-    <string name="support">Support: support@mehstudios.net</string>
     <string name="copyright_owner" translatable="false">Multimedia Entertainment Hub LLC</string>
     <string name="copyright_rights">© 2026. All rights reserved.</string>
     <string name="announcement_from">%1$s · %2$s</string>

@@ -72,13 +72,16 @@ oricum.
 | `day` | Ziua | `miercuri` |
 | `start`, `end` | Orele | `12:00`, `14:00` |
 | `weeks` | `toate`, `impare`, `pare` sau numerele săptămânilor | `impare`, `1-7`, `2,4,6` |
-| `professor` | Titlul și numele | `Conf. dr. ing. Ioana Marinescu` |
+| `professor` | Cine ține rândul: titularul la curs, asistentul la seminar și laborator | `Conf. dr. ing. Ioana Marinescu` |
 | `professor_email` | Opțional | |
-| `room` | Sala, cu codul corpului la început | `BN 212 b` |
+| `room` | Codul corpului lipit de număr; campusul după sală; sălile cu nume rămân cum sunt | `BN212b`, `L201 Polizu`, `Sala Sport` |
 | `erasmus` | `da` dacă studenții Erasmus pot alege activitatea | `da` |
 
 Rândurile de tip `consultații` au nevoie doar de zi, ore, săptămâni,
 profesor și, opțional, sală. Ele apar la profesor, nu în orarul grupelor.
+
+La import, spațiile dintre corp și număr se scot singure: `BN 212 b` devine
+`BN212b`, iar `a 139 Polizu` devine `A139 Polizu`.
 
 Excel în română salvează CSV cu punct și virgulă; serverul acceptă și virgulă.
 Diacriticele se păstrează dacă fișierul este salvat ca "CSV UTF-8".

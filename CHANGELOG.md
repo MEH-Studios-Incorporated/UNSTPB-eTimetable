@@ -21,3 +21,19 @@ Each section is also the text of the matching GitHub release.
 - Announcements open in full with their formatting (lists, bold, links).
 - Swiping between days, transitions between screens, and the About page
   with links to mehstudios.net and support@mehstudios.net.
+- The current teaching week and whether it is odd or even, always visible
+  at the top ("Săpt. 5, impară"), or "Vacanță" during a break.
+- Romanian and English inside the app, chosen in the profile or on the
+  sign-in screen, whatever the phone's language.
+- A page for each professor: where they are now, their office hours and
+  their classes this week. Tapping a name on a class opens it.
+- Labs and seminars name their assistant and the professor of the course.
+- The app icon is the FAIMA seal.
+
+### Fixed
+
+- One-hour classes no longer cut their text off: the card shows the name
+  and one line with time, type and room.
+- Room codes are written the same everywhere, without a space after the
+  building ("BN212b", "L201 Polizu"), also when an admin imports them with
+  spaces.

@@ -58,7 +58,10 @@ import net.mehstudios.etimetable.android.ui.announcements.AnnouncementScreen
 import net.mehstudios.etimetable.android.ui.announcements.AnnouncementsScreen
 import net.mehstudios.etimetable.android.ui.components.EtIcons
 import net.mehstudios.etimetable.android.ui.components.OfflineBar
+import net.mehstudios.etimetable.android.ui.components.WeekBadge
+import net.mehstudios.etimetable.android.ui.components.appLanguage
 import net.mehstudios.etimetable.android.ui.onboarding.OnboardingScreen
+import net.mehstudios.etimetable.android.ui.professors.ProfessorScreen
 import net.mehstudios.etimetable.android.ui.profile.ProfileScreen
 import net.mehstudios.etimetable.android.ui.signin.SignInScreen
 import net.mehstudios.etimetable.android.ui.theme.ButtonShape
@@ -86,6 +89,14 @@ fun EtRoot(container: AppContainer) {
     }
     // coming back online refreshes at once instead of waiting for the next periodic sync
     LaunchedEffect(online) { if (online && state.loaded) repository.refresh() }
+    // the server keeps the student's language for notifications; follow the app's
+    val language = appLanguage()
+    LaunchedEffect(state.profile, language) {
+        val profile = state.profile ?: return@LaunchedEffect
+        if (state.signedIn && profile.enrollment != null && profile.language != language) {
+            repository.saveProfile(profile.copy(language = language))
+        }
+    }
 
     val phase = when {
         !state.loaded -> Phase.LOADING
@@ -155,9 +166,14 @@ private fun WaitingForData(state: AppState, online: Boolean, retry: () -> Unit, 
     }
 }
 
-/** Where the main screen is: a tab, the profile over it, or one announcement over it. */
-private data class Place(val tab: Tab, val profile: Boolean = false, val announcementId: String? = null) {
-    val overlay get() = profile || announcementId != null
+/** Where the main screen is: a tab, or the profile, an announcement or a professor over it. */
+private data class Place(
+    val tab: Tab,
+    val profile: Boolean = false,
+    val announcementId: String? = null,
+    val professorId: String? = null,
+) {
+    val overlay get() = profile || announcementId != null || professorId != null
 }
 
 @Composable
@@ -174,7 +190,8 @@ private fun MainScreen(
     var tab by rememberSaveable { mutableStateOf(Tab.TIMETABLE) }
     var showProfile by rememberSaveable { mutableStateOf(false) }
     var announcementId by rememberSaveable { mutableStateOf<String?>(null) }
-    val place = Place(tab, showProfile, announcementId)
+    var professorId by rememberSaveable { mutableStateOf<String?>(null) }
+    val place = Place(tab, showProfile, announcementId, professorId)
     val now by produceState(Clock.System.facultyNow()) {
         while (true) {
             delay(30_000)
@@ -183,10 +200,17 @@ private fun MainScreen(
     }
     val timetable = remember(dataset, profile) { StudentTimetable(dataset, profile) }
     val unread = state.announcements.count { !it.read }
-    val avatar: @Composable () -> Unit = { Avatar(initials(state)) { showProfile = true } }
+    val actions: @Composable () -> Unit = {
+        WeekBadge(timetable.calendar, now.date)
+        Avatar(initials(state)) { showProfile = true }
+    }
 
     BackHandler(enabled = place.overlay) {
-        if (announcementId != null) announcementId = null else showProfile = false
+        when {
+            professorId != null -> professorId = null
+            announcementId != null -> announcementId = null
+            else -> showProfile = false
+        }
     }
 
     Scaffold(
@@ -257,6 +281,13 @@ private fun MainScreen(
                     }
                 }
                 when {
+                    target.professorId != null -> ProfessorScreen(
+                        dataset,
+                        timetable.calendar,
+                        target.professorId,
+                        now,
+                        onBack = { professorId = null },
+                    )
                     opened != null -> AnnouncementScreen(opened.announcement, markRead = {
                         markRead(opened.announcement.id)
                     }, onBack = {
@@ -266,8 +297,10 @@ private fun MainScreen(
                     target.profile -> ProfileScreen(state, onBack = {
                         showProfile = false
                     }, onChangeEnrollment, onSyncNow, onSignOut)
-                    target.tab == Tab.TIMETABLE -> TimetableScreen(dataset, timetable, now, avatar)
-                    else -> AnnouncementsScreen(state.announcements, avatar) { announcementId = it }
+                    target.tab == Tab.TIMETABLE -> TimetableScreen(dataset, timetable, now, actions) {
+                        professorId = it
+                    }
+                    else -> AnnouncementsScreen(state.announcements, actions) { announcementId = it }
                 }
             }
         }

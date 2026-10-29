@@ -30,6 +30,17 @@ fun ActivityType.label(): String = stringResource(
     },
 )
 
+/** Who runs an activity of this type: the course professor, or the assistant for the rest. */
+@Composable
+fun ActivityType.roleLabel(): String = stringResource(
+    when (this) {
+        ActivityType.COURSE -> R.string.role_course
+        ActivityType.SEMINAR -> R.string.role_seminar
+        ActivityType.LAB -> R.string.role_lab
+        ActivityType.PROJECT -> R.string.role_project
+    },
+)
+
 @Composable
 fun WeekRule.label(): String = when (this) {
     WeekRule.All -> stringResource(R.string.weeks_all)

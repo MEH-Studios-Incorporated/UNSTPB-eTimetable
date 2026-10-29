@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
@@ -55,6 +54,8 @@ import kotlinx.coroutines.launch
 import net.mehstudios.etimetable.AppInfo
 import net.mehstudios.etimetable.android.R
 import net.mehstudios.etimetable.android.data.ActionResult
+import net.mehstudios.etimetable.android.ui.components.LanguagePicker
+import net.mehstudios.etimetable.android.ui.components.MehCredit
 import net.mehstudios.etimetable.android.ui.components.message
 import net.mehstudios.etimetable.android.ui.theme.ButtonShape
 import net.mehstudios.etimetable.api.ErrorCodes
@@ -130,7 +131,8 @@ fun SignInScreen(
                 .padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Spacer(Modifier.height(if (creating) 16.dp else 40.dp))
+            LanguagePicker(Modifier.align(Alignment.End).padding(top = 8.dp), followPhone = false, short = true)
+            Spacer(Modifier.height(if (creating) 4.dp else 16.dp))
             Image(
                 painter = painterResource(R.drawable.faima_seal),
                 contentDescription = stringResource(R.string.faima_seal),
@@ -211,24 +213,7 @@ fun SignInScreen(
                 }
             }
             Spacer(Modifier.weight(1f).height(32.dp))
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                modifier = Modifier.padding(vertical = 24.dp),
-            ) {
-                Image(
-                    painter = painterResource(R.drawable.meh_mark),
-                    contentDescription = null,
-                    colorFilter = if (dark) null else invertInDark,
-                    modifier = Modifier.size(16.dp),
-                )
-                Text(
-                    stringResource(R.string.footer_credit),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
-                )
-            }
+            MehCredit(Modifier.padding(vertical = 24.dp), centered = true)
         }
     }
 }

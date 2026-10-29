@@ -47,11 +47,11 @@ import net.mehstudios.etimetable.store.StoredAnnouncement
 @Composable
 fun AnnouncementsScreen(
     announcements: List<StoredAnnouncement>,
-    avatar: @Composable () -> Unit,
+    actions: @Composable () -> Unit,
     open: (String) -> Unit,
 ) {
     Column(Modifier.fillMaxSize()) {
-        BrandBar { avatar() }
+        BrandBar { actions() }
         Text(
             stringResource(R.string.tab_announcements),
             style = MaterialTheme.typography.headlineSmall,

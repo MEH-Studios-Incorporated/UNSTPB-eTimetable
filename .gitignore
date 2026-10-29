@@ -37,3 +37,4 @@ iosApp/iosApp.xcodeproj/
 
 # FAIMA timetable converter (tools/faima-timetable)
 tools/faima-timetable/.venv/
+__pycache__/

@@ -110,7 +110,13 @@ private fun hourRange(occurrences: List<Occurrence>, now: LocalDateTime?): HourR
 }
 
 @Composable
-fun TimetableScreen(dataset: Dataset, timetable: StudentTimetable, now: LocalDateTime, avatar: @Composable () -> Unit) {
+fun TimetableScreen(
+    dataset: Dataset,
+    timetable: StudentTimetable,
+    now: LocalDateTime,
+    actions: @Composable () -> Unit,
+    openProfessor: (String) -> Unit,
+) {
     var mode by rememberSaveable { mutableStateOf(Mode.DAY) }
     var selectedText by rememberSaveable { mutableStateOf(now.date.toString()) }
     val selected = LocalDate.parse(selectedText)
@@ -138,7 +144,7 @@ fun TimetableScreen(dataset: Dataset, timetable: StudentTimetable, now: LocalDat
     }.ifEmpty { (0 until 5).map { monday.plus(it, DateTimeUnit.DAY) } }
 
     Column(Modifier.fillMaxSize()) {
-        BrandBar { avatar() }
+        BrandBar { actions() }
         Column(
             Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 12.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -245,7 +251,7 @@ fun TimetableScreen(dataset: Dataset, timetable: StudentTimetable, now: LocalDat
         }
     }
 
-    opened?.let { ActivitySheet(dataset, it) { opened = null } }
+    opened?.let { ActivitySheet(dataset, it, onDismiss = { opened = null }, openProfessor = openProfessor) }
 }
 
 private fun weekdays(dataset: Dataset, timetable: StudentTimetable, today: LocalDate): List<LocalDate> {
@@ -548,54 +554,82 @@ private fun OccurrenceBlock(
                 if (compact) 3.dp else 4.dp,
             ).fillMaxHeight().background(bar, RoundedCornerShape(topEnd = 2.dp, bottomEnd = 2.dp)),
         )
-        Column(Modifier.padding(horizontal = if (compact) 4.dp else 10.dp, vertical = if (compact) 4.dp else 6.dp)) {
-            if (compact) {
-                Text(
-                    dataset.subjectShortName(occurrence.activity.subjectId),
-                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
-                    color = text,
-                    maxLines = 1,
-                )
-                Text(
-                    occurrence.activity.type.label(),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = muted,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                dataset.roomsById[occurrence.activity.roomId]?.code?.let {
-                    Text(it, style = MaterialTheme.typography.bodySmall, color = muted, maxLines = 1)
+        val minutes = (slot.end.toSecondOfDay() - slot.start.toSecondOfDay()) / 60
+        val room = dataset.roomsById[occurrence.activity.roomId]?.code
+        val type = occurrence.activity.type.label()
+        Column(
+            Modifier.padding(
+                horizontal = if (compact) 4.dp else 10.dp,
+                vertical = if (compact || minutes < 90) 3.dp else 6.dp,
+            ),
+        ) {
+            when {
+                // week grid: short name, then as much as the height allows
+                compact -> {
+                    Text(
+                        dataset.subjectShortName(occurrence.activity.subjectId),
+                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
+                        color = text,
+                        maxLines = 1,
+                    )
+                    if (minutes >= 90) Line(type, muted)
+                    if (minutes >= 50) room?.let { Line(it, muted) }
                 }
-            } else {
-                Text(
-                    listOfNotNull(
-                        occurrence.activity.type.label(),
-                        slot.weeks.takeIf {
-                            it != WeekRule.All
-                        }?.label(),
-                    ).joinToString(" · "),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = muted,
-                )
-                Text(
-                    dataset.subjectName(occurrence.activity.subjectId),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = text,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    listOfNotNull(
-                        "${slot.start} - ${slot.end}",
-                        dataset.roomsById[occurrence.activity.roomId]?.code,
-                        dataset.professorsById[occurrence.activity.professorId]?.displayName,
-                    ).joinToString(" · "),
-                    style = TimeStyle.copy(fontWeight = FontWeight.Normal),
-                    color = muted,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                // a full block: type, name on up to two lines, time, room and professor
+                minutes >= 90 -> {
+                    Line(
+                        listOfNotNull(
+                            type,
+                            slot.weeks.takeIf {
+                                it != WeekRule.All
+                            }?.label(),
+                        ).joinToString(" · "),
+                        muted,
+                    )
+                    Text(
+                        dataset.subjectName(occurrence.activity.subjectId),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = text,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        listOfNotNull(
+                            "${slot.start} - ${slot.end}",
+                            room,
+                            dataset.professorsById[occurrence.activity.professorId]?.displayName,
+                        ).joinToString(" · "),
+                        style = TimeStyle.copy(fontWeight = FontWeight.Normal),
+                        color = muted,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                // an hour: the name, then time, type and room on one line
+                else -> {
+                    Text(
+                        dataset.subjectName(occurrence.activity.subjectId),
+                        style = MaterialTheme.typography.titleSmall,
+                        color = text,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    if (minutes >= 50) {
+                        Line(listOfNotNull("${slot.start} - ${slot.end}", type, room).joinToString(" · "), muted)
+                    }
+                }
             }
         }
     }
+}
+
+@Composable
+private fun Line(text: String, color: Color) {
+    Text(
+        text,
+        style = MaterialTheme.typography.bodySmall,
+        color = color,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+    )
 }

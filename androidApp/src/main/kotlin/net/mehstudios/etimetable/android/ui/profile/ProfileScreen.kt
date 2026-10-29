@@ -4,7 +4,6 @@
 package net.mehstudios.etimetable.android.ui.profile
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -12,7 +11,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -28,20 +26,20 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlinx.datetime.toLocalDateTime
 import net.mehstudios.etimetable.android.BuildConfig
 import net.mehstudios.etimetable.android.R
 import net.mehstudios.etimetable.android.data.AppState
+import net.mehstudios.etimetable.android.ui.components.LanguagePicker
+import net.mehstudios.etimetable.android.ui.components.LinkText
+import net.mehstudios.etimetable.android.ui.components.MehCredit
 import net.mehstudios.etimetable.android.ui.components.longLabel
 import net.mehstudios.etimetable.android.ui.signin.invertInDark
 import net.mehstudios.etimetable.android.ui.theme.ButtonShape
 import net.mehstudios.etimetable.model.Enrollment
 import net.mehstudios.etimetable.schedule.FacultyTimeZone
 
-private const val MEH_SITE = "https://mehstudios.net/"
-private const val SUPPORT_EMAIL = "support@mehstudios.net"
 private const val FAIMA_SITE = "https://faima.upb.ro/"
 
 @Composable
@@ -117,6 +115,13 @@ fun ProfileScreen(
         HorizontalDivider(Modifier.padding(16.dp))
 
         Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text(stringResource(R.string.language), style = MaterialTheme.typography.titleMedium)
+            LanguagePicker(Modifier.fillMaxWidth())
+        }
+
+        HorizontalDivider(Modifier.padding(16.dp))
+
+        Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(stringResource(R.string.about), style = MaterialTheme.typography.titleMedium)
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 Image(
@@ -140,31 +145,11 @@ fun ProfileScreen(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Link(stringResource(R.string.faima_site)) { uri.openUri(FAIMA_SITE) }
+            LinkText(stringResource(R.string.faima_site)) { uri.openUri(FAIMA_SITE) }
 
             HorizontalDivider(Modifier.padding(vertical = 6.dp))
 
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-                Image(
-                    painter = painterResource(R.drawable.meh_mark),
-                    contentDescription = null,
-                    colorFilter = if (dark) null else invertInDark,
-                    modifier = Modifier.size(34.dp),
-                )
-                Column {
-                    Text(
-                        stringResource(R.string.copyright_owner),
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                    )
-                    Text(
-                        stringResource(R.string.copyright_rights),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-            Link(stringResource(R.string.meh_site)) { uri.openUri(MEH_SITE) }
-            Link(stringResource(R.string.support)) { uri.openUri("mailto:$SUPPORT_EMAIL") }
+            MehCredit()
             Text(
                 stringResource(R.string.commissioned),
                 style = MaterialTheme.typography.bodySmall,
@@ -173,14 +158,4 @@ fun ProfileScreen(
             )
         }
     }
-}
-
-@Composable
-private fun Link(text: String, onClick: () -> Unit) {
-    Text(
-        text,
-        style = MaterialTheme.typography.bodyLarge,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.clickable(onClick = onClick).padding(vertical = 6.dp),
-    )
 }

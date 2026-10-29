@@ -58,7 +58,12 @@ object TimetableSheet {
     private val DAYS = listOf("luni", "marti", "miercuri", "joi", "vineri", "sambata", "duminica")
     private val DAYS_EN = listOf("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")
     private val TITLE_WORDS =
-        setOf("prof", "conf", "lect", "as", "sl", "s.l", "dr", "ing", "ec", "univ", "habil", "drd", "mat", "fiz")
+        setOf(
+            "prof", "conf", "lect", "lector", "as", "asist", "sl", "s.l", "dr", "ing", "ec", "univ", "habil", "drd",
+            "mat", "fiz", "jr",
+        )
+    private val ROOM =
+        Regex("""^(?!sala\b)([A-Za-z]{1,4})\s*(\d{1,4})\s*([A-Za-z]{1,2})?(?=\s|$)\s*(.*)$""", RegexOption.IGNORE_CASE)
 
     fun import(text: String, semester: Semester): ImportResult {
         val rows = Csv.parse(text)
@@ -110,8 +115,8 @@ object TimetableSheet {
                 professors[id] = (existing ?: Professor(id, title, name)).copy(email = email?.ifEmpty { null })
                 id
             }
-            val roomId = cell("room").takeIf { it.isNotEmpty() }?.let { code ->
-                val buildingCode = code.substringBefore(' ').uppercase()
+            val roomId = cell("room").takeIf { it.isNotEmpty() }?.let { text ->
+                val (code, buildingCode) = roomCode(text)
                 buildings.getOrPut(slug(buildingCode)) { Building(slug(buildingCode), buildingCode, buildingCode) }
                 rooms.getOrPut(slug(code)) { Room(slug(code), slug(buildingCode), code) }.id
             }
@@ -341,6 +346,18 @@ object TimetableSheet {
                 WeekRule.Only(weeks.toSet())
             }
         }
+    }
+
+    /**
+     * "BN 212 b" -> ("BN212b", "BN"), "A 139 Polizu" -> ("A139 Polizu", "A Polizu"). Names such as
+     * "Sala Sport" stay as written and are their own building.
+     */
+    fun roomCode(text: String): Pair<String, String> {
+        val clean = text.trim().replace(Regex("\\s+"), " ")
+        val match = ROOM.matchEntire(clean) ?: return clean to clean
+        val (letters, number, suffix, rest) = match.destructured
+        val place = if (rest.isEmpty()) "" else " $rest"
+        return "${letters.uppercase()}$number${suffix.lowercase()}$place" to "${letters.uppercase()}$place"
     }
 
     /** "Conf. dr. ing. Ioana Marinescu" -> ("Conf. dr. ing.", "Ioana Marinescu") */
