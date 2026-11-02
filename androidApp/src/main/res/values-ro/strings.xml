@@ -132,4 +132,34 @@
     <string name="copyright_rights">© 2026. Toate drepturile rezervate.</string>
     <string name="announcement_from">%1$s · %2$s</string>
     <string name="commissioned">Realizată la comanda Facultății de Antreprenoriat, Ingineria și Managementul Afacerilor (FAIMA), Universitatea Națională de Știință și Tehnologie POLITEHNICA București. Numele și siglele FAIMA și UNSTPB aparțin universității.</string>
+
+    <string name="tab_subjects">Materii</string>
+    <string name="subjects_show_all">Toate specializările și anii</string>
+    <string name="subjects_none">Nicio materie nu se potrivește.</string>
+    <string name="subject_fits">Doar ce se potrivește în orarul meu</string>
+    <string name="subject_fits_hint">Ascunde orele care se suprapun</string>
+    <plurals name="subject_slots">
+        <item quantity="one">%1$d oră</item>
+        <item quantity="few">%1$d ore</item>
+        <item quantity="other">%1$d de ore</item>
+    </plurals>
+    <string name="subject_in_timetable">În orarul tău</string>
+    <string name="subject_your_group">Grupa ta</string>
+    <string name="subject_added">Adăugat</string>
+    <string name="subject_added_once">Adăugat pe %1$s</string>
+    <string name="subject_add">Adaugă</string>
+    <string name="subject_remove">Scoate</string>
+    <string name="subject_clash">Se suprapune cu %1$s (%2$s, %3$s)</string>
+    <string name="subject_add_course">Adaugi cursul de %1$s?</string>
+    <string name="subject_add_seminar">Adaugi seminarul de %1$s?</string>
+    <string name="subject_add_lab">Adaugi laboratorul de %1$s?</string>
+    <string name="subject_add_project">Adaugi proiectul de %1$s?</string>
+    <string name="subject_add_hint">Pentru o recuperare alege o singură dată. Grupa ta rămâne aceeași.</string>
+    <string name="subject_add_hint_clash">Se suprapune cu orarul tău în alte zile, dar data următoare e liberă.</string>
+    <string name="subject_add_once">O dată, %1$s</string>
+    <string name="subject_add_semester">Tot semestrul</string>
+    <string name="subject_no_more_dates">Nu mai are ore</string>
+    <string name="subject_no_slots">Materia nu are ore în orar.</string>
+    <string name="subject_all_clash">Toate orele se suprapun cu ceva din orarul tău.</string>
+    <string name="error_clash">Se suprapune cu ceva din orarul tău.</string>
 </resources>

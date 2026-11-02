@@ -20,6 +20,7 @@ fun ActionResult.message(): String? = when (this) {
         ErrorCodes.WRONG_CREDENTIALS -> stringResource(R.string.error_wrong_credentials)
         ErrorCodes.EMAIL_TAKEN -> stringResource(R.string.error_email_taken)
         ErrorCodes.INVALID_EMAIL -> stringResource(R.string.error_invalid_email)
+        ErrorCodes.CLASH -> stringResource(R.string.error_clash)
         ErrorCodes.WEAK_PASSWORD -> pluralStringResource(
             R.plurals.error_weak_password,
             MIN_PASSWORD_LENGTH,

@@ -64,15 +64,18 @@ import net.mehstudios.etimetable.android.ui.onboarding.OnboardingScreen
 import net.mehstudios.etimetable.android.ui.professors.ProfessorScreen
 import net.mehstudios.etimetable.android.ui.profile.ProfileScreen
 import net.mehstudios.etimetable.android.ui.signin.SignInScreen
+import net.mehstudios.etimetable.android.ui.subjects.SubjectScreen
+import net.mehstudios.etimetable.android.ui.subjects.SubjectsScreen
 import net.mehstudios.etimetable.android.ui.theme.ButtonShape
 import net.mehstudios.etimetable.android.ui.timetable.TimetableScreen
+import net.mehstudios.etimetable.model.Profile
 import net.mehstudios.etimetable.schedule.StudentTimetable
 import net.mehstudios.etimetable.schedule.facultyNow
 import kotlin.time.Clock
 
 private enum class Phase { LOADING, SIGN_IN, WAITING, ONBOARDING, MAIN }
 
-private enum class Tab { TIMETABLE, ANNOUNCEMENTS }
+private enum class Tab { TIMETABLE, SUBJECTS, ANNOUNCEMENTS }
 
 /** Picks the screen from the app state: sign-in, waiting for data, onboarding or the app itself. */
 @Composable
@@ -141,6 +144,7 @@ fun EtRoot(container: AppContainer) {
                     onSyncNow = { scope.launch { repository.refresh() } },
                     onSignOut = { scope.launch { repository.signOut() } },
                     markRead = { id -> scope.launch { repository.markRead(id) } },
+                    saveProfile = repository::saveProfile,
                 )
             }
         }
@@ -166,14 +170,15 @@ private fun WaitingForData(state: AppState, online: Boolean, retry: () -> Unit, 
     }
 }
 
-/** Where the main screen is: a tab, or the profile, an announcement or a professor over it. */
+/** Where the main screen is: a tab, or the profile, an announcement, a subject or a professor over it. */
 private data class Place(
     val tab: Tab,
     val profile: Boolean = false,
     val announcementId: String? = null,
     val professorId: String? = null,
+    val subjectId: String? = null,
 ) {
-    val overlay get() = profile || announcementId != null || professorId != null
+    val overlay get() = profile || announcementId != null || professorId != null || subjectId != null
 }
 
 @Composable
@@ -184,6 +189,7 @@ private fun MainScreen(
     onSyncNow: () -> Unit,
     onSignOut: () -> Unit,
     markRead: (String) -> Unit,
+    saveProfile: suspend (Profile) -> ActionResult,
 ) {
     val dataset = state.dataset ?: return
     val profile = state.profile ?: return
@@ -191,7 +197,8 @@ private fun MainScreen(
     var showProfile by rememberSaveable { mutableStateOf(false) }
     var announcementId by rememberSaveable { mutableStateOf<String?>(null) }
     var professorId by rememberSaveable { mutableStateOf<String?>(null) }
-    val place = Place(tab, showProfile, announcementId, professorId)
+    var subjectId by rememberSaveable { mutableStateOf<String?>(null) }
+    val place = Place(tab, showProfile, announcementId, professorId, subjectId)
     val now by produceState(Clock.System.facultyNow()) {
         while (true) {
             delay(30_000)
@@ -208,6 +215,7 @@ private fun MainScreen(
     BackHandler(enabled = place.overlay) {
         when {
             professorId != null -> professorId = null
+            subjectId != null -> subjectId = null
             announcementId != null -> announcementId = null
             else -> showProfile = false
         }
@@ -235,6 +243,12 @@ private fun MainScreen(
                         onClick = { tab = Tab.TIMETABLE },
                         icon = { Icon(EtIcons.Calendar, contentDescription = null) },
                         label = { Text(stringResource(R.string.tab_timetable)) },
+                    )
+                    NavigationBarItem(
+                        selected = tab == Tab.SUBJECTS,
+                        onClick = { tab = Tab.SUBJECTS },
+                        icon = { Icon(EtIcons.Book, contentDescription = null) },
+                        label = { Text(stringResource(R.string.tab_subjects)) },
                     )
                     NavigationBarItem(
                         selected = tab == Tab.ANNOUNCEMENTS,
@@ -288,6 +302,14 @@ private fun MainScreen(
                         now,
                         onBack = { professorId = null },
                     )
+                    target.subjectId != null -> SubjectScreen(
+                        dataset,
+                        timetable,
+                        target.subjectId,
+                        now,
+                        saveProfile,
+                        onBack = { subjectId = null },
+                    )
                     opened != null -> AnnouncementScreen(opened.announcement, markRead = {
                         markRead(opened.announcement.id)
                     }, onBack = {
@@ -297,9 +319,15 @@ private fun MainScreen(
                     target.profile -> ProfileScreen(state, onBack = {
                         showProfile = false
                     }, onChangeEnrollment, onSyncNow, onSignOut)
-                    target.tab == Tab.TIMETABLE -> TimetableScreen(dataset, timetable, now, actions) {
-                        professorId = it
-                    }
+                    target.tab == Tab.TIMETABLE -> TimetableScreen(
+                        dataset,
+                        timetable,
+                        now,
+                        actions,
+                        openProfessor = { professorId = it },
+                        openSubject = { subjectId = it },
+                    )
+                    target.tab == Tab.SUBJECTS -> SubjectsScreen(dataset, timetable, actions) { subjectId = it }
                     else -> AnnouncementsScreen(state.announcements, actions) { announcementId = it }
                 }
             }

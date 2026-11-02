@@ -10,7 +10,8 @@ Developed and owned by Multimedia Entertainment Hub LLC, on commission from
 FAIMA, UNSTPB.
 
 Status: early development. The Android app shows a student's timetable from a
-running server; subjects, professors, push notifications and widgets are next.
+running server, with its subjects and professors; push notifications and
+widgets are next.
 
 ## What it does
 
@@ -56,8 +57,9 @@ and looks like something the faculty would put its name on.
 
 - The Android app: sign-in, choosing a group or Erasmus slots (clashes are
   refused on the spot), today and week views with the next class and the
-  current time, class details, announcements and the profile. It keeps
-  working offline and updates itself every few hours.
+  current time, class details, the subjects with every slot (add another
+  group's lab once or for the semester), professors, announcements and the
+  profile. It keeps working offline and updates itself every few hours.
 - The server stores semesters, announcements and student accounts in
   PostgreSQL and serves them over its API, with Erasmus overlaps checked on
   the server too. It runs from a Docker image next to PostgreSQL.

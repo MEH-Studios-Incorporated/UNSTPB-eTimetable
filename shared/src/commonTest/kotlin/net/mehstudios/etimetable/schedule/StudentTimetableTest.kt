@@ -92,4 +92,26 @@ class StudentTimetableTest {
         val student = timetable(Enrollment.National("1541E", "1541E/A"))
         assertNull(student.nowAndNext(LocalDateTime(2027, 1, 15, 20, 0)).next)
     }
+
+    @Test
+    fun nextMeetingSkipsOneThatAlreadyStarted() {
+        val student = timetable(Enrollment.National("1541E", "1541E/A"))
+        val lab = SampleData.dataset.activitiesById.getValue("calit-l-1542B")
+        assertEquals(LocalDate(2026, 10, 30), student.nextMeeting(lab, LocalDateTime(2026, 10, 28, 12, 0))?.date)
+        assertEquals(LocalDate(2026, 11, 6), student.nextMeeting(lab, LocalDateTime(2026, 10, 30, 10, 0))?.date)
+        assertNull(student.nextMeeting(lab, LocalDateTime(2027, 1, 15, 20, 0)))
+    }
+
+    @Test
+    fun standingOfEachLab() {
+        val visit = ExtraSlot("calit-l-1542A", LocalDate(2026, 10, 29))
+        val student = timetable(Enrollment.National("1541E", "1541E/A"), listOf(visit))
+        val lab = { id: String -> SampleData.dataset.activitiesById.getValue(id) }
+        assertEquals(SlotStanding.Group, student.standing(lab("calit-l-1541A")))
+        assertEquals(SlotStanding.Extra(LocalDate(2026, 10, 29)), student.standing(lab("calit-l-1542A")))
+        assertEquals(SlotStanding.Open(null), student.standing(lab("calit-l-1542B")))
+
+        val erasmus = timetable(Enrollment.Erasmus(setOf("calit-l-1541A")))
+        assertEquals(SlotStanding.Picked, erasmus.standing(lab("calit-l-1541A")))
+    }
 }

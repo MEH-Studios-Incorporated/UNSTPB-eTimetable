@@ -39,18 +39,25 @@ import net.mehstudios.etimetable.schedule.courseProfessors
 /** Everything known about one class, from a tap on the timetable. Names open the person's schedule. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ActivitySheet(dataset: Dataset, occurrence: Occurrence, onDismiss: () -> Unit, openProfessor: (String) -> Unit) {
+fun ActivitySheet(
+    dataset: Dataset,
+    occurrence: Occurrence,
+    onDismiss: () -> Unit,
+    openProfessor: (String) -> Unit,
+    openSubject: (String) -> Unit,
+) {
     val activity = occurrence.activity
     val room = dataset.roomsById[activity.roomId]
     val building = room?.let { dataset.buildingsById[it.buildingId] }
     val sheet = rememberModalBottomSheetState()
     val scope = rememberCoroutineScope()
-    fun open(professor: Professor) {
+    fun closeThen(then: () -> Unit) {
         scope.launch { sheet.hide() }.invokeOnCompletion {
             onDismiss()
-            openProfessor(professor.id)
+            then()
         }
     }
+    fun open(professor: Professor) = closeThen { openProfessor(professor.id) }
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheet) {
         Column(
             Modifier.fillMaxWidth().padding(start = 24.dp, end = 24.dp, bottom = 32.dp),
@@ -61,7 +68,25 @@ fun ActivitySheet(dataset: Dataset, occurrence: Occurrence, onDismiss: () -> Uni
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Text(dataset.subjectName(activity.subjectId), style = MaterialTheme.typography.headlineSmall)
+            Surface(
+                onClick = { closeThen { openSubject(activity.subjectId) } },
+                color = MaterialTheme.colorScheme.surface,
+                shape = MaterialTheme.shapes.small,
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        dataset.subjectName(activity.subjectId),
+                        style = MaterialTheme.typography.headlineSmall,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Icon(
+                        EtIcons.ChevronRight,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(24.dp),
+                    )
+                }
+            }
             Text(
                 "${occurrence.date.longLabel()}, ${activity.slot.start} - ${activity.slot.end}",
                 style = MaterialTheme.typography.bodyLarge,
