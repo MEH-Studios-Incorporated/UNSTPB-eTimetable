@@ -116,6 +116,7 @@ fun TimetableScreen(
     now: LocalDateTime,
     actions: @Composable () -> Unit,
     openProfessor: (String) -> Unit,
+    openSubject: (String) -> Unit,
 ) {
     var mode by rememberSaveable { mutableStateOf(Mode.DAY) }
     var selectedText by rememberSaveable { mutableStateOf(now.date.toString()) }
@@ -251,7 +252,15 @@ fun TimetableScreen(
         }
     }
 
-    opened?.let { ActivitySheet(dataset, it, onDismiss = { opened = null }, openProfessor = openProfessor) }
+    opened?.let {
+        ActivitySheet(
+            dataset,
+            it,
+            onDismiss = { opened = null },
+            openProfessor = openProfessor,
+            openSubject = openSubject,
+        )
+    }
 }
 
 private fun weekdays(dataset: Dataset, timetable: StudentTimetable, today: LocalDate): List<LocalDate> {

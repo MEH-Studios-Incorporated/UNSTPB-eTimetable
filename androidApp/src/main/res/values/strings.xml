@@ -132,4 +132,33 @@
     <string name="copyright_rights">© 2026. All rights reserved.</string>
     <string name="announcement_from">%1$s · %2$s</string>
     <string name="commissioned">Commissioned by the Faculty of Entrepreneurship, Business Engineering and Management (FAIMA), National University of Science and Technology POLITEHNICA Bucharest. The FAIMA and UNSTPB names and logos belong to the university.</string>
+
+    <string name="tab_subjects">Subjects</string>
+    <string name="subjects_show_all">All programmes and years</string>
+    <string name="subjects_none">No subjects match.</string>
+    <string name="subject_fits">Only what fits my timetable</string>
+    <string name="subject_fits_hint">Hides the slots that overlap</string>
+    <plurals name="subject_slots">
+        <item quantity="one">%1$d slot</item>
+        <item quantity="other">%1$d slots</item>
+    </plurals>
+    <string name="subject_in_timetable">In your timetable</string>
+    <string name="subject_your_group">Your group</string>
+    <string name="subject_added">Added</string>
+    <string name="subject_added_once">Added for %1$s</string>
+    <string name="subject_add">Add</string>
+    <string name="subject_remove">Remove</string>
+    <string name="subject_clash">Overlaps with %1$s (%2$s, %3$s)</string>
+    <string name="subject_add_course">Add the course on %1$s?</string>
+    <string name="subject_add_seminar">Add the seminar on %1$s?</string>
+    <string name="subject_add_lab">Add the lab on %1$s?</string>
+    <string name="subject_add_project">Add the project on %1$s?</string>
+    <string name="subject_add_hint">For a recovery pick a single date. Your group stays the same.</string>
+    <string name="subject_add_hint_clash">It overlaps your timetable on other dates, but the next one is free.</string>
+    <string name="subject_add_once">Once, %1$s</string>
+    <string name="subject_add_semester">Whole semester</string>
+    <string name="subject_no_more_dates">No dates left</string>
+    <string name="subject_no_slots">This subject has no slots in the timetable.</string>
+    <string name="subject_all_clash">Every slot overlaps something in your timetable.</string>
+    <string name="error_clash">This overlaps something already in your timetable.</string>
 </resources>

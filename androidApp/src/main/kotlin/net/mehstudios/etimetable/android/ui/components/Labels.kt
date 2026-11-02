@@ -80,6 +80,15 @@ fun LocalDate.dayInitials(): String = java.time.DayOfWeek.of(
 fun LocalDate.dayName(): String =
     java.time.DayOfWeek.of(dayOfWeek.isoDayNumber).getDisplayName(TextStyle.FULL, Locale.getDefault()).capitalized()
 
+/** "Joi" when [capitalized], else as the language writes it mid-sentence ("joi", "Thursday"). */
+fun weekdayName(isoDay: Int, capitalized: Boolean): String {
+    val name = java.time.DayOfWeek.of(isoDay).getDisplayName(TextStyle.FULL, Locale.getDefault())
+    return if (capitalized) name.capitalized() else name
+}
+
+/** "30 oct." */
+fun LocalDate.shortDate(): String = toJava().format(DateTimeFormatter.ofPattern("d MMM", Locale.getDefault()))
+
 /** "26 - 30 octombrie" or "28 septembrie - 2 octombrie" */
 fun weekRangeLabel(first: LocalDate, last: LocalDate): String {
     val month = DateTimeFormatter.ofPattern("MMMM", Locale.getDefault())

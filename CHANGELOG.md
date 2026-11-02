@@ -30,6 +30,13 @@ Each section is also the text of the matching GitHub release.
   their classes this week. Tapping a name on a class opens it.
 - Labs and seminars name their assistant and the professor of the course.
 - The app icon is the FAIMA seal.
+- A Subjects tab: every subject, searchable, starting with your programme
+  and year. A subject's page lists its course, seminar, lab and project
+  slots with room, groups and teacher, and can hide the ones that overlap
+  your timetable. Add another group's lab once (for a recovery) or for the
+  whole semester; Erasmus students add and remove their picks here. A slot
+  that overlaps your timetable is refused and the clash named. Tapping a
+  subject's name on a class opens its page.
 
 ### Fixed
 

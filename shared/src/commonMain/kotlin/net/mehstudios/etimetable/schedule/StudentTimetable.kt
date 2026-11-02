@@ -17,12 +17,14 @@ data class NowAndNext(val current: Occurrence?, val next: Occurrence?)
 /** A student's timetable, computed from the dataset and their choices; never stored. */
 class StudentTimetable(
     private val dataset: Dataset,
-    private val profile: Profile,
+    val profile: Profile,
     val calendar: TeachingCalendar = TeachingCalendar(dataset.semester),
 ) {
+    private val base: List<Activity> = baseActivities(dataset, profile.enrollment)
+
     /** Activities that repeat every week their rule selects. */
     val recurring: List<Activity> = buildList {
-        addAll(baseActivities(dataset, profile.enrollment))
+        addAll(base)
         profile.extraSlots.filter { it.date == null }.forEach { extra ->
             dataset.activitiesById[extra.activityId]?.let(::add)
         }
@@ -52,6 +54,21 @@ class StudentTimetable(
         return NowAndNext(current, next)
     }
 
+    /** The first meeting of [activity] that starts after [at], or null when the semester has none left. */
+    fun nextMeeting(activity: Activity, at: LocalDateTime): Occurrence? =
+        calendar.occurrences(activity, at.date, calendar.semester.lastDay).firstOrNull { it.start > at }
+
+    /** How [activity] stands for this student, as the subject page shows it. */
+    fun standing(activity: Activity): SlotStanding {
+        when (val enrollment = profile.enrollment) {
+            is Enrollment.Erasmus -> if (activity.id in enrollment.activityIds) return SlotStanding.Picked
+            is Enrollment.National -> if (base.any { it.id == activity.id }) return SlotStanding.Group
+            null -> Unit
+        }
+        profile.extraSlots.firstOrNull { it.activityId == activity.id }?.let { return SlotStanding.Extra(it.date) }
+        return SlotStanding.Open(clashFor(activity))
+    }
+
     /**
      * What [candidate] would clash with if added: every week when [date] is
      * null, or only on [date] for a single visit. Null when it fits.
@@ -71,6 +88,20 @@ class StudentTimetable(
                 timesOverlap(a.slot.start, a.slot.end, candidate.slot.start, candidate.slot.end)
         }?.second
     }
+}
+
+sealed interface SlotStanding {
+    /** Comes with the student's group or half-group. */
+    data object Group : SlotStanding
+
+    /** One of an Erasmus student's picks. */
+    data object Picked : SlotStanding
+
+    /** Added on top of the group: every week, or only on [date]. */
+    data class Extra(val date: LocalDate?) : SlotStanding
+
+    /** Not in the timetable. [clash] is what it would overlap every week, or null when it fits. */
+    data class Open(val clash: Activity?) : SlotStanding
 }
 
 /**
