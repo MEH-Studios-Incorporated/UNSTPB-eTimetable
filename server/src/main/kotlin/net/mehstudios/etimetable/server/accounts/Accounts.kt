@@ -21,6 +21,7 @@ import java.sql.SQLException
 import java.util.Base64
 import java.util.UUID
 import javax.sql.DataSource
+import kotlin.time.toKotlinInstant
 
 private val EMAIL = Regex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")
 
@@ -100,6 +101,43 @@ class Accounts(private val db: DataSource) {
         }
     }
 
+    /** Students for the dashboard, newest first; [query] matches the email or the name. */
+    suspend fun list(query: String = "", limit: Int = 200): List<StudentAccount> = db.transaction { c ->
+        val like = "%${query.trim().lowercase()}%"
+        c.query(
+            """
+            SELECT id, email, profile, created_at FROM student
+            WHERE lower(email) LIKE ? OR lower(profile ->> 'firstName' || ' ' || (profile ->> 'lastName')) LIKE ?
+            ORDER BY created_at DESC LIMIT ?
+            """.trimIndent(),
+            like,
+            like,
+            limit,
+        ) {
+            StudentAccount(
+                UUID.fromString(it.getString(1)),
+                it.getString(2),
+                AppJson.decodeFromString(Profile.serializer(), it.getString(3)),
+                it.getObject(4, java.time.OffsetDateTime::class.java).toInstant().toKotlinInstant(),
+            )
+        }
+    }
+
+    /**
+     * An admin sets a new password when a student has lost theirs; every session ends, so
+     * phones signed in with the old one have to sign in again.
+     */
+    suspend fun setPassword(studentId: UUID, password: String) {
+        if (password.length < MIN_PASSWORD_LENGTH) {
+            throw ApiProblem(HttpStatusCode.UnprocessableEntity, ErrorCodes.WEAK_PASSWORD)
+        }
+        val hash = Passwords.hash(password)
+        db.transaction { c ->
+            c.update("UPDATE student SET password_hash = ? WHERE id = ?", hash, studentId)
+            c.update("DELETE FROM student_session WHERE student_id = ?", studentId)
+        }
+    }
+
     /** How many students have an account and how they study, for the dashboard. */
     suspend fun counts(): StudentCounts = db.transaction { c ->
         c.query(
@@ -132,3 +170,5 @@ class Accounts(private val db: DataSource) {
 
 /** Students who never finished choosing are in [total] only. */
 data class StudentCounts(val total: Int, val national: Int, val erasmus: Int)
+
+data class StudentAccount(val id: UUID, val email: String, val profile: Profile, val createdAt: kotlin.time.Instant)

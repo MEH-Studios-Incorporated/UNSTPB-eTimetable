@@ -343,21 +343,26 @@ private val EN = Texts(
     even = "even",
 )
 
-/** Our own line drawing of the Rectorat's front, the building in the university's emblem. */
+/**
+ * Our own line drawing of the Rectorat's front, the building in the university's emblem.
+ * Everything is mirrored around x = 600, the middle of the 1200-wide drawing.
+ */
 private val RECTORAT = buildString {
+    val middle = 600
     append("""<svg viewBox="0 0 1200 260" preserveAspectRatio="xMidYMax meet" fill="none" """)
     append("""stroke="currentColor" stroke-width="1.4" stroke-linejoin="round">""")
-    // the curved roof, two lines
-    append("""<path d="M300 112C360 70 560 44 700 50C800 54 900 76 968 108"/>""")
-    append("""<path d="M340 112C420 82 580 64 700 68C790 71 872 89 930 112"/>""")
-    // the attic with its marks
-    append("""<rect x="252" y="112" width="696" height="20"/>""")
-    append("""<path d="${(0 until 16).joinToString("") { "M${292 + it * 40} 116v12" }}"/>""")
-    // the front and its columns
-    append("""<rect x="270" y="132" width="660" height="104"/><path d="M270 146H930"/>""")
-    (0 until 15).forEach { append("""<rect x="${296 + it * 44}" y="146" width="12" height="90"/>""") }
-    // the steps and the ground
-    append("""<path d="M250 236H950V243H230V250H970V243H950M0 250H230M970 250H1200"/>""")
+    // the vaulted roof: two arcs over the attic
+    append("""<path d="M260 112C380 54 820 54 940 112"/>""")
+    append("""<path d="M300 112C410 74 790 74 900 112"/>""")
+    // the attic and its marks, one every 40 from the middle out
+    append("""<rect x="240" y="112" width="720" height="20"/>""")
+    append("""<path d="${(-8..8).joinToString("") { "M${middle + it * 40} 116v12" }}"/>""")
+    // the front, the line under the capitals and fifteen columns, one every 44 from the middle out
+    append("""<rect x="260" y="132" width="680" height="104"/><path d="M260 146H940"/>""")
+    (-7..7).forEach { append("""<rect x="${middle + it * 44 - 6}" y="146" width="12" height="90"/>""") }
+    // two steps and the ground
+    append("""<rect x="240" y="236" width="720" height="7"/><rect x="220" y="243" width="760" height="7"/>""")
+    append("""<path d="M0 250H220M980 250H1200"/>""")
     append("</svg>")
 }
 
@@ -404,17 +409,17 @@ private val SITE_STYLES = """
 .start li { counter-increment: step; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; }
 .start li::before { content: counter(step); display: block; font-size: 28px; font-weight: 700; color: var(--primary); margin-bottom: 6px;
   font-variant-numeric: tabular-nums; }
-.staff { position: relative; overflow: hidden; background: var(--ink); color: #D6D6D2; padding: 56px 0 120px; }
+.staff { position: relative; overflow: hidden; background: var(--ink); color: #D6D6D2; padding: 56px 0 200px; }
 .staff .wrap { position: relative; z-index: 1; display: flex; flex-wrap: wrap; gap: 20px 48px; align-items: center;
   justify-content: space-between; }
 .staff h2 { color: #FFFFFF; font-size: 22px; margin: 0 0 6px; }
 .staff p { margin: 0; max-width: 40em; }
 .staff .btn { background: #FFFFFF; color: var(--ink); }
-.rectorat { position: absolute; left: 50%; bottom: -2px; width: 1200px; transform: translateX(-50%); color: #343432;
+.rectorat { position: absolute; left: 50%; bottom: 0; width: 960px; transform: translateX(-50%); color: #343432;
   pointer-events: none; }
 .rectorat svg { display: block; width: 100%; height: auto; }
 .foot { background: var(--ink); color: #A9A9A4; font-size: 14px; padding: 8px 0 40px; }
-.foot .wrap { border-top: 1px solid #333333; padding-top: 28px; }
+.foot .wrap { padding-top: 28px; }
 .foot .logos { display: flex; align-items: center; gap: 24px; margin-bottom: 24px; }
 .foot .logos .unstpb { height: 56px; width: auto; }
 .foot .logos .faima { height: 56px; width: auto; padding-left: 24px; border-left: 1px solid #3A3A3A; }
@@ -434,8 +439,8 @@ private val SITE_STYLES = """
   .phone.back { left: 0; }
   .phone.front { left: auto; right: 0; top: 40px; }
   .features .grid, .start ol { grid-template-columns: 1fr; }
-  .staff { padding-bottom: 90px; }
-  .rectorat { width: 900px; }
+  .staff { padding-bottom: 110px; }
+  .rectorat { width: 100%; }
   .foot .logos .unstpb, .foot .logos .faima { height: 44px; }
   .wrap { padding-left: 16px; padding-right: 16px; }
   .top { padding-top: 14px; padding-bottom: 6px; }

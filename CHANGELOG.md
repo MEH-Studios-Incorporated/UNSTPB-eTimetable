@@ -48,6 +48,12 @@ Each section is also the text of the matching GitHub release.
   accounts, and a list of what still needs doing (activities without a
   teacher or a room, double bookings, professors without an email).
 - Announcements can be previewed before publishing and edited afterwards.
+- The timetable can be corrected in the dashboard without a new import:
+  subjects, single activities, professors with their office hours, rooms
+  and buildings. One form sets the same teacher on all labs of a subject,
+  which is how the lab assistants missing from the faculty's sheets get in.
+- Administrators can find a student's account, give it a new password
+  (which signs the student out everywhere) or delete it.
 
 ### Changed
 

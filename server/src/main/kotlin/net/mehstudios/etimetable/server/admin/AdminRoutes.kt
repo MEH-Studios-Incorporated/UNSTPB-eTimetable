@@ -53,12 +53,12 @@ data class AdminCookie(val token: String)
 
 private const val MAX_SHEET_BYTES = 5 * 1024 * 1024
 
-private val DAY_NAMES = listOf("Luni", "Marți", "Miercuri", "Joi", "Vineri", "Sâmbătă", "Duminică")
+internal val DAY_NAMES = listOf("Luni", "Marți", "Miercuri", "Joi", "Vineri", "Sâmbătă", "Duminică")
 private val MONTHS = listOf(
     "ianuarie", "februarie", "martie", "aprilie", "mai", "iunie",
     "iulie", "august", "septembrie", "octombrie", "noiembrie", "decembrie",
 )
-private val TYPE_NAMES = mapOf(
+internal val TYPE_NAMES = mapOf(
     ActivityType.COURSE to "Curs",
     ActivityType.SEMINAR to "Seminar",
     ActivityType.LAB to "Laborator",
@@ -122,6 +122,7 @@ fun Route.adminRoutes(services: Services) {
         semesterRoutes(services)
         announcementRoutes(services)
         adminListRoutes(services)
+        editRoutes(services)
     }
 }
 
@@ -575,6 +576,14 @@ private fun Route.semesterRoutes(services: Services) {
                     +listOfNotNull(programme?.code, series?.let { "anul ${it.year}, seria ${it.name}" })
                         .joinToString(prefix = " · ", separator = ", ")
                 },
+                actions = {
+                    val back = "/admin/semesters/${dataset.semester.id}/groups/${group.id.encodeURLParameter()}"
+                    a(
+                        href = "/admin/semesters/${dataset.semester.id}/activities/new?group=" +
+                            "${group.code.encodeURLParameter()}&back=${back.encodeURLParameter()}",
+                        classes = "btn",
+                    ) { +"Adaugă activitate" }
+                },
             ) {
                 div("scroll") {
                     div("week") {
@@ -582,13 +591,13 @@ private fun Route.semesterRoutes(services: Services) {
                             div("day") {
                                 h3 { +DAY_NAMES[day - 1] }
                                 activities.filter { it.slot.isoDay == day }.sortedBy { it.slot.start }.forEach { a ->
-                                    val kind = when (a.type) {
-                                        ActivityType.COURSE -> ""
-                                        ActivityType.SEMINAR -> "seminar"
-                                        ActivityType.LAB -> "lab"
-                                        ActivityType.PROJECT -> "project"
-                                    }
-                                    div("slot $kind".trim()) {
+                                    val back = "/admin/semesters/${dataset.semester.id}/groups/" +
+                                        group.id.encodeURLParameter()
+                                    a(
+                                        href = "/admin/semesters/${dataset.semester.id}/activities/" +
+                                            "${a.id.encodeURLParameter()}?back=${back.encodeURLParameter()}",
+                                        classes = "slot ${slotKind(a.type)}".trim(),
+                                    ) {
                                         span("time") {
                                             +"${a.slot.start} - ${a.slot.end} · ${TYPE_NAMES.getValue(a.type)}"
                                         }
@@ -922,7 +931,7 @@ private fun Route.adminListRoutes(services: Services) {
 }
 
 /** A label above its input. */
-private fun FlowContent.field(id: String, label: String, input: FlowContent.() -> Unit) {
+internal fun FlowContent.field(id: String, label: String, input: FlowContent.() -> Unit) {
     div("field") {
         label {
             htmlFor = id
@@ -986,7 +995,7 @@ private fun FlowContent.calendarFields(semester: Semester?) {
     }
 }
 
-private fun weeksLabel(rule: WeekRule): String? = when (rule) {
+internal fun weeksLabel(rule: WeekRule): String? = when (rule) {
     WeekRule.All -> null
     WeekRule.Odd -> "săptămâni impare"
     WeekRule.Even -> "săptămâni pare"
@@ -994,7 +1003,7 @@ private fun weeksLabel(rule: WeekRule): String? = when (rule) {
 }
 
 /** "3 noiembrie 2026" */
-private fun longDate(date: LocalDate) = "${date.day} ${MONTHS[date.month.ordinal]} ${date.year}"
+internal fun longDate(date: LocalDate) = "${date.day} ${MONTHS[date.month.ordinal]} ${date.year}"
 
 /** "3 noiembrie 2026, 20:42", in Bucharest time. */
 private fun dateTime(a: Announcement): String {
@@ -1031,7 +1040,7 @@ private fun HTML.loginPage(error: String?) {
     }
 }
 
-private suspend fun RoutingContext.currentAdmin(services: Services): Admin? =
+internal suspend fun RoutingContext.currentAdmin(services: Services): Admin? =
     call.sessions.get<AdminCookie>()?.let { services.admins.adminFor(it.token) }
 
 /**
@@ -1044,7 +1053,7 @@ private fun RoutingContext.sameOrigin(): Boolean {
     return origin.substringAfter("://").substringBefore('/') == host
 }
 
-private fun Route.page(
+internal fun Route.page(
     path: String,
     services: Services,
     role: AdminRole = AdminRole.EDITOR,
@@ -1055,7 +1064,7 @@ private fun Route.page(
     body(admin)
 }
 
-private fun Route.action(
+internal fun Route.action(
     path: String,
     services: Services,
     role: AdminRole = AdminRole.EDITOR,

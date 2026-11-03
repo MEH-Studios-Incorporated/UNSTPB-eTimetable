@@ -303,14 +303,14 @@ object TimetableSheet {
 
     private fun professorText(dataset: Dataset, id: String?) = dataset.professorsById[id]?.displayName.orEmpty()
 
-    private fun weeksText(rule: WeekRule) = when (rule) {
+    internal fun weeksText(rule: WeekRule) = when (rule) {
         WeekRule.All -> "toate"
         WeekRule.Odd -> "impare"
         WeekRule.Even -> "pare"
         is WeekRule.Only -> rule.weeks.sorted().joinToString(",")
     }
 
-    private fun parseDay(text: String): Int {
+    internal fun parseDay(text: String): Int {
         val value = fold(text)
         value.toIntOrNull()?.let { if (it in 1..7) return it }
         val index = DAYS.indexOf(value).takeIf { it >= 0 } ?: DAYS_EN.indexOf(value)
@@ -318,7 +318,7 @@ object TimetableSheet {
         return index + 1
     }
 
-    private fun parseTime(text: String): LocalTime {
+    internal fun parseTime(text: String): LocalTime {
         val match = Regex("""^(\d{1,2})[:.](\d{2})$""").matchEntire(text.trim())
             ?: Regex("""^(\d{1,2})$""").matchEntire(text.trim())
         requireNotNull(match) { "oră greșită \"$text\" (de exemplu 08:00)" }
@@ -328,7 +328,7 @@ object TimetableSheet {
         return LocalTime(hour, minute)
     }
 
-    private fun parseWeeks(text: String): WeekRule {
+    internal fun parseWeeks(text: String): WeekRule {
         val value = fold(text)
         return when (value) {
             "", "toate", "all" -> WeekRule.All
@@ -370,8 +370,8 @@ object TimetableSheet {
     private fun isYes(text: String) = fold(text) in setOf("da", "yes", "1", "x", "true")
 
     /** Lower case without diacritics, so "Marți" and "marti" match. */
-    private fun fold(text: String): String =
+    internal fun fold(text: String): String =
         Normalizer.normalize(text.trim().lowercase(), Normalizer.Form.NFD).replace(Regex("\\p{M}"), "")
 
-    private fun slug(text: String): String = fold(text).replace(Regex("[^a-z0-9/]+"), "-").trim('-')
+    internal fun slug(text: String): String = fold(text).replace(Regex("[^a-z0-9/]+"), "-").trim('-')
 }
