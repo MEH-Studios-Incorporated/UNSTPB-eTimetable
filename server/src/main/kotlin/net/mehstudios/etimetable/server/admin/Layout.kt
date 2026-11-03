@@ -30,9 +30,16 @@ import kotlinx.html.unsafe
 enum class Section(val label: String, val href: String) {
     OVERVIEW("Prezentare", "/admin"),
     SEMESTERS("Semestre și orar", "/admin/semesters"),
+    SUBJECTS("Materii", "/admin/subjects"),
+    PROFESSORS("Profesori", "/admin/professors"),
+    ROOMS("Săli", "/admin/rooms"),
     ANNOUNCEMENTS("Anunțuri", "/admin/announcements"),
+    STUDENTS("Studenți", "/admin/students"),
     ADMINS("Administratori", "/admin/admins"),
 }
+
+/** Sections only administrators see: other admins, and the students' personal data. */
+private val ADMIN_ONLY = setOf(Section.ADMINS, Section.STUDENTS)
 
 /**
  * Every dashboard page: the sidebar with the sections, then a header with
@@ -67,7 +74,7 @@ fun HTML.adminPage(
                 }
                 nav {
                     Section.entries.filter {
-                        it != Section.ADMINS || admin.role == AdminRole.ADMIN
+                        it !in ADMIN_ONLY || admin.role == AdminRole.ADMIN
                     }.forEach { section ->
                         a(href = section.href, classes = if (section == current) "active" else null) { +section.label }
                     }
@@ -209,6 +216,21 @@ ul.problems { margin: 8px 0 0; padding-left: 20px; }
 .chips a { padding: 5px 10px; border: 1px solid var(--strong); border-radius: 6px; background: var(--surface); color: var(--text);
   text-decoration: none; font-weight: 500; font-variant-numeric: tabular-nums; }
 .chips a:hover { border-color: var(--primary); color: var(--primary); }
+.filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
+.filters input, .filters select { width: auto; min-width: 180px; }
+.filters input[type=search] { flex: 1 1 260px; max-width: 420px; }
+.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; }
+.buildings { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
+.buildings .card { margin: 0; }
+form.building { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
+form.building strong { min-width: 72px; font-size: 16px; }
+form.building input { width: auto; flex: 1 1 200px; }
+.chips a .hint { margin: 0; font-size: 12px; }
+.inline-form { display: inline-flex; gap: 6px; margin: 0 6px 0 0; }
+.inline-form input { width: 150px; padding: 5px 8px; font-size: 13px; }
+a.slot { display: block; color: var(--text); text-decoration: none; }
+a.slot:hover { border-color: var(--primary); }
+.slot.office { border-left-color: var(--muted); background: var(--alt); }
 .week { display: grid; grid-template-columns: repeat(5, minmax(170px, 1fr)); gap: 10px; }
 .day h3 { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; margin: 0 0 8px; }
 .slot { background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--primary); border-radius: 6px;

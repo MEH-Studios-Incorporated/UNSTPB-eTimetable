@@ -56,6 +56,44 @@ Fiecare își schimbă parola din pagina **Schimbă parola**. O sesiune durează
 5. **Fă-l curent** din lista de semestre. Abia atunci îl văd studenții, la
    următoarea sincronizare.
 
+## Modificări fără import
+
+Orarul se poate corecta direct în panou, fără să mai treci prin fișier.
+Fiecare salvare ajunge în aplicații la următoarea sincronizare. Un import
+ulterior înlocuiește tot semestrul, inclusiv aceste modificări, așa că
+descarcă orarul actual înainte de a-l modifica în Excel.
+
+- **Materii.** Lista se caută după nume sau cod și se filtrează după
+  specializare și an. Pe pagina unei materii se schimbă numele (în română și
+  în engleză) și codul, se văd toate activitățile ei și se adaugă una nouă.
+  "Profesor pentru mai multe activități" trece același profesor la toate
+  laboratoarele (sau seminarele, proiectele) materiei, doar acolo unde nu e
+  trecut nimeni dacă lași bifa. Așa se completează asistenții pe care orarul
+  facultății nu îi are.
+- **O activitate.** Butonul "Editează" de lângă orice activitate (sau o
+  activitate din săptămâna unei grupe) deschide formularul: materia, tipul,
+  ziua, orele, săptămânile (`toate`, `pare`, `impare` sau numere ca în
+  fișier), profesorul, sala, grupele și dacă e deschisă studenților Erasmus.
+  Grupele se scriu cu codul lor, despărțite prin spațiu: `1521A 1522A` sau
+  `1521A/A` pentru o semigrupă. O sală nouă se adaugă singură.
+- **Profesori.** Lista arată cine nu are email. Pe pagina unui profesor se
+  schimbă titlul, numele, emailul, biroul și consultațiile, câte una pe rând:
+
+  ```
+  Miercuri 14:00-16:00 EC210 impare
+  Vineri 10:00-12:00
+  ```
+
+  Un profesor fără activități se poate șterge; unul nou se adaugă de pe
+  listă.
+- **Săli.** Sălile sunt grupate pe corpuri; numele și adresa corpului se
+  schimbă de aici. Pagina unei săli arată săptămâna ei, deci și orele în
+  care e liberă.
+- **Studenți** (doar administratorii). Conturile, după email sau nume, cu
+  grupa aleasă. **Schimbă** pune o parolă nouă pentru cine și-a pierdut-o și
+  îl deconectează de pe toate telefoanele; spune-i parola pe altă cale.
+  **Șterge** șterge contul de tot.
+
 ## Fișierul cu orarul
 
 Un tabel (Excel, LibreOffice sau Google Sheets) salvat ca CSV, cu un rând pe

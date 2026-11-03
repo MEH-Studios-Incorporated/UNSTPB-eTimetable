@@ -171,9 +171,13 @@ UNSTPB and FAIMA logos and the Multimedia Entertainment Hub credit.
 ## Admin dashboard (web, part of the server)
 
 A dark sidebar with the sections, each page with a title, a context line and
-its main actions on the right. Done: sign in, an overview (today's week,
-counts, a list of what still needs doing), semesters with their calendar,
-groups by series and each group's week, CSV import and export, announcements
-(write, preview, publish, edit, pin), admin accounts. Still to come: editing
-subjects, professors and office hours, rooms and single activities in the
-page instead of through the CSV, and student accounts.
+its main actions on the right: an overview (today's week, counts, a list of
+what still needs doing), semesters with their calendar, CSV import and
+export, groups by series and each group's week; subjects (search, filters,
+rename, every activity, one teacher for all of a subject's labs or
+seminars); single activities (add, edit, delete, with the importer's rules
+for days, times and weeks; a new room adds itself); professors (contact,
+office, office hours one per line, their activities); rooms by building
+(building names and addresses, each room's week); announcements (write,
+preview, publish, edit, pin); student accounts (administrators only: search,
+a new password that signs them out, delete); admin accounts.
