@@ -53,9 +53,6 @@ Each section is also the text of the matching GitHub release.
 
 - The dashboard has a sidebar, page headers with their actions, groups
   listed by series and a cleaner look throughout.
-
-### Changed
-
 - The current week sits in a quieter badge: its number in a grey block,
   "Săptămâna impară" beside it.
 - The profile is a menu: settings (language, theme, timetable layout and
