@@ -4,6 +4,7 @@
 package net.mehstudios.etimetable.android.ui.components
 
 import androidx.activity.compose.LocalActivity
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -18,6 +19,7 @@ import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -27,11 +29,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import net.mehstudios.etimetable.android.R
 import net.mehstudios.etimetable.android.data.AppLocale
 import net.mehstudios.etimetable.android.data.ThemeMode
 import net.mehstudios.etimetable.android.ui.signin.invertInDark
 import net.mehstudios.etimetable.android.ui.theme.LocalDarkTheme
+import net.mehstudios.etimetable.android.ui.theme.LocalScreenFade
 import net.mehstudios.etimetable.android.ui.theme.LocalThemeChoice
 
 const val MEH_SITE = "https://mehstudios.net/"
@@ -104,11 +109,25 @@ fun LanguagePicker(modifier: Modifier = Modifier, followPhone: Boolean = true, s
     val picked = remember(activity) { AppLocale.picked(activity) }
     val options = (if (followPhone) listOf(null) else emptyList()) + AppLocale.supported
     val current = if (followPhone) picked else picked ?: appLanguage()
+    val fade = LocalScreenFade.current
+    val scope = rememberCoroutineScope()
     SingleChoiceSegmentedButtonRow(modifier) {
         options.forEachIndexed { index, language ->
             SegmentedButton(
                 selected = language == current,
-                onClick = { if (language != current) AppLocale.pick(activity, language) },
+                onClick = {
+                    if (language != current) {
+                        scope.launch {
+                            fade?.animateTo(0f, tween(160))
+                            AppLocale.switching = true
+                            AppLocale.pick(activity, language)
+                            // nothing rebuilt the activity (the language did not really change): show it again
+                            delay(800)
+                            AppLocale.switching = false
+                            fade?.animateTo(1f, tween(200))
+                        }
+                    }
+                },
                 shape = SegmentedButtonDefaults.itemShape(index, options.size),
                 icon = {},
             ) {
@@ -148,6 +167,27 @@ fun ThemePicker(modifier: Modifier = Modifier) {
                     ),
                 )
             }
+        }
+    }
+}
+
+/** A row of segmented choices without the check mark; [names] labels each option. */
+@Composable
+fun <T> Choices(
+    options: List<T>,
+    selected: T,
+    names: @Composable (T) -> String,
+    modifier: Modifier = Modifier,
+    pick: (T) -> Unit,
+) {
+    SingleChoiceSegmentedButtonRow(modifier) {
+        options.forEachIndexed { index, option ->
+            SegmentedButton(
+                selected = option == selected,
+                onClick = { pick(option) },
+                shape = SegmentedButtonDefaults.itemShape(index, options.size),
+                icon = {},
+            ) { Text(names(option), maxLines = 1) }
         }
     }
 }
