@@ -4,6 +4,17 @@ Pentru secretariatul și administratorii FAIMA care pun orarul și anunțurile �
 aplicație. Panoul de administrare este la adresa serverului urmată de
 `/admin`, de exemplu `https://orar.faima.upb.ro/admin`.
 
+## Prezentare
+
+Prima pagină după conectare arată săptămâna de azi (numărul și paritatea),
+câte activități, grupe, materii, profesori și conturi de studenți are
+semestrul curent și ce mai e de făcut: activități fără profesor sau fără
+sală, săli sau profesori cu două activități în același timp, profesori fără
+email. Fiecare rând trimite unde se rezolvă.
+
+Adresa serverului fără `/admin` este pagina publică a aplicației, pentru
+studenți: de unde se descarcă și ce face. Are un link spre panou.
+
 ## Conturi
 
 Primul cont se creează la instalarea serverului (vezi `docs/deploy.md`).
@@ -90,5 +101,9 @@ Diacriticele se păstrează dacă fișierul este salvat ca "CSV UTF-8".
 
 **Anunțuri** are un formular cu titlu, text și semnătură. Textul acceptă
 Markdown simplu: `**îngroșat**`, `*cursiv*`, `[link](https://...)`, liste cu
-`-`. Un anunț fixat apare primul în aplicație. Anunțurile ajung la toți
+`-`. **Previzualizează** arată anunțul așa cum apare în aplicație, fără să-l
+publice. Un anunț fixat apare primul în aplicație. Anunțurile ajung la toți
 studenții; notificările push vin într-o versiune următoare.
+
+Un anunț publicat se poate **edita**: textul nou ajunge în aplicații la
+următoarea sincronizare, iar data publicării rămâne aceeași.

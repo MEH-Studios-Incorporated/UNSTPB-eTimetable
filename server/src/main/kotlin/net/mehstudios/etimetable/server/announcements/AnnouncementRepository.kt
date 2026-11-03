@@ -60,6 +60,28 @@ class AnnouncementRepository(private val db: DataSource, private val clock: Cloc
         return announcement
     }
 
+    suspend fun byId(id: String): Announcement? = db.transaction { c ->
+        c.query(
+            "SELECT id, title, body, author, pinned, published_at FROM announcement WHERE id = ?",
+            id,
+            row = ::toAnnouncement,
+        ).singleOrNull()
+    }
+
+    /** Changes the text; the publication time stays, so the order in the apps does not change. */
+    suspend fun update(id: String, title: String, body: String, author: String, pinned: Boolean) {
+        db.transaction { c ->
+            c.update(
+                "UPDATE announcement SET title = ?, body = ?, author = ?, pinned = ? WHERE id = ?",
+                title,
+                body,
+                author,
+                pinned,
+                id,
+            )
+        }
+    }
+
     suspend fun setPinned(id: String, pinned: Boolean) {
         db.transaction { c -> c.update("UPDATE announcement SET pinned = ? WHERE id = ?", pinned, id) }
     }

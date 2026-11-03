@@ -95,6 +95,11 @@ the student is not touching the screen, apart from the current-time line.
 - The Multimedia Entertainment Hub mark appears next to the copyright on
   the About screen (34 dp, with the site and support links) and, smaller and
   without links, in the sign-in footer (20 dp).
+- The public page (`/`) ends on the dark ink colour with the UNSTPB logo
+  (the university's own 280 px white version from upb.ro) next to the white
+  FAIMA seal, and a line drawing of the Rectorat behind the secretariat
+  section. The drawing is ours, an outline of the building's front; the
+  university's emblem itself is never redrawn or cut up.
 - The launcher icon is the white seal on `#292929`, 60 dp wide inside the
   108 dp adaptive icon, so launchers that cut a circle keep the lettering.
   The same image is the monochrome (themed) icon.

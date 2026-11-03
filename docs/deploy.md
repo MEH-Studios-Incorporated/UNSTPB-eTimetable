@@ -14,6 +14,9 @@ curl http://localhost:8080/api/v1/health
 The server creates and migrates its tables on every start. Set
 `ETT_ADMIN_EMAIL` and `ETT_ADMIN_PASSWORD` for the first start: that account
 signs in at `/admin`, changes its password and adds the other accounts.
+The address itself (`/`) is a public page for students: what the app does,
+the download links from `ETT_ANDROID_URL` and `ETT_IOS_URL`, the current
+teaching week and a link to the dashboard.
 Without a current semester, `GET /api/v1/dataset` answers 404 `no_semester`
 until an admin publishes one; `docs/admin.md` explains how.
 
@@ -29,6 +32,7 @@ The compose file passes the database ones to the server.
 | `ETT_DB_PASSWORD` | none, required | PostgreSQL password |
 | `ETT_PUBLIC_URL` | empty | The address people use; `https://` makes the dashboard cookie Secure |
 | `ETT_ADMIN_EMAIL`, `ETT_ADMIN_PASSWORD` | empty | First dashboard account, created only while there is none |
+| `ETT_ANDROID_URL`, `ETT_IOS_URL` | empty | Download links on the public page at `/` (a store page or a hosted file); empty shows "în curând" |
 | `ETT_IMAGE` | the latest release on GHCR | Image to run, for pinning a version |
 
 ## HTTPS and reverse proxies

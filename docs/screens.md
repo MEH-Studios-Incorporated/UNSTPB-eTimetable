@@ -158,8 +158,22 @@ connection; nothing else changes.
 
 Tapping a widget opens the app on that activity or day.
 
+## Public page (web, part of the server)
+
+At `/`, in Romanian or English (`?lang=en`, or the browser's language): what
+the app does, download buttons from `ETT_ANDROID_URL` and `ETT_IOS_URL`
+("în curând" while one is not set), two screenshots of the app (one light,
+one dark, different screens), today's teaching week from the current
+semester, three steps to get started, and a dark ending with the way to the
+dashboard for the secretariat, a line drawing of the Rectorat behind it, the
+UNSTPB and FAIMA logos and the Multimedia Entertainment Hub credit.
+
 ## Admin dashboard (web, part of the server)
 
-Sign in, semester calendar, programmes and groups, subjects, professors and
-office hours, buildings and rooms, activities on a week grid per group, CSV
-import, announcements (write, preview, publish, pin), admin accounts.
+A dark sidebar with the sections, each page with a title, a context line and
+its main actions on the right. Done: sign in, an overview (today's week,
+counts, a list of what still needs doing), semesters with their calendar,
+groups by series and each group's week, CSV import and export, announcements
+(write, preview, publish, edit, pin), admin accounts. Still to come: editing
+subjects, professors and office hours, rooms and single activities in the
+page instead of through the CSV, and student accounts.

@@ -5,6 +5,7 @@ package net.mehstudios.etimetable.server.admin
 
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.Parameters
 import io.ktor.http.content.PartData
 import io.ktor.http.content.forEachPart
 import io.ktor.http.encodeURLParameter
@@ -27,17 +28,25 @@ import io.ktor.server.sessions.get
 import io.ktor.server.sessions.sessions
 import io.ktor.server.sessions.set
 import io.ktor.utils.io.toByteArray
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.toLocalDateTime
 import kotlinx.html.*
 import kotlinx.serialization.Serializable
 import net.mehstudios.etimetable.model.ActivityType
+import net.mehstudios.etimetable.model.Announcement
 import net.mehstudios.etimetable.model.Dataset
 import net.mehstudios.etimetable.model.Enrollment
+import net.mehstudios.etimetable.model.Parity
 import net.mehstudios.etimetable.model.Semester
 import net.mehstudios.etimetable.model.WeekRule
+import net.mehstudios.etimetable.schedule.FacultyTimeZone
+import net.mehstudios.etimetable.schedule.TeachingCalendar
 import net.mehstudios.etimetable.schedule.baseActivities
+import net.mehstudios.etimetable.schedule.facultyNow
 import net.mehstudios.etimetable.server.Services
 import net.mehstudios.etimetable.server.timetable.TimetableSheet
 import java.util.UUID
+import kotlin.time.Clock
 
 @Serializable
 data class AdminCookie(val token: String)
@@ -45,6 +54,10 @@ data class AdminCookie(val token: String)
 private const val MAX_SHEET_BYTES = 5 * 1024 * 1024
 
 private val DAY_NAMES = listOf("Luni", "Marți", "Miercuri", "Joi", "Vineri", "Sâmbătă", "Duminică")
+private val MONTHS = listOf(
+    "ianuarie", "februarie", "martie", "aprilie", "mai", "iunie",
+    "iulie", "august", "septembrie", "octombrie", "noiembrie", "decembrie",
+)
 private val TYPE_NAMES = mapOf(
     ActivityType.COURSE to "Curs",
     ActivityType.SEMINAR to "Seminar",
@@ -56,7 +69,10 @@ fun Route.adminRoutes(services: Services) {
     route("/admin") {
         staticResources("/static", "admin")
 
-        get { call.respondRedirect("/admin/semesters") }
+        get {
+            val admin = currentAdmin(services) ?: return@get call.respondRedirect("/admin/login")
+            overview(services, admin)
+        }
 
         get("/login") { call.respondHtml { loginPage(error = null) } }
         post("/login") {
@@ -67,7 +83,7 @@ fun Route.adminRoutes(services: Services) {
                 call.respondHtml(HttpStatusCode.Unauthorized) { loginPage(error = "Email sau parolă greșită.") }
             } else {
                 call.sessions.set(AdminCookie(token))
-                call.respondRedirect("/admin/semesters")
+                call.respondRedirect("/admin")
             }
         }
         post("/logout") {
@@ -78,20 +94,20 @@ fun Route.adminRoutes(services: Services) {
 
         page("/password", services) { admin ->
             call.respondHtml {
-                adminPage("Schimbă parola", admin, null) {
+                adminPage("Schimbă parola", admin, null, context = { +admin.email }) {
                     notice(call.parameters["msg"])
                     notice(call.parameters["err"], error = true)
-                    form(action = "/admin/password", method = FormMethod.post, classes = "panel") {
-                        label {
-                            htmlFor = "password"
-                            +"Parola nouă"
+                    form(action = "/admin/password", method = FormMethod.post, classes = "card") {
+                        field("password", "Parola nouă") {
+                            passwordInput(name = "password") {
+                                id = "password"
+                                required = true
+                                minLength = "8"
+                                attributes["autocomplete"] = "new-password"
+                            }
                         }
-                        passwordInput(name = "password") {
-                            id = "password"
-                            required = true
-                            minLength = "8"
-                        }
-                        button { +"Schimbă parola" }
+                        p("hint") { +"Cel puțin 8 caractere. După schimbare te conectezi din nou." }
+                        div("form-actions") { button { +"Schimbă parola" } }
                     }
                 }
             }
@@ -109,11 +125,182 @@ fun Route.adminRoutes(services: Services) {
     }
 }
 
+/** The start page: today's teaching week, the numbers, and what still needs doing. */
+private suspend fun RoutingContext.overview(services: Services, admin: Admin) {
+    val current = services.datasets.current()
+    val dataset = current?.dataset
+    val students = services.accounts.counts()
+    val announcements = services.announcements.page(before = null, limit = 100)
+    val today = Clock.System.facultyNow().date
+    call.respondHtml {
+        adminPage(
+            "Prezentare",
+            admin,
+            Section.OVERVIEW,
+            context = { +"Azi, ${longDate(today)}" },
+            actions = {
+                if (dataset != null) {
+                    a(href = "/admin/semesters/${dataset.semester.id}#import", classes = "btn secondary") {
+                        +"Importă orarul"
+                    }
+                }
+                a(href = "/admin/announcements#new", classes = "btn") { +"Anunț nou" }
+            },
+        ) {
+            if (dataset == null) {
+                div("card") {
+                    h2 { +"Niciun semestru în aplicație" }
+                    p {
+                        +"Aplicația nu are încă ce arăta. Creează semestrul, importă orarul, apoi fă-l curent. "
+                        a(href = "/admin/semesters") { +"Mergi la semestre" }
+                    }
+                }
+                return@adminPage
+            }
+            todayStrip(dataset, today)
+            div("stats") {
+                stat(dataset.activities.size, "activități")
+                stat(dataset.groups.size, "grupe")
+                stat(dataset.subjects.size, "materii")
+                stat(dataset.professors.size, "profesori")
+                stat(
+                    students.total,
+                    "conturi de studenți",
+                    "${students.national} în grupe, ${students.erasmus} Erasmus",
+                )
+                stat(announcements.size, "anunțuri publicate")
+            }
+            div("cols") {
+                div("card") {
+                    h2 { +"Ce e de făcut" }
+                    todo(dataset)
+                }
+                div("card") {
+                    h2 { +"Ultimele anunțuri" }
+                    if (announcements.isEmpty()) p("hint") { +"Niciun anunț încă." }
+                    ul("todo") {
+                        announcements.take(4).forEach { a ->
+                            li {
+                                span("mark ok") { style = "background: var(--primary)" }
+                                div {
+                                    a(href = "/admin/announcements/${a.id}") { +a.title }
+                                    div("hint") { +"${a.author} · ${dateTime(a)}" }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+private fun FlowContent.todayStrip(dataset: Dataset, today: LocalDate) {
+    val calendar = TeachingCalendar(dataset.semester)
+    val week = calendar.weekOf(today)
+    val pause = calendar.breakOn(today)
+    div("today") {
+        div("num") { +(week?.number?.toString() ?: "-") }
+        div("text") {
+            strong {
+                +when {
+                    week != null -> "Săptămâna ${week.number}, ${if (week.parity == Parity.ODD) "impară" else "pară"}"
+                    pause != null -> pause.name.ro
+                    today < dataset.semester.firstDay -> "Semestrul începe pe ${longDate(dataset.semester.firstDay)}"
+                    else -> "Semestrul s-a încheiat"
+                }
+            }
+            span {
+                +"${dataset.semester.name.ro}, ${longDate(
+                    dataset.semester.firstDay,
+                )} - ${longDate(dataset.semester.lastDay)}"
+            }
+        }
+    }
+}
+
+private fun FlowContent.stat(value: Int, label: String, detail: String? = null) {
+    div("stat") {
+        span("value") { +value.toString() }
+        span("label") { +label }
+        if (detail != null) span("label") { +detail }
+    }
+}
+
+/** What the current semester still lacks, from the data itself. */
+private fun FlowContent.todo(dataset: Dataset) {
+    val noTeacher = dataset.activities.count { it.professorId == null }
+    val noRoom = dataset.activities.count { it.roomId == null }
+    val clashes = TimetableSheet.doubleBookings(dataset).size
+    val noEmail = dataset.professors.count { it.email == null }
+    val semesterLink = "/admin/semesters/${dataset.semester.id}"
+    ul("todo") {
+        if (dataset.activities.isEmpty()) {
+            item("bad", "Semestrul nu are încă orar.", "Importă fișierul CSV", "$semesterLink#import")
+        }
+        if (noTeacher > 0) {
+            item(
+                "warn",
+                "$noTeacher ${plural(noTeacher, "activitate nu are", "activități nu au")} profesor sau asistent.",
+                "Completează coloana professor și importă din nou",
+                "$semesterLink/export.csv",
+            )
+        }
+        if (noRoom > 0) {
+            item("warn", "$noRoom ${plural(noRoom, "activitate nu are", "activități nu au")} sală.", null, null)
+        }
+        if (clashes > 0) {
+            item(
+                "warn",
+                "$clashes ${plural(clashes, "suprapunere", "suprapuneri")} de săli sau profesori.",
+                "Vezi lista",
+                "$semesterLink#problems",
+            )
+        }
+        if (noEmail > 0) {
+            item(
+                "warn",
+                "$noEmail ${plural(noEmail, "profesor nu are", "profesori nu au")} adresă de email.",
+                null,
+                null,
+            )
+        }
+        if (dataset.activities.isNotEmpty() && noTeacher == 0 && noRoom == 0 && clashes == 0) {
+            item("ok", "Orarul nu are probleme cunoscute.", null, null)
+        }
+    }
+}
+
+private fun UL.item(kind: String, text: String, linkText: String?, href: String?) {
+    li {
+        span("mark ${if (kind == "warn") "" else kind}".trim())
+        div {
+            +text
+            if (linkText != null && href != null) {
+                +" "
+                a(href = href) { +linkText }
+            }
+        }
+    }
+}
+
+/** Romanian counts: 1 activitate, 2 activități, 20 de activități. */
+private fun plural(n: Int, one: String, many: String) = when {
+    n == 1 -> one
+    n % 100 in 1..19 -> many
+    else -> "de $many"
+}
+
 private fun Route.semesterRoutes(services: Services) {
     page("/semesters", services) { admin ->
         val semesters = services.datasets.semesters()
         call.respondHtml {
-            adminPage("Semestre", admin, Section.SEMESTERS) {
+            adminPage(
+                "Semestre și orar",
+                admin,
+                Section.SEMESTERS,
+                context = { +"Aplicația arată semestrul marcat Curent." },
+            ) {
                 notice(call.parameters["msg"])
                 notice(call.parameters["err"], error = true)
                 if (semesters.isEmpty()) {
@@ -125,7 +312,7 @@ private fun Route.semesterRoutes(services: Services) {
                                 tr {
                                     th { +"Semestru" }
                                     th { +"Perioadă" }
-                                    th { +"Activități" }
+                                    th(classes = "num") { +"Activități" }
                                     th { +"Stare" }
                                     th { }
                                 }
@@ -135,13 +322,14 @@ private fun Route.semesterRoutes(services: Services) {
                                     tr {
                                         td {
                                             a(href = "/admin/semesters/${s.semester.id}") { +s.semester.name.ro }
-                                            br
-                                            span("hint") { +s.semester.id }
+                                            div("hint") { +s.semester.id }
                                         }
-                                        td { +"${s.semester.firstDay} - ${s.semester.lastDay}" }
-                                        td { +s.activityCount.toString() }
+                                        td("tnum") {
+                                            +"${longDate(s.semester.firstDay)} - ${longDate(s.semester.lastDay)}"
+                                        }
+                                        td("num") { +s.activityCount.toString() }
                                         td { if (s.isCurrent) span("tag current") { +"Curent" } }
-                                        td {
+                                        td("actions") {
                                             if (!s.isCurrent) {
                                                 form(
                                                     action = "/admin/semesters/${s.semester.id}/current",
@@ -157,24 +345,27 @@ private fun Route.semesterRoutes(services: Services) {
                         }
                     }
                 }
-                h2 { +"Semestru nou" }
-                form(action = "/admin/semesters", method = FormMethod.post, classes = "panel") {
-                    label {
-                        htmlFor = "id"
-                        +"Cod"
+                details("card") {
+                    style = "margin-top: 24px"
+                    if (semesters.isEmpty()) attributes["open"] = "open"
+                    summary { strong { +"Semestru nou" } }
+                    form(action = "/admin/semesters", method = FormMethod.post) {
+                        style = "margin-top: 16px"
+                        field("id", "Cod") {
+                            textInput(name = "id") {
+                                id = "id"
+                                required = true
+                                placeholder = "2026-1"
+                            }
+                        }
+                        p("hint") { +"Rămâne același tot semestrul. Litere, cifre, - și _." }
+                        calendarFields(null)
+                        label("check") {
+                            checkBoxInput(name = "copy_current") { checked = semesters.any { it.isCurrent } }
+                            +"Copiază grupele, materiile și orarul semestrului curent"
+                        }
+                        div("form-actions") { button { +"Creează semestrul" } }
                     }
-                    textInput(name = "id") {
-                        id = "id"
-                        required = true
-                        placeholder = "2026-1"
-                    }
-                    p("hint") { +"Rămâne același tot semestrul. Litere, cifre, - și _." }
-                    calendarFields(null)
-                    label {
-                        checkBoxInput(name = "copy_current") { checked = semesters.any { it.isCurrent } }
-                        +" Copiază grupele, materiile și orarul semestrului curent"
-                    }
-                    button { +"Creează semestrul" }
                 }
             }
         }
@@ -211,27 +402,55 @@ private fun Route.semesterRoutes(services: Services) {
                 ?: return@page call.respond(HttpStatusCode.NotFound)
         val semester = dataset.semester
         val isCurrent = services.datasets.current()?.semesterId == semester.id
+        val problems = TimetableSheet.doubleBookings(dataset)
         call.respondHtml {
-            adminPage(semester.name.ro, admin, Section.SEMESTERS) {
+            adminPage(
+                semester.name.ro,
+                admin,
+                Section.SEMESTERS,
+                context = {
+                    if (isCurrent) span("tag current") { +"Curent" } else span("tag") { +"Nu este în aplicație" }
+                    +"  ${dataset.activities.size} activități, ${dataset.groups.size} grupe, "
+                    +"${dataset.subjects.size} materii, ${dataset.professors.size} profesori"
+                },
+                actions = {
+                    a(href = "/admin/semesters/${semester.id}/export.csv", classes = "btn secondary") {
+                        +"Descarcă orarul (CSV)"
+                    }
+                    if (!isCurrent) {
+                        form(
+                            action = "/admin/semesters/${semester.id}/current",
+                            method = FormMethod.post,
+                            classes = "inline",
+                        ) {
+                            button { +"Fă-l curent" }
+                        }
+                    }
+                },
+            ) {
                 notice(call.parameters["msg"])
                 notice(call.parameters["err"], error = true)
-                p {
-                    if (isCurrent) span("tag current") { +"Curent" } else span("tag") { +"Nu este în aplicație" }
-                    +" ${dataset.activities.size} activități, ${dataset.groups.size} grupe, "
-                    +"${dataset.subjects.size} materii, ${dataset.professors.size} profesori"
+
+                h2 { +"Grupe" }
+                if (dataset.groups.isEmpty()) {
+                    p("hint") { +"Grupele apar după primul import." }
+                } else {
+                    div("card") { groupsBySeries(dataset) }
                 }
 
-                h2 { +"Importă orarul" }
+                h2 {
+                    id = "import"
+                    +"Importă orarul"
+                }
                 form(
                     action = "/admin/semesters/${semester.id}/import",
                     method = FormMethod.post,
                     encType = FormEncType.multipartFormData,
-                    classes = "panel",
+                    classes = "card",
                 ) {
                     p {
-                        +"Un fișier CSV cu un rând pe activitate, în formatul descris în ghidul de administrare. "
-                        a(href = "/admin/semesters/${semester.id}/export.csv") { +"Descarcă orarul actual" }
-                        +" ca punct de plecare."
+                        +"Un fișier CSV cu un rând pe activitate, în formatul din ghidul de administrare. "
+                        +"Cel mai simplu: descarcă orarul actual, modifică-l și importă-l înapoi."
                     }
                     fileInput(name = "sheet") {
                         accept = ".csv,text/csv"
@@ -241,30 +460,25 @@ private fun Route.semesterRoutes(services: Services) {
                         +"Importul înlocuiește tot orarul acestui semestru. "
                         +"Dacă fișierul are erori, nu se salvează nimic."
                     }
-                    button { +"Importă" }
+                    div("form-actions") { button { +"Importă" } }
                 }
 
-                h2 { +"Grupe" }
-                if (dataset.groups.isEmpty()) {
-                    p("hint") { +"Grupele apar după primul import." }
-                } else {
-                    div("panel") {
-                        dataset.groups.forEach { group ->
-                            a(
-                                href = "/admin/semesters/${semester.id}/groups/${group.id.encodeURLParameter()}",
-                                classes = "button secondary",
-                            ) {
-                                +group.code
-                            }
-                            +" "
-                        }
+                if (problems.isNotEmpty()) {
+                    h2 {
+                        id = "problems"
+                        +"De verificat"
+                        span("count") { +problems.size.toString() }
+                    }
+                    details("card") {
+                        summary { +"Săli sau profesori cu două activități în același timp" }
+                        ul("problems") { problems.forEach { li { +it } } }
                     }
                 }
 
                 h2 { +"Calendar" }
-                form(action = "/admin/semesters/${semester.id}/calendar", method = FormMethod.post, classes = "panel") {
+                form(action = "/admin/semesters/${semester.id}/calendar", method = FormMethod.post, classes = "card") {
                     calendarFields(semester)
-                    button { +"Salvează calendarul" }
+                    div("form-actions") { button { +"Salvează calendarul" } }
                 }
             }
         }
@@ -311,10 +525,15 @@ private fun Route.semesterRoutes(services: Services) {
         val imported = result.dataset
         if (imported != null) services.datasets.replace(imported, makeCurrent = false)
         call.respondHtml(if (imported == null) HttpStatusCode.UnprocessableEntity else HttpStatusCode.OK) {
-            adminPage("Import", admin, Section.SEMESTERS) {
+            adminPage(
+                if (imported == null) "Orarul nu a fost importat" else "Orar importat",
+                admin,
+                Section.SEMESTERS,
+                context = { a(href = "/admin/semesters/${existing.semester.id}") { +existing.semester.name.ro } },
+            ) {
                 if (imported == null) {
                     div("notice error") {
-                        +"Orarul nu a fost importat. Corectează rândurile de mai jos și încearcă din nou."
+                        +"Nu s-a salvat nimic. Corectează rândurile de mai jos și încearcă din nou."
                         ul("problems") { result.errors.forEach { li { +it } } }
                     }
                 } else {
@@ -323,11 +542,14 @@ private fun Route.semesterRoutes(services: Services) {
                         +"Aplicațiile le primesc la următoarea sincronizare."
                     }
                     if (result.warnings.isNotEmpty()) {
-                        h2 { +"De verificat" }
-                        ul("problems") { result.warnings.forEach { li { +it } } }
+                        h2 {
+                            +"De verificat"
+                            span("count") { +result.warnings.size.toString() }
+                        }
+                        div("card") { ul("problems") { result.warnings.forEach { li { +it } } } }
                     }
                 }
-                a(href = "/admin/semesters/${existing.semester.id}", classes = "button secondary") {
+                a(href = "/admin/semesters/${existing.semester.id}", classes = "btn secondary") {
                     +"Înapoi la semestru"
                 }
             }
@@ -340,20 +562,37 @@ private fun Route.semesterRoutes(services: Services) {
                 ?: return@page call.respond(HttpStatusCode.NotFound)
         val group =
             dataset.groupsById[call.parameters["group"].orEmpty()] ?: return@page call.respond(HttpStatusCode.NotFound)
+        val series = dataset.series.firstOrNull { it.id == group.seriesId }
+        val programme = dataset.programmes.firstOrNull { it.id == series?.programmeId }
         val activities = baseActivities(dataset, Enrollment.National(group.id))
         call.respondHtml {
-            adminPage("Orarul grupei ${group.code}", admin, Section.SEMESTERS) {
-                p { a(href = "/admin/semesters/${dataset.semester.id}") { +dataset.semester.name.ro } }
+            adminPage(
+                "Grupa ${group.code}",
+                admin,
+                Section.SEMESTERS,
+                context = {
+                    a(href = "/admin/semesters/${dataset.semester.id}") { +dataset.semester.name.ro }
+                    +listOfNotNull(programme?.code, series?.let { "anul ${it.year}, seria ${it.name}" })
+                        .joinToString(prefix = " · ", separator = ", ")
+                },
+            ) {
                 div("scroll") {
                     div("week") {
                         (1..5).forEach { day ->
                             div("day") {
                                 h3 { +DAY_NAMES[day - 1] }
                                 activities.filter { it.slot.isoDay == day }.sortedBy { it.slot.start }.forEach { a ->
-                                    div("slot") {
+                                    val kind = when (a.type) {
+                                        ActivityType.COURSE -> ""
+                                        ActivityType.SEMINAR -> "seminar"
+                                        ActivityType.LAB -> "lab"
+                                        ActivityType.PROJECT -> "project"
+                                    }
+                                    div("slot $kind".trim()) {
+                                        span("time") {
+                                            +"${a.slot.start} - ${a.slot.end} · ${TYPE_NAMES.getValue(a.type)}"
+                                        }
                                         strong { +(dataset.subjectsById[a.subjectId]?.name?.ro ?: a.subjectId) }
-                                        +"${a.slot.start} - ${a.slot.end} · ${TYPE_NAMES.getValue(a.type)}"
-                                        br
                                         +listOfNotNull(
                                             dataset.roomsById[a.roomId]?.code,
                                             dataset.professorsById[a.professorId]?.displayName,
@@ -373,86 +612,58 @@ private fun Route.semesterRoutes(services: Services) {
     }
 }
 
-private fun Route.announcementRoutes(services: Services) {
-    page("/announcements", services) { admin ->
-        val announcements = services.announcements.page(before = null, limit = 100)
-        call.respondHtml {
-            adminPage("Anunțuri", admin, Section.ANNOUNCEMENTS) {
-                notice(call.parameters["msg"])
-                notice(call.parameters["err"], error = true)
-                form(action = "/admin/announcements", method = FormMethod.post, classes = "panel") {
-                    label {
-                        htmlFor = "title"
-                        +"Titlu"
-                    }
-                    textInput(name = "title") {
-                        id = "title"
-                        required = true
-                        maxLength = "200"
-                    }
-                    label {
-                        htmlFor = "body"
-                        +"Text"
-                    }
-                    textArea {
-                        id = "body"
-                        name = "body"
-                        required = true
-                    }
-                    p("hint") { +"Markdown: **îngroșat**, *cursiv*, [link](https://faima.upb.ro), liste cu -." }
-                    label {
-                        htmlFor = "author"
-                        +"Semnat de"
-                    }
-                    textInput(name = "author") {
-                        id = "author"
-                        required = true
-                        placeholder = "Secretariat"
-                    }
-                    label {
-                        checkBoxInput(name = "pinned")
-                        +" Fixat sus în listă"
-                    }
-                    button { +"Publică" }
-                }
-                h2 { +"Publicate" }
-                if (announcements.isEmpty()) p("hint") { +"Niciun anunț încă." }
-                announcements.forEach { a ->
-                    div("panel") {
-                        p {
-                            strong { +a.title }
-                            if (a.pinned) {
-                                +" "
-                                span("tag pinned") { +"Fixat" }
-                            }
-                        }
-                        p("hint") { +"${a.author} · ${a.publishedAt.toString().take(16).replace('T', ' ')} UTC" }
-                        p { +a.body }
-                        form(action = "/admin/announcements/${a.id}/pin", method = FormMethod.post) {
-                            hiddenInput(name = "pinned") { value = (!a.pinned).toString() }
-                            button(classes = "secondary") { +(if (a.pinned) "Nu mai fixa" else "Fixează") }
-                        }
-                        +" "
-                        form(action = "/admin/announcements/${a.id}/delete", method = FormMethod.post) {
-                            button(classes = "danger") { +"Șterge" }
-                        }
+/** One row per series ("IMA, anul 2, seria A") with its groups, in the order the sheet gave them. */
+private fun FlowContent.groupsBySeries(dataset: Dataset) {
+    div("series") {
+        dataset.series.forEach { series ->
+            val groups = dataset.groups.filter { it.seriesId == series.id }
+            if (groups.isEmpty()) return@forEach
+            val programme = dataset.programmes.firstOrNull { it.id == series.programmeId }
+            div("label") {
+                strong { +(programme?.code ?: series.programmeId) }
+                +", anul ${series.year}, seria ${series.name}"
+            }
+            div("chips") {
+                groups.forEach { group ->
+                    a(href = "/admin/semesters/${dataset.semester.id}/groups/${group.id.encodeURLParameter()}") {
+                        +group.code
                     }
                 }
             }
         }
     }
-    action("/announcements", services) { _ ->
-        val form = call.receiveParameters()
-        val title = form["title"].orEmpty().trim()
-        val body = form["body"].orEmpty().trim()
-        val author = form["author"].orEmpty().trim()
-        if (title.isEmpty() || body.isEmpty() || author.isEmpty()) {
-            return@action call.respondRedirect(
-                "/admin/announcements?err=${"Titlul, textul și semnătura sunt obligatorii.".encodeURLParameter()}",
-            )
+}
+
+private fun Route.announcementRoutes(services: Services) {
+    page("/announcements", services) { admin ->
+        val announcements = services.announcements.page(before = null, limit = 100)
+        call.respondHtml { announcementsPage(admin, announcements, draft = null, msg = call.parameters["msg"]) }
+    }
+    action("/announcements", services) { admin ->
+        val draft = Draft.from(call.receiveParameters())
+        if (draft.preview || draft.error != null) {
+            val announcements = services.announcements.page(before = null, limit = 100)
+            return@action call.respondHtml { announcementsPage(admin, announcements, draft, msg = null) }
         }
-        services.announcements.publish(title, body, author, pinned = form["pinned"] == "on")
+        services.announcements.publish(draft.title, draft.body, draft.author, pinned = draft.pinned)
         call.respondRedirect("/admin/announcements?msg=${"Anunțul a fost publicat.".encodeURLParameter()}")
+    }
+    page("/announcements/{id}", services) { admin ->
+        val announcement =
+            services.announcements.byId(call.parameters["id"].orEmpty())
+                ?: return@page call.respond(HttpStatusCode.NotFound)
+        call.respondHtml { editAnnouncementPage(admin, announcement, Draft.of(announcement)) }
+    }
+    action("/announcements/{id}", services) { admin ->
+        val announcement =
+            services.announcements.byId(call.parameters["id"].orEmpty())
+                ?: return@action call.respond(HttpStatusCode.NotFound)
+        val draft = Draft.from(call.receiveParameters())
+        if (draft.preview || draft.error != null) {
+            return@action call.respondHtml { editAnnouncementPage(admin, announcement, draft) }
+        }
+        services.announcements.update(announcement.id, draft.title, draft.body, draft.author, draft.pinned)
+        call.respondRedirect("/admin/announcements?msg=${"Anunțul a fost salvat.".encodeURLParameter()}")
     }
     action("/announcements/{id}/pin", services) { _ ->
         services.announcements.setPinned(call.parameters["id"].orEmpty(), call.receiveParameters()["pinned"] == "true")
@@ -464,11 +675,162 @@ private fun Route.announcementRoutes(services: Services) {
     }
 }
 
+/** An announcement being written: what the form sent, and whether to only show the preview. */
+private class Draft(
+    val title: String,
+    val body: String,
+    val author: String,
+    val pinned: Boolean,
+    val preview: Boolean,
+) {
+    val error: String? get() =
+        if (title.isBlank() ||
+            body.isBlank() ||
+            author.isBlank()
+        ) {
+            "Titlul, textul și semnătura sunt obligatorii."
+        } else {
+            null
+        }
+
+    companion object {
+        fun from(form: Parameters) = Draft(
+            form["title"].orEmpty().trim(),
+            form["body"].orEmpty().trim(),
+            form["author"].orEmpty().trim(),
+            form["pinned"] == "on",
+            preview = form["preview"] != null,
+        )
+
+        fun of(a: Announcement) = Draft(a.title, a.body, a.author, a.pinned, preview = false)
+    }
+}
+
+private fun HTML.announcementsPage(admin: Admin, announcements: List<Announcement>, draft: Draft?, msg: String?) {
+    adminPage(
+        "Anunțuri",
+        admin,
+        Section.ANNOUNCEMENTS,
+        context = { +"Ajung la toți studenții, la următoarea sincronizare a aplicației." },
+    ) {
+        notice(msg)
+        h2 {
+            id = "new"
+            style = "margin-top: 0"
+            +"Anunț nou"
+        }
+        announcementForm("/admin/announcements", draft, submit = "Publică")
+        h2 {
+            +"Publicate"
+            span("count") { +announcements.size.toString() }
+        }
+        if (announcements.isEmpty()) p("hint") { +"Niciun anunț încă." }
+        announcements.forEach { a ->
+            div("card announcement") {
+                h3 {
+                    +a.title
+                    if (a.pinned) {
+                        +" "
+                        span("tag pinned") { +"Fixat" }
+                    }
+                }
+                p("meta") { +"${a.author} · ${dateTime(a)}" }
+                div("body") { markdown(a.body) }
+                div("form-actions") {
+                    a(href = "/admin/announcements/${a.id}", classes = "btn secondary") { +"Editează" }
+                    form(action = "/admin/announcements/${a.id}/pin", method = FormMethod.post, classes = "inline") {
+                        hiddenInput(name = "pinned") { value = (!a.pinned).toString() }
+                        button(classes = "secondary") { +(if (a.pinned) "Nu mai fixa" else "Fixează") }
+                    }
+                    form(action = "/admin/announcements/${a.id}/delete", method = FormMethod.post, classes = "inline") {
+                        onSubmit = "return confirm('Ștergi anunțul? Dispare și din aplicații.')"
+                        button(classes = "danger") { +"Șterge" }
+                    }
+                }
+            }
+        }
+    }
+}
+
+private fun HTML.editAnnouncementPage(admin: Admin, announcement: Announcement, draft: Draft) {
+    adminPage(
+        "Editează anunțul",
+        admin,
+        Section.ANNOUNCEMENTS,
+        context = {
+            a(href = "/admin/announcements") { +"Anunțuri" }
+            +" · publicat ${dateTime(announcement)}"
+        },
+    ) {
+        announcementForm("/admin/announcements/${announcement.id}", draft, submit = "Salvează")
+        p("hint") { +"Data publicării rămâne aceeași; aplicațiile primesc textul nou la următoarea sincronizare." }
+    }
+}
+
+private fun FlowContent.announcementForm(action: String, draft: Draft?, submit: String) {
+    if (draft?.error != null && !draft.preview) notice(draft.error, error = true)
+    div("cols") {
+        form(action = action, method = FormMethod.post, classes = "card") {
+            field("title", "Titlu") {
+                textInput(name = "title") {
+                    id = "title"
+                    required = true
+                    maxLength = "200"
+                    value = draft?.title.orEmpty()
+                }
+            }
+            field("body", "Text") {
+                textArea {
+                    id = "body"
+                    name = "body"
+                    required = true
+                    +draft?.body.orEmpty()
+                }
+                p("hint") { +"**îngroșat**, *cursiv*, [link](https://faima.upb.ro), liste cu - la început de rând." }
+            }
+            field("author", "Semnat de") {
+                textInput(name = "author") {
+                    id = "author"
+                    required = true
+                    placeholder = "Secretariat"
+                    value = draft?.author.orEmpty()
+                }
+            }
+            label("check") {
+                checkBoxInput(name = "pinned") { checked = draft?.pinned == true }
+                +"Fixat sus în listă"
+            }
+            div("form-actions") {
+                button { +submit }
+                button(classes = "secondary") {
+                    name = "preview"
+                    value = "1"
+                    attributes["formnovalidate"] = "formnovalidate"
+                    +"Previzualizează"
+                }
+            }
+        }
+        if (draft?.preview == true) {
+            div("preview announcement") {
+                div("label") { +"Așa apare în aplicație" }
+                h3 { +draft.title.ifBlank { "(fără titlu)" } }
+                p("meta") { +draft.author.ifBlank { "(fără semnătură)" } }
+                div("body") { markdown(draft.body) }
+            }
+        }
+    }
+}
+
 private fun Route.adminListRoutes(services: Services) {
     page("/admins", services, AdminRole.ADMIN) { admin ->
         val admins = services.admins.list()
         call.respondHtml {
-            adminPage("Administratori", admin, Section.ADMINS) {
+            adminPage(
+                "Administratori",
+                admin,
+                Section.ADMINS,
+                context = { +"Editorii schimbă orarul și anunțurile; administratorii și conturile." },
+            ) {
                 notice(call.parameters["msg"])
                 notice(call.parameters["err"], error = true)
                 table {
@@ -484,9 +846,10 @@ private fun Route.adminListRoutes(services: Services) {
                             tr {
                                 td { +other.email }
                                 td { +(if (other.role == AdminRole.ADMIN) "Administrator" else "Editor") }
-                                td {
+                                td("actions") {
                                     if (other.id != admin.id) {
                                         form(action = "/admin/admins/${other.id}/delete", method = FormMethod.post) {
+                                            onSubmit = "return confirm('Ștergi contul ${other.email}?')"
                                             button(classes = "danger") { +"Șterge" }
                                         }
                                     } else {
@@ -498,42 +861,37 @@ private fun Route.adminListRoutes(services: Services) {
                     }
                 }
                 h2 { +"Cont nou" }
-                form(action = "/admin/admins", method = FormMethod.post, classes = "panel") {
-                    label {
-                        htmlFor = "email"
-                        +"Email"
-                    }
-                    emailInput(name = "email") {
-                        id = "email"
-                        required = true
-                    }
-                    label {
-                        htmlFor = "password"
-                        +"Parolă inițială"
-                    }
-                    passwordInput(name = "password") {
-                        id = "password"
-                        required = true
-                        minLength = "8"
-                    }
-                    p("hint") { +"Spune-i persoanei să o schimbe după prima conectare." }
-                    label {
-                        htmlFor = "role"
-                        +"Rol"
-                    }
-                    select {
-                        id = "role"
-                        name = "role"
-                        option {
-                            value = "editor"
-                            +"Editor: orar și anunțuri"
-                        }
-                        option {
-                            value = "admin"
-                            +"Administrator: tot, inclusiv conturile"
+                form(action = "/admin/admins", method = FormMethod.post, classes = "card") {
+                    field("email", "Email") {
+                        emailInput(name = "email") {
+                            id = "email"
+                            required = true
                         }
                     }
-                    button { +"Creează contul" }
+                    field("password", "Parolă inițială") {
+                        passwordInput(name = "password") {
+                            id = "password"
+                            required = true
+                            minLength = "8"
+                            attributes["autocomplete"] = "new-password"
+                        }
+                        p("hint") { +"Spune-i persoanei să o schimbe după prima conectare." }
+                    }
+                    field("role", "Rol") {
+                        select {
+                            id = "role"
+                            name = "role"
+                            option {
+                                value = "editor"
+                                +"Editor: orar și anunțuri"
+                            }
+                            option {
+                                value = "admin"
+                                +"Administrator: tot, inclusiv conturile"
+                            }
+                        }
+                    }
+                    div("form-actions") { button { +"Creează contul" } }
                 }
             }
         }
@@ -563,68 +921,69 @@ private fun Route.adminListRoutes(services: Services) {
     }
 }
 
+/** A label above its input. */
+private fun FlowContent.field(id: String, label: String, input: FlowContent.() -> Unit) {
+    div("field") {
+        label {
+            htmlFor = id
+            +label
+        }
+        input()
+    }
+}
+
 private fun FlowContent.calendarFields(semester: Semester?) {
-    label {
-        htmlFor = "name_ro"
-        +"Nume"
+    div("cols") {
+        style = "gap: 0 16px"
+        field("name_ro", "Nume") {
+            textInput(name = "name_ro") {
+                id = "name_ro"
+                required = true
+                value = semester?.name?.ro.orEmpty()
+                placeholder = "Semestrul 1, 2026-2027"
+            }
+        }
+        field("name_en", "Nume în engleză") {
+            textInput(name = "name_en") {
+                id = "name_en"
+                value = semester?.name?.en.orEmpty()
+                placeholder = "Semester 1, 2026-2027"
+            }
+        }
+        field("first_day", "Prima zi de cursuri") {
+            dateInput(name = "first_day") {
+                id = "first_day"
+                required = true
+                value = semester?.firstDay?.toString().orEmpty()
+            }
+        }
+        field("last_day", "Ultima zi de cursuri") {
+            dateInput(name = "last_day") {
+                id = "last_day"
+                required = true
+                value = semester?.lastDay?.toString().orEmpty()
+            }
+        }
     }
-    textInput(name = "name_ro") {
-        id = "name_ro"
-        required = true
-        value = semester?.name?.ro.orEmpty()
-        placeholder =
-            "Semestrul 1, 2026-2027"
+    field("breaks", "Vacanțe și zile libere") {
+        textArea {
+            id = "breaks"
+            name = "breaks"
+            +(semester?.let(CalendarForm::breaksText).orEmpty())
+        }
+        p("hint") {
+            +"Câte una pe rând: 2026-12-21 2027-01-03 Vacanța de iarnă | Winter break. "
+            +"Pentru o singură zi, o singură dată."
+        }
     }
-    label {
-        htmlFor = "name_en"
-        +"Nume în engleză"
+    field("overrides", "Săptămâni cu paritatea schimbată") {
+        textArea {
+            id = "overrides"
+            name = "overrides"
+            +(semester?.let(CalendarForm::overridesText).orEmpty())
+        }
+        p("hint") { +"Câte una pe rând: o zi din săptămână și pară sau impară, de exemplu 2026-11-30 pară." }
     }
-    textInput(name = "name_en") {
-        id = "name_en"
-        value = semester?.name?.en.orEmpty()
-        placeholder =
-            "Semester 1, 2026-2027"
-    }
-    label {
-        htmlFor = "first_day"
-        +"Prima zi de cursuri"
-    }
-    dateInput(name = "first_day") {
-        id = "first_day"
-        required = true
-        value = semester?.firstDay?.toString().orEmpty()
-    }
-    label {
-        htmlFor = "last_day"
-        +"Ultima zi de cursuri"
-    }
-    dateInput(name = "last_day") {
-        id = "last_day"
-        required = true
-        value = semester?.lastDay?.toString().orEmpty()
-    }
-    label {
-        htmlFor = "breaks"
-        +"Vacanțe și zile libere"
-    }
-    textArea {
-        id = "breaks"
-        name = "breaks"
-        +(semester?.let(CalendarForm::breaksText).orEmpty())
-    }
-    p("hint") {
-        +"Câte una pe rând: 2026-12-21 2027-01-03 Vacanța de iarnă | Winter break. Pentru o singură zi, o singură dată."
-    }
-    label {
-        htmlFor = "overrides"
-        +"Săptămâni cu paritatea schimbată"
-    }
-    textArea {
-        id = "overrides"
-        name = "overrides"
-        +(semester?.let(CalendarForm::overridesText).orEmpty())
-    }
-    p("hint") { +"Câte una pe rând: o zi din săptămână și pară sau impară, de exemplu 2026-11-30 pară." }
 }
 
 private fun weeksLabel(rule: WeekRule): String? = when (rule) {
@@ -634,32 +993,40 @@ private fun weeksLabel(rule: WeekRule): String? = when (rule) {
     is WeekRule.Only -> "săptămânile ${rule.weeks.sorted().joinToString(", ")}"
 }
 
+/** "3 noiembrie 2026" */
+private fun longDate(date: LocalDate) = "${date.day} ${MONTHS[date.month.ordinal]} ${date.year}"
+
+/** "3 noiembrie 2026, 20:42", in Bucharest time. */
+private fun dateTime(a: Announcement): String {
+    val local = a.publishedAt.toLocalDateTime(FacultyTimeZone)
+    return "${longDate(local.date)}, ${local.time.toString().take(5)}"
+}
+
 private fun HTML.loginPage(error: String?) {
     adminPage("Administrare eTimetable", null, null) {
-        div("login panel") {
+        div("login") {
             img(src = "/admin/static/faima-seal.png", alt = "Sigiliul FAIMA")
             h1 { +"Administrare eTimetable" }
+            p("sub") { +"Orarul și anunțurile FAIMA" }
             notice(error, error = true)
             form(action = "/admin/login", method = FormMethod.post) {
-                label {
-                    htmlFor = "email"
-                    +"Email"
+                field("email", "Email") {
+                    emailInput(name = "email") {
+                        id = "email"
+                        required = true
+                        attributes["autocomplete"] = "username"
+                    }
                 }
-                emailInput(name = "email") {
-                    id = "email"
-                    required = true
-                    attributes["autocomplete"] = "username"
-                }
-                label {
-                    htmlFor = "password"
-                    +"Parolă"
-                }
-                passwordInput(name = "password") {
-                    id = "password"
-                    required = true
+                field("password", "Parolă") {
+                    passwordInput(name = "password") {
+                        id = "password"
+                        required = true
+                        attributes["autocomplete"] = "current-password"
+                    }
                 }
                 button { +"Conectează-te" }
             }
+            a(href = "/", classes = "back") { +"Înapoi la pagina aplicației" }
         }
     }
 }
