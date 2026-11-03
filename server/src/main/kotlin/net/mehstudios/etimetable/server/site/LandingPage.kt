@@ -233,7 +233,7 @@ private val RO = Texts(
     other = "en",
     self = "/?lang=ro",
     faculty = "Facultatea de Antreprenoriat, Ingineria și Managementul Afacerilor",
-    headline = "Orarul FAIMA, pe telefon",
+    headline = "Orarul FAIMA, pe\u00A0telefon",
     lead = "Grupa ta, sălile, profesorii și anunțurile facultății, într-o aplicație pentru Android și iPhone. " +
         "După prima sincronizare merge și fără internet.",
     android = "Descarcă pentru Android",
@@ -291,7 +291,7 @@ private val EN = Texts(
     other = "ro",
     self = "/?lang=en",
     faculty = "Faculty of Entrepreneurship, Business Engineering and Management",
-    headline = "The FAIMA timetable, on your phone",
+    headline = "The FAIMA timetable, on your\u00A0phone",
     lead = "Your group, rooms, professors and the faculty's announcements, in one app for Android and iPhone. " +
         "After the first sync it also works offline.",
     android = "Get it for Android",
@@ -367,30 +367,32 @@ private val RECTORAT = buildString {
 }
 
 private val SITE_STYLES = """
-.wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+.wrap { max-width: 1200px; margin: 0 auto; padding: 0 clamp(16px, 4vw, 40px); }
 .top { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-top: 20px; padding-bottom: 20px; }
 .top .brand { display: flex; align-items: center; gap: 12px; color: var(--text); text-decoration: none; }
 .top .brand img { width: 48px; height: auto; }
 .top .brand strong { display: block; font-size: 18px; line-height: 22px; }
-.top .brand span span { display: block; font-size: 13px; color: var(--muted); }
+.top .brand span span { display: block; font-size: 13px; color: var(--muted); white-space: nowrap; }
 .top nav { display: flex; align-items: center; gap: 16px; }
 .top .lang { color: var(--muted); font-weight: 600; font-size: 13px; text-decoration: none; letter-spacing: 0.04em; }
 .top .lang:hover { color: var(--text); }
-.hero { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr); gap: 48px; align-items: center; padding-top: 40px; padding-bottom: 56px; }
+.hero { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(24px, 5vw, 72px); align-items: center;
+  padding-top: clamp(12px, 4vw, 48px); padding-bottom: clamp(32px, 5vw, 64px); }
 .kicker { color: var(--faima); font-weight: 600; font-size: 14px; margin: 0 0 14px; }
-.hero h1 { font-size: 52px; line-height: 1.05; letter-spacing: -0.025em; margin: 0 0 20px; max-width: 14ch; }
-.lead { font-size: 19px; line-height: 1.5; color: #3D3D3B; max-width: 34em; margin: 0 0 28px; }
+.hero h1 { font-size: clamp(36px, 3.6vw + 12px, 64px); line-height: 1.04; letter-spacing: -0.025em; margin: 0 0 20px; max-width: 13ch; }
+.lead { font-size: clamp(16px, 0.5vw + 13px, 20px); line-height: 1.5; color: #3D3D3B; max-width: 34em; margin: 0 0 28px; }
 .downloads { display: flex; flex-wrap: wrap; gap: 10px; }
-.btn.store { padding: 12px 18px; font-size: 15px; border-radius: 8px; background: var(--ink); }
+.btn.store { justify-content: center; padding: 12px 18px; font-size: 15px; border-radius: 8px; background: var(--ink); }
 .btn.store.off { background: var(--alt); color: var(--muted); border-color: var(--border); cursor: default; filter: none; }
 .btn.store .soon { font-weight: 500; font-size: 13px; }
 .btn.store .soon::before { content: "·"; margin: 0 6px 0 2px; }
 .small { color: var(--muted); font-size: 14px; margin: 14px 0 0; }
-.phones { position: relative; height: 560px; }
-.phone { position: absolute; width: 250px; height: auto; border: 9px solid var(--ink); border-radius: 34px; background: var(--ink);
-  box-shadow: 0 24px 48px rgba(30, 30, 30, 0.14); }
-.phone.back { left: 4%; top: 0; }
-.phone.front { left: 42%; top: 56px; }
+/* the two screenshots as one overlapping pair; their own height sets the block, so no gaps at any width */
+.phones { display: flex; justify-content: center; align-items: flex-start; padding-bottom: 4%; }
+.phone { position: relative; flex: none; width: clamp(140px, 44%, 280px); height: auto; border: 9px solid var(--ink);
+  border-radius: 34px; background: var(--ink); box-shadow: 0 24px 48px rgba(30, 30, 30, 0.14); }
+.phone.back { z-index: 1; }
+.phone.front { z-index: 2; margin-left: -10%; margin-top: 14%; }
 .today { display: flex; align-items: stretch; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
 .today .num { display: flex; align-items: center; justify-content: center; min-width: 72px; background: var(--alt); color: var(--text);
   border-right: 1px solid var(--border);
@@ -400,12 +402,13 @@ private val SITE_STYLES = """
 .today span { color: var(--muted); }
 .features { padding-top: 64px; }
 .features h2, .start h2 { font-size: 28px; line-height: 34px; margin: 0 0 24px; }
-.features .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 48px; }
+.features .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 0 48px; }
 .feature { border-top: 1px solid var(--border); padding: 18px 0 22px; }
 .feature h3 { font-size: 17px; margin: 0 0 6px; }
 .feature p { margin: 0; color: #3D3D3B; }
 .start { padding-top: 40px; padding-bottom: 64px; }
-.start ol { margin: 0; padding: 0; list-style: none; counter-reset: step; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.start ol { margin: 0; padding: 0; list-style: none; counter-reset: step; display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); gap: 16px; }
 .start li { counter-increment: step; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; }
 .start li::before { content: counter(step); display: block; font-size: 28px; font-weight: 700; color: var(--primary); margin-bottom: 6px;
   font-variant-numeric: tabular-nums; }
@@ -430,20 +433,24 @@ private val SITE_STYLES = """
 .foot p { max-width: 60em; }
 .foot a { color: #D6D6D2; }
 .foot .links { display: flex; flex-wrap: wrap; gap: 6px 20px; }
-@media (max-width: 900px) {
-  .hero { grid-template-columns: 1fr; gap: 24px; padding-top: 16px; }
-  .hero h1 { font-size: 38px; }
-  .lead { font-size: 17px; }
-  .phones { height: 500px; }
-  .phone { width: 190px; border-width: 7px; border-radius: 26px; }
-  .phone.back { left: 0; }
-  .phone.front { left: auto; right: 0; top: 40px; }
-  .features .grid, .start ol { grid-template-columns: 1fr; }
+@media (min-width: 1600px) {
+  .wrap { max-width: 1320px; }
+  body { font-size: 16px; }
+}
+@media (max-width: 860px) {
+  .hero { grid-template-columns: 1fr; }
+  .phones { max-width: 460px; width: 100%; margin: 0 auto; }
+  .phone { width: 47%; border-width: 7px; border-radius: 26px; }
   .staff { padding-bottom: 110px; }
   .rectorat { width: 100%; }
   .foot .logos .unstpb, .foot .logos .faima { height: 44px; }
-  .wrap { padding-left: 16px; padding-right: 16px; }
   .top { padding-top: 14px; padding-bottom: 6px; }
-  .top .brand img { width: 34px; height: 34px; }
+  .top .brand img { width: 38px; }
+}
+@media (max-width: 520px) {
+  .downloads .btn.store { flex: 1 1 140px; padding: 11px 12px; }
+  .top nav { gap: 12px; }
+  .top .btn { padding: 7px 12px; font-size: 13px; }
+  .start li { padding: 14px 16px; }
 }
 """
