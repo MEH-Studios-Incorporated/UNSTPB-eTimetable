@@ -12,6 +12,7 @@ data class ServerConfig(
     /** First admin account, created only while there is none. */
     val firstAdminEmail: String? = null,
     val firstAdminPassword: String? = null,
+    val downloads: Downloads = Downloads(),
 ) {
     companion object {
         /** From the jar manifest, so it is the release tag; "dev" when run from the IDE. */
@@ -30,9 +31,16 @@ data class ServerConfig(
                 publicUrl = env["ETT_PUBLIC_URL"]?.takeIf { it.isNotBlank() },
                 firstAdminEmail = env["ETT_ADMIN_EMAIL"],
                 firstAdminPassword = env["ETT_ADMIN_PASSWORD"],
+                downloads = Downloads(
+                    android = env["ETT_ANDROID_URL"]?.takeIf { it.isNotBlank() },
+                    ios = env["ETT_IOS_URL"]?.takeIf { it.isNotBlank() },
+                ),
             )
         }
     }
 }
 
 data class DatabaseConfig(val url: String, val user: String, val password: String)
+
+/** Where the public page sends students for the apps; a missing one shows as "coming soon". */
+data class Downloads(val android: String? = null, val ios: String? = null)

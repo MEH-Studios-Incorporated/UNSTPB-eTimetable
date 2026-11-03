@@ -173,4 +173,59 @@ class AdminRoutesTest {
         val error = runCatching { services.admins.delete(only.id) }.exceptionOrNull()
         assertTrue(error is net.mehstudios.etimetable.server.admin.AdminFormError)
     }
+
+    @Test
+    fun previewPublishesNothingAndEscapesHtml() = withDashboard { _, browser ->
+        browser.login()
+        val page = browser.submitForm(
+            "/admin/announcements",
+            parameters {
+                append("title", "Sală nouă")
+                append("body", "**BN212b** de luni <script>alert(1)</script>\n\n- grupa 1521A")
+                append("author", "Secretariat")
+                append("preview", "1")
+            },
+        ).bodyAsText()
+        assertTrue("<strong>BN212b</strong>" in page, page)
+        assertTrue("<li>grupa 1521A</li>" in page)
+        assertTrue("&lt;script&gt;" in page)
+        assertTrue("<script>alert" !in page)
+        assertEquals(emptyList(), browser.get("/api/v1/announcements").body<List<Announcement>>())
+    }
+
+    @Test
+    fun editingKeepsThePublicationTime() = withDashboard { _, browser ->
+        browser.login()
+        browser.submitForm(
+            "/admin/announcements",
+            parameters {
+                append("title", "Sala se schimbă")
+                append("body", "Laboratorul se ține în BN212b.")
+                append("author", "Secretariat")
+            },
+        )
+        val before = browser.get("/api/v1/announcements").body<List<Announcement>>().single()
+        val saved = browser.submitForm(
+            "/admin/announcements/${before.id}",
+            parameters {
+                append("title", "Sala se schimbă de luni")
+                append("body", "Laboratorul se ține în BN212a.")
+                append("author", "Secretariat")
+                append("pinned", "on")
+            },
+        )
+        assertEquals(HttpStatusCode.Found, saved.status)
+        val after = browser.get("/api/v1/announcements").body<List<Announcement>>().single()
+        assertEquals("Sala se schimbă de luni", after.title)
+        assertTrue(after.pinned)
+        assertEquals(before.publishedAt, after.publishedAt)
+    }
+
+    @Test
+    fun overviewSaysWhenThereIsNoSemester() = withDashboard { _, browser ->
+        browser.login()
+        val page = browser.get("/admin")
+        assertEquals(HttpStatusCode.OK, page.status)
+        assertTrue("Niciun semestru în aplicație" in page.bodyAsText())
+    }
 }

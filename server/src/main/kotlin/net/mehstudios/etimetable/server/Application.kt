@@ -35,6 +35,7 @@ import net.mehstudios.etimetable.server.announcements.AnnouncementRepository
 import net.mehstudios.etimetable.server.dataset.DatasetRepository
 import net.mehstudios.etimetable.server.db.createDataSource
 import net.mehstudios.etimetable.server.db.migrate
+import net.mehstudios.etimetable.server.site.siteRoutes
 import org.slf4j.LoggerFactory
 import org.slf4j.event.Level
 import javax.sql.DataSource
@@ -49,7 +50,9 @@ fun main() {
         LoggerFactory.getLogger("eTimetable").info("Created the first admin account, {}", config.firstAdminEmail)
     }
     val secureCookies = config.publicUrl?.startsWith("https://") == true
-    embeddedServer(Netty, port = config.port, host = "0.0.0.0") { module(services, secureCookies) }.start(wait = true)
+    embeddedServer(Netty, port = config.port, host = "0.0.0.0") {
+        module(services, secureCookies, config.downloads)
+    }.start(wait = true)
 }
 
 class Services(val db: DataSource) {
@@ -59,7 +62,7 @@ class Services(val db: DataSource) {
     val admins = AdminAccounts(db)
 }
 
-fun Application.module(services: Services, secureCookies: Boolean = false) {
+fun Application.module(services: Services, secureCookies: Boolean = false, downloads: Downloads = Downloads()) {
     install(ContentNegotiation) { json(AppJson) }
     install(Compression) { gzip() }
     install(CallLogging) {
@@ -96,6 +99,7 @@ fun Application.module(services: Services, secureCookies: Boolean = false) {
         }
     }
     routing {
+        siteRoutes(services, downloads)
         apiRoutes(services)
         adminRoutes(services)
     }

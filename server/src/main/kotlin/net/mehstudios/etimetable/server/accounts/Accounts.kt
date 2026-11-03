@@ -100,6 +100,18 @@ class Accounts(private val db: DataSource) {
         }
     }
 
+    /** How many students have an account and how they study, for the dashboard. */
+    suspend fun counts(): StudentCounts = db.transaction { c ->
+        c.query(
+            """
+            SELECT count(*),
+                   count(*) FILTER (WHERE profile -> 'enrollment' ->> 'type' = 'national'),
+                   count(*) FILTER (WHERE profile -> 'enrollment' ->> 'type' = 'erasmus')
+            FROM student
+            """.trimIndent(),
+        ) { StudentCounts(it.getInt(1), it.getInt(2), it.getInt(3)) }.single()
+    }
+
     /** Deletes the account; its sessions go with it. */
     suspend fun delete(studentId: UUID) {
         db.transaction { c -> c.update("DELETE FROM student WHERE id = ?", studentId) }
@@ -117,3 +129,6 @@ class Accounts(private val db: DataSource) {
         const val UNIQUE_VIOLATION = "23505"
     }
 }
+
+/** Students who never finished choosing are in [total] only. */
+data class StudentCounts(val total: Int, val national: Int, val erasmus: Int)

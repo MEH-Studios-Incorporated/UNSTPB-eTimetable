@@ -19,6 +19,8 @@ services:
       ETT_PUBLIC_URL: ${ETT_PUBLIC_URL:-}
       ETT_ADMIN_EMAIL: ${ETT_ADMIN_EMAIL:-}
       ETT_ADMIN_PASSWORD: ${ETT_ADMIN_PASSWORD:-}
+      ETT_ANDROID_URL: ${ETT_ANDROID_URL:-}
+      ETT_IOS_URL: ${ETT_IOS_URL:-}
     ports:
       - "${ETT_PUBLIC_PORT:-8080}:8080"
     depends_on:

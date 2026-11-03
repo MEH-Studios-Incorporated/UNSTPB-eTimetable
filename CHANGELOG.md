@@ -37,6 +37,18 @@ Each section is also the text of the matching GitHub release.
   whole semester; Erasmus students add and remove their picks here. A slot
   that overlaps your timetable is refused and the clash named. Tapping a
   subject's name on a class opens its page.
+- A public page at the server's address for students: what the app does,
+  download links set by the deployment, real screenshots, the current
+  teaching week, in Romanian and English, with a link to the dashboard.
+- Dashboard overview: today's teaching week, the semester's numbers, student
+  accounts, and a list of what still needs doing (activities without a
+  teacher or a room, double bookings, professors without an email).
+- Announcements can be previewed before publishing and edited afterwards.
+
+### Changed
+
+- The dashboard has a sidebar, page headers with their actions, groups
+  listed by series and a cleaner look throughout.
 
 ### Fixed
 

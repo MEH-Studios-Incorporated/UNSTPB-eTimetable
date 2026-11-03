@@ -22,7 +22,6 @@ import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.put
 import io.ktor.server.routing.route
-import net.mehstudios.etimetable.AppInfo
 import net.mehstudios.etimetable.api.ApiError
 import net.mehstudios.etimetable.api.ErrorCodes
 import net.mehstudios.etimetable.api.Health
@@ -40,8 +39,6 @@ val AUTH_RATE_LIMIT = RateLimitName("auth")
 data class StudentPrincipal(val studentId: UUID)
 
 fun Route.apiRoutes(services: Services) {
-    get("/") { call.respondText("${AppInfo.NAME} server ${ServerConfig.version}") }
-
     route("/api/v1") {
         get("/health") {
             val databaseUp = runCatching {
