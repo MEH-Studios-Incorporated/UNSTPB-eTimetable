@@ -93,11 +93,11 @@ private fun HTML.landing(t: Texts, dataset: Dataset?, downloads: Downloads) {
                     p("small") { +t.free }
                 }
                 div("phones") {
-                    img(src = "/static/app-day.webp", alt = t.shotDay, classes = "phone back") {
+                    img(src = "/static/app-light.webp", alt = t.shotLight, classes = "phone back") {
                         attributes["width"] = "270"
                         attributes["height"] = "606"
                     }
-                    img(src = "/static/app-week.webp", alt = t.shotWeek, classes = "phone front") {
+                    img(src = "/static/app-dark.webp", alt = t.shotDark, classes = "phone front") {
                         attributes["width"] = "270"
                         attributes["height"] = "606"
                     }
@@ -120,6 +120,10 @@ private fun HTML.landing(t: Texts, dataset: Dataset?, downloads: Downloads) {
                 ol { t.steps.forEach { li { +it } } }
             }
             section("staff") {
+                div("rectorat") {
+                    attributes["aria-hidden"] = "true"
+                    unsafe { +RECTORAT }
+                }
                 div("wrap") {
                     div {
                         h2 { +t.staffTitle }
@@ -129,19 +133,26 @@ private fun HTML.landing(t: Texts, dataset: Dataset?, downloads: Downloads) {
                 }
             }
         }
-        footer("wrap") {
-            div("meh") {
-                img(src = "/static/meh-mark.png", alt = "")
-                div {
-                    strong { +"Multimedia Entertainment Hub LLC" }
-                    span { +"© 2026. ${t.rights}" }
+        footer("foot") {
+            div("wrap") {
+                div("logos") {
+                    img(src = "/static/unstpb-logo-white.png", alt = t.unstpb, classes = "unstpb")
+                    img(src = "/static/faima-seal-white.png", alt = t.faimaSeal, classes = "faima")
                 }
-            }
-            p { +t.commissioned }
-            p("links") {
-                a(href = "https://faima.upb.ro/") { +"faima.upb.ro" }
-                a(href = "https://mehstudios.net/") { +"mehstudios.net" }
-                a(href = "mailto:support@mehstudios.net") { +"support@mehstudios.net" }
+                div("meh") {
+                    img(src = "/static/meh-mark.png", alt = "")
+                    div {
+                        strong { +"Multimedia Entertainment Hub LLC" }
+                        span { +"© 2026. ${t.rights}" }
+                    }
+                }
+                p { +t.commissioned }
+                p("links") {
+                    a(href = "https://faima.upb.ro/") { +"faima.upb.ro" }
+                    a(href = "https://upb.ro/") { +"upb.ro" }
+                    a(href = "https://mehstudios.net/") { +"mehstudios.net" }
+                    a(href = "mailto:support@mehstudios.net") { +"support@mehstudios.net" }
+                }
             }
         }
     }
@@ -193,8 +204,8 @@ private class Texts(
     val soon: String,
     val free: String,
     val dashboard: String,
-    val shotDay: String,
-    val shotWeek: String,
+    val shotLight: String,
+    val shotDark: String,
     val todayIs: String,
     val whatTitle: String,
     val features: List<Pair<String, String>>,
@@ -204,6 +215,8 @@ private class Texts(
     val staffText: String,
     val staffButton: String,
     val rights: String,
+    val unstpb: String,
+    val faimaSeal: String,
     val commissioned: String,
     val months: List<String>,
     val weekWord: String,
@@ -228,8 +241,8 @@ private val RO = Texts(
     soon = "în curând",
     free = "Gratuită pentru studenții FAIMA. Contul se face din aplicație, cu adresa de email.",
     dashboard = "Administrare",
-    shotDay = "Ziua de joi în aplicație: seminarele de germană, statistică și comunicare, cu sălile lor",
-    shotWeek = "Săptămâna 7 ca tabel de ore și zile",
+    shotLight = "Ziua de joi în tema luminoasă: seminarele de germană, statistică și comunicare, cu sălile lor",
+    shotDark = "Pagina unei materii în tema întunecată: laboratoarele tuturor grupelor, cu cele pe care le poți adăuga",
     todayIs = "Azi,",
     whatTitle = "Ce găsești în aplicație",
     features = listOf(
@@ -259,8 +272,11 @@ private val RO = Texts(
         "Orarul se importă dintr-un fișier CSV; aplicațiile primesc schimbările la următoarea sincronizare.",
     staffButton = "Intră în panoul de administrare",
     rights = "Toate drepturile rezervate.",
+    unstpb = "Universitatea Națională de Știință și Tehnologie POLITEHNICA București",
+    faimaSeal = "Sigiliul FAIMA",
     commissioned = "Realizată la comanda Facultății de Antreprenoriat, Ingineria și Managementul Afacerilor (FAIMA), " +
-        "Universitatea Națională de Știință și Tehnologie POLITEHNICA București.",
+        "Universitatea Națională de Știință și Tehnologie POLITEHNICA București. Numele și siglele FAIMA și UNSTPB " +
+        "aparțin universității.",
     months = listOf(
         "ianuarie", "februarie", "martie", "aprilie", "mai", "iunie",
         "iulie", "august", "septembrie", "octombrie", "noiembrie", "decembrie",
@@ -283,8 +299,8 @@ private val EN = Texts(
     soon = "coming soon",
     free = "Free for FAIMA students. You create the account in the app, with your email address.",
     dashboard = "Dashboard",
-    shotDay = "Thursday in the app: the German, statistics and communication seminars, with their rooms",
-    shotWeek = "Week 7 as a table of times and days",
+    shotLight = "Thursday in the light theme: the German, statistics and communication seminars, with their rooms",
+    shotDark = "A subject in the dark theme: every group's labs, with the ones you can add",
     todayIs = "Today,",
     whatTitle = "What the app does",
     features = listOf(
@@ -313,8 +329,11 @@ private val EN = Texts(
         "The timetable is imported from a CSV file; the apps get the changes at their next sync.",
     staffButton = "Open the dashboard",
     rights = "All rights reserved.",
+    unstpb = "National University of Science and Technology POLITEHNICA Bucharest",
+    faimaSeal = "FAIMA seal",
     commissioned = "Commissioned by the Faculty of Entrepreneurship, Business Engineering and Management (FAIMA), " +
-        "National University of Science and Technology POLITEHNICA Bucharest.",
+        "National University of Science and Technology POLITEHNICA Bucharest. The FAIMA and UNSTPB names and logos " +
+        "belong to the university.",
     months = listOf(
         "January", "February", "March", "April", "May", "June",
         "July", "August", "September", "October", "November", "December",
@@ -324,11 +343,29 @@ private val EN = Texts(
     even = "even",
 )
 
+/** Our own line drawing of the Rectorat's front, the building in the university's emblem. */
+private val RECTORAT = buildString {
+    append("""<svg viewBox="0 0 1200 260" preserveAspectRatio="xMidYMax meet" fill="none" """)
+    append("""stroke="currentColor" stroke-width="1.4" stroke-linejoin="round">""")
+    // the curved roof, two lines
+    append("""<path d="M300 112C360 70 560 44 700 50C800 54 900 76 968 108"/>""")
+    append("""<path d="M340 112C420 82 580 64 700 68C790 71 872 89 930 112"/>""")
+    // the attic with its marks
+    append("""<rect x="252" y="112" width="696" height="20"/>""")
+    append("""<path d="${(0 until 16).joinToString("") { "M${292 + it * 40} 116v12" }}"/>""")
+    // the front and its columns
+    append("""<rect x="270" y="132" width="660" height="104"/><path d="M270 146H930"/>""")
+    (0 until 15).forEach { append("""<rect x="${296 + it * 44}" y="146" width="12" height="90"/>""") }
+    // the steps and the ground
+    append("""<path d="M250 236H950V243H230V250H970V243H950M0 250H230M970 250H1200"/>""")
+    append("</svg>")
+}
+
 private val SITE_STYLES = """
 .wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
 .top { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-top: 20px; padding-bottom: 20px; }
 .top .brand { display: flex; align-items: center; gap: 12px; color: var(--text); text-decoration: none; }
-.top .brand img { width: 40px; height: 40px; }
+.top .brand img { width: 48px; height: auto; }
 .top .brand strong { display: block; font-size: 18px; line-height: 22px; }
 .top .brand span span { display: block; font-size: 13px; color: var(--muted); }
 .top nav { display: flex; align-items: center; gap: 16px; }
@@ -350,7 +387,8 @@ private val SITE_STYLES = """
 .phone.back { left: 4%; top: 0; }
 .phone.front { left: 42%; top: 56px; }
 .today { display: flex; align-items: stretch; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
-.today .num { display: flex; align-items: center; justify-content: center; min-width: 72px; background: var(--primary); color: #FFFFFF;
+.today .num { display: flex; align-items: center; justify-content: center; min-width: 72px; background: var(--alt); color: var(--text);
+  border-right: 1px solid var(--border);
   font-size: 30px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .today div { padding: 14px 20px; }
 .today strong { display: block; font-size: 17px; }
@@ -366,17 +404,27 @@ private val SITE_STYLES = """
 .start li { counter-increment: step; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; }
 .start li::before { content: counter(step); display: block; font-size: 28px; font-weight: 700; color: var(--primary); margin-bottom: 6px;
   font-variant-numeric: tabular-nums; }
-.staff { background: var(--ink); color: #D6D6D2; padding: 40px 0; }
-.staff .wrap { display: flex; flex-wrap: wrap; gap: 20px 48px; align-items: center; justify-content: space-between; }
+.staff { position: relative; overflow: hidden; background: var(--ink); color: #D6D6D2; padding: 56px 0 120px; }
+.staff .wrap { position: relative; z-index: 1; display: flex; flex-wrap: wrap; gap: 20px 48px; align-items: center;
+  justify-content: space-between; }
 .staff h2 { color: #FFFFFF; font-size: 22px; margin: 0 0 6px; }
 .staff p { margin: 0; max-width: 40em; }
 .staff .btn { background: #FFFFFF; color: var(--ink); }
-footer.wrap { padding-top: 32px; padding-bottom: 40px; color: var(--muted); font-size: 14px; }
-footer .meh { display: flex; align-items: center; gap: 12px; color: var(--text); }
-footer .meh img { width: 28px; height: auto; filter: invert(1); }
-footer .meh strong, footer .meh span { display: block; }
-footer .meh span { color: var(--muted); font-size: 13px; }
-footer .links { display: flex; flex-wrap: wrap; gap: 6px 20px; }
+.rectorat { position: absolute; left: 50%; bottom: -2px; width: 1200px; transform: translateX(-50%); color: #343432;
+  pointer-events: none; }
+.rectorat svg { display: block; width: 100%; height: auto; }
+.foot { background: var(--ink); color: #A9A9A4; font-size: 14px; padding: 8px 0 40px; }
+.foot .wrap { border-top: 1px solid #333333; padding-top: 28px; }
+.foot .logos { display: flex; align-items: center; gap: 24px; margin-bottom: 24px; }
+.foot .logos .unstpb { height: 56px; width: auto; }
+.foot .logos .faima { height: 56px; width: auto; padding-left: 24px; border-left: 1px solid #3A3A3A; }
+.foot .meh { display: flex; align-items: center; gap: 12px; color: #FFFFFF; }
+.foot .meh img { width: 26px; height: auto; }
+.foot .meh strong, .foot .meh span { display: block; }
+.foot .meh span { color: #A9A9A4; font-size: 13px; }
+.foot p { max-width: 60em; }
+.foot a { color: #D6D6D2; }
+.foot .links { display: flex; flex-wrap: wrap; gap: 6px 20px; }
 @media (max-width: 900px) {
   .hero { grid-template-columns: 1fr; gap: 24px; padding-top: 16px; }
   .hero h1 { font-size: 38px; }
@@ -386,6 +434,9 @@ footer .links { display: flex; flex-wrap: wrap; gap: 6px 20px; }
   .phone.back { left: 0; }
   .phone.front { left: auto; right: 0; top: 40px; }
   .features .grid, .start ol { grid-template-columns: 1fr; }
+  .staff { padding-bottom: 90px; }
+  .rectorat { width: 900px; }
+  .foot .logos .unstpb, .foot .logos .faima { height: 44px; }
   .wrap { padding-left: 16px; padding-right: 16px; }
   .top { padding-top: 14px; padding-bottom: 6px; }
   .top .brand img { width: 34px; height: 34px; }

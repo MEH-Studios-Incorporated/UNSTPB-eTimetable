@@ -165,7 +165,7 @@ h2 .count { color: var(--muted); font-weight: 400; margin-left: 6px; }
 .stat .value { display: block; font-size: 28px; line-height: 34px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .stat .label { display: block; color: var(--muted); font-size: 13px; }
 .today { display: flex; flex-wrap: wrap; align-items: stretch; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-bottom: 16px; }
-.today .num { display: flex; align-items: center; justify-content: center; min-width: 76px; background: var(--primary); color: #FFFFFF; font-size: 32px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.today .num { display: flex; align-items: center; justify-content: center; min-width: 76px; background: var(--alt); color: var(--text); border-right: 1px solid var(--border); font-size: 32px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .today .text { padding: 14px 18px; }
 .today .text strong { display: block; font-size: 17px; }
 .today .text span { color: var(--muted); }
