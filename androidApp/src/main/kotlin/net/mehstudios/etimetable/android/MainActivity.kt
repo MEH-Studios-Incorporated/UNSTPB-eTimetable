@@ -69,7 +69,7 @@ class MainActivity : ComponentActivity() {
                         window.setBackgroundDrawable(background.toArgb().toDrawable())
                     }
                     // a language switch rebuilds the activity: the old screen fades out
-                    // (LanguagePicker), the new one fades in here
+                    // (rememberLanguageSwitch), the new one fades in here
                     val fade = remember { Animatable(if (AppLocale.switching) 0f else 1f) }
                     LaunchedEffect(Unit) {
                         if (AppLocale.switching) {

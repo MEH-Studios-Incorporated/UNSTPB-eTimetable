@@ -33,11 +33,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import net.mehstudios.etimetable.android.R
 import net.mehstudios.etimetable.android.data.AppLocale
-import net.mehstudios.etimetable.android.data.ThemeMode
 import net.mehstudios.etimetable.android.ui.signin.invertInDark
 import net.mehstudios.etimetable.android.ui.theme.LocalDarkTheme
 import net.mehstudios.etimetable.android.ui.theme.LocalScreenFade
-import net.mehstudios.etimetable.android.ui.theme.LocalThemeChoice
 
 const val MEH_SITE = "https://mehstudios.net/"
 const val SUPPORT_EMAIL = "support@mehstudios.net"
@@ -100,94 +98,49 @@ fun LinkText(text: String, style: TextStyle = MaterialTheme.typography.bodyLarge
 }
 
 /**
- * Română or English for the whole app. With [followPhone] there is a third choice that
- * goes back to the phone's language; [short] shows "RO" and "EN" for tight spots.
+ * Switches the app's language: "ro", "en", or null for the phone's. The screen fades out,
+ * the activity is drawn again in the new language and fades back in (MainActivity).
  */
 @Composable
-fun LanguagePicker(modifier: Modifier = Modifier, followPhone: Boolean = true, short: Boolean = false) {
-    val activity = LocalActivity.current ?: return
-    val picked = remember(activity) { AppLocale.picked(activity) }
-    val options = (if (followPhone) listOf(null) else emptyList()) + AppLocale.supported
-    val current = if (followPhone) picked else picked ?: appLanguage()
+fun rememberLanguageSwitch(): (String?) -> Unit {
+    val activity = LocalActivity.current
     val fade = LocalScreenFade.current
     val scope = rememberCoroutineScope()
+    return { language ->
+        if (activity != null) {
+            scope.launch {
+                fade?.animateTo(0f, tween(160))
+                AppLocale.switching = true
+                AppLocale.pick(activity, language)
+                // nothing rebuilt the activity (the language did not really change): show it again
+                delay(800)
+                AppLocale.switching = false
+                fade?.animateTo(1f, tween(200))
+            }
+        }
+    }
+}
+
+/** The language picked in the app, or null when it follows the phone. */
+@Composable
+fun pickedLanguage(): String? {
+    val activity = LocalActivity.current ?: return null
+    return remember(activity) { AppLocale.picked(activity) }
+}
+
+/** RO and EN on the sign-in page, where there is room for nothing more. */
+@Composable
+fun LanguageToggle(modifier: Modifier = Modifier) {
+    val current = pickedLanguage() ?: appLanguage()
+    val switch = rememberLanguageSwitch()
     SingleChoiceSegmentedButtonRow(modifier) {
-        options.forEachIndexed { index, language ->
+        AppLocale.supported.forEachIndexed { index, language ->
             SegmentedButton(
                 selected = language == current,
-                onClick = {
-                    if (language != current) {
-                        scope.launch {
-                            fade?.animateTo(0f, tween(160))
-                            AppLocale.switching = true
-                            AppLocale.pick(activity, language)
-                            // nothing rebuilt the activity (the language did not really change): show it again
-                            delay(800)
-                            AppLocale.switching = false
-                            fade?.animateTo(1f, tween(200))
-                        }
-                    }
-                },
-                shape = SegmentedButtonDefaults.itemShape(index, options.size),
+                onClick = { if (language != current) switch(language) },
+                shape = SegmentedButtonDefaults.itemShape(index, AppLocale.supported.size),
                 icon = {},
-            ) {
-                Text(
-                    when {
-                        language == null -> stringResource(R.string.language_phone)
-                        short -> language.uppercase()
-                        language == "ro" -> "Română"
-                        else -> "English"
-                    },
-                )
-            }
-        }
-    }
-}
-
-/** Same as the phone, light or dark. */
-@Composable
-fun ThemePicker(modifier: Modifier = Modifier) {
-    val choice = LocalThemeChoice.current
-    val options = ThemeMode.entries
-    SingleChoiceSegmentedButtonRow(modifier) {
-        options.forEachIndexed { index, mode ->
-            SegmentedButton(
-                selected = mode == choice.mode,
-                onClick = { choice.change(mode) },
-                shape = SegmentedButtonDefaults.itemShape(index, options.size),
-                icon = {},
-            ) {
-                Text(
-                    stringResource(
-                        when (mode) {
-                            ThemeMode.SYSTEM -> R.string.language_phone
-                            ThemeMode.LIGHT -> R.string.theme_light
-                            ThemeMode.DARK -> R.string.theme_dark
-                        },
-                    ),
-                )
-            }
-        }
-    }
-}
-
-/** A row of segmented choices without the check mark; [names] labels each option. */
-@Composable
-fun <T> Choices(
-    options: List<T>,
-    selected: T,
-    names: @Composable (T) -> String,
-    modifier: Modifier = Modifier,
-    pick: (T) -> Unit,
-) {
-    SingleChoiceSegmentedButtonRow(modifier) {
-        options.forEachIndexed { index, option ->
-            SegmentedButton(
-                selected = option == selected,
-                onClick = { pick(option) },
-                shape = SegmentedButtonDefaults.itemShape(index, options.size),
-                icon = {},
-            ) { Text(names(option), maxLines = 1) }
+            ) { Text(language.uppercase()) }
         }
     }
 }

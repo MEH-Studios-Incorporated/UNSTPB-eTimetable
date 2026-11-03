@@ -73,7 +73,7 @@ fun BrandBar(modifier: Modifier = Modifier, trailing: @Composable RowScope.() ->
 }
 
 /**
- * The teaching week as a small ticket: its number in a solid block, "Săptămâna impară" beside
+ * The teaching week as a small ticket: its number in a grey block, "Săptămâna impară" beside
  * it; "Vacanță" during a break. On Saturday and Sunday it already shows the coming week.
  */
 @Composable
@@ -96,13 +96,13 @@ fun WeekBadge(calendar: TeachingCalendar, today: LocalDate) {
             return@Row
         }
         Box(
-            Modifier.fillMaxHeight().width(40.dp).background(MaterialTheme.colorScheme.primary),
+            Modifier.fillMaxHeight().width(40.dp).background(MaterialTheme.colorScheme.surfaceVariant),
             contentAlignment = Alignment.Center,
         ) {
             Text(
                 week.number.toString(),
                 style = TimeStyle.copy(fontSize = 20.sp, lineHeight = 24.sp, fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.onPrimary,
+                color = MaterialTheme.colorScheme.onSurface,
             )
         }
         Column(Modifier.padding(start = 10.dp, end = 12.dp)) {

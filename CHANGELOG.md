@@ -44,8 +44,11 @@ Each section is also the text of the matching GitHub release.
 
 ### Changed
 
-- The current week sits in a clearer badge: its number in a solid block,
+- The current week sits in a quieter badge: its number in a grey block,
   "Săptămâna impară" beside it.
+- The profile is a menu: settings (language, theme, timetable layout and
+  the view it opens on) and the about page each have their own page, and
+  every choice opens a list of options.
 - Pages opened over a tab have a round back button and their name at the
   top, which stay in place while the page scrolls.
 - Changing the language fades the screen out and back in instead of

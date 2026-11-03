@@ -110,7 +110,6 @@
     <string name="announcements_empty">Niciun anunț încă.</string>
     <string name="pinned">Fixat</string>
 
-    <string name="enrolled_group">Grupa %1$s</string>
     <plurals name="enrolled_erasmus">
         <item quantity="one">Erasmus, %1$d oră</item>
         <item quantity="few">Erasmus, %1$d ore</item>
@@ -139,6 +138,11 @@
     <string name="layout_list_hint">Câte un card pentru fiecare oră, cu pauzele dintre ele; săptămâna zi cu zi.</string>
     <string name="layout_table_hint">Un rând pentru fiecare oră; săptămâna ca tabel de ore și zile, ca orarul facultății.</string>
     <string name="timetable_opens_on">Se deschide la</string>
+    <string name="settings">Setări</string>
+    <string name="settings_hint">Limbă, temă, aspectul orarului</string>
+    <string name="settings_general">General</string>
+    <string name="menu_studies">Grupa și orarul</string>
+    <string name="menu_app">Aplicația</string>
     <string name="about">Despre aplicație</string>
     <string name="version">Versiunea %1$s</string>
     <string name="privacy_title">Confidențialitate</string>

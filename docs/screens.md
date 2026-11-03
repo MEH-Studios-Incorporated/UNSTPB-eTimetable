@@ -94,11 +94,23 @@ Every choice can be changed later from the profile. Nothing is checked.
 
 ## Profile and settings
 
-Name, email, enrollment, group or picked subjects, language (same as the
-phone, Română or English; on Android 13 and newer this is the same setting
-as the phone's per-app language), light or dark
-theme (or the system's), the timetable layout and the view it opens on,
-notifications, the time of the last sync, sign out, app version.
+The profile is a menu, like the phone's own settings: a header with the
+student's initials, name, email and phone, then grouped rows that show
+their current value and open the next step:
+
+- Grupa și orarul: change group or subjects (shows the group, or the number
+  of Erasmus picks), update now (with the time of the last update, or that
+  a change waits to be sent).
+- Aplicația: Setări and Despre aplicație, each its own page.
+- Sign out, in red, on its own.
+
+Setări has two groups. General: language (same as the phone, Română or
+English; on Android 13 and newer this is the same setting as the phone's
+per-app language) and theme (same as the phone, light, dark). Orar: the
+layout and the view it opens on. Each row opens a sheet with the options
+and a short line about each. Despre aplicație has the FAIMA seal, the
+version, the privacy note, the FAIMA site and the Multimedia Entertainment
+Hub credit.
 
 Pages opened over a tab (profile, a professor, a subject, an announcement,
 changing the group) have the same top bar: a round back button and the
