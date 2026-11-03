@@ -22,7 +22,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
@@ -37,6 +36,7 @@ import net.mehstudios.etimetable.android.R
 import net.mehstudios.etimetable.android.ui.components.BrandBar
 import net.mehstudios.etimetable.android.ui.components.EtIcons
 import net.mehstudios.etimetable.android.ui.components.MarkdownText
+import net.mehstudios.etimetable.android.ui.components.PageBar
 import net.mehstudios.etimetable.android.ui.components.longLabel
 import net.mehstudios.etimetable.android.ui.components.markdownPreview
 import net.mehstudios.etimetable.model.Announcement
@@ -113,23 +113,23 @@ fun AnnouncementsScreen(
 @Composable
 fun AnnouncementScreen(announcement: Announcement, markRead: () -> Unit, onBack: () -> Unit) {
     LaunchedEffect(announcement.id) { markRead() }
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-        TextButton(onClick = onBack, modifier = Modifier.padding(start = 4.dp, top = 8.dp)) {
-            Text(stringResource(R.string.back))
-        }
-        Column(
-            Modifier.padding(start = 16.dp, end = 16.dp, bottom = 32.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            if (announcement.pinned) PinnedLabel()
-            Text(announcement.title, style = MaterialTheme.typography.headlineSmall)
-            Text(
-                meta(announcement),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            HorizontalDivider(Modifier.padding(vertical = 8.dp))
-            MarkdownText(announcement.body)
+    Column(Modifier.fillMaxSize()) {
+        PageBar(stringResource(R.string.page_announcement), onBack)
+        Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
+            Column(
+                Modifier.padding(start = 16.dp, end = 16.dp, bottom = 32.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                if (announcement.pinned) PinnedLabel()
+                Text(announcement.title, style = MaterialTheme.typography.headlineSmall)
+                Text(
+                    meta(announcement),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                HorizontalDivider(Modifier.padding(vertical = 8.dp))
+                MarkdownText(announcement.body)
+            }
         }
     }
 }
