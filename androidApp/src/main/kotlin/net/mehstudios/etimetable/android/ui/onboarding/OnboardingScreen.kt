@@ -37,7 +37,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
@@ -57,6 +56,7 @@ import net.mehstudios.etimetable.android.R
 import net.mehstudios.etimetable.android.data.ActionResult
 import net.mehstudios.etimetable.android.ui.components.BrandBar
 import net.mehstudios.etimetable.android.ui.components.EtIcons
+import net.mehstudios.etimetable.android.ui.components.PageBar
 import net.mehstudios.etimetable.android.ui.components.appLanguage
 import net.mehstudios.etimetable.android.ui.components.label
 import net.mehstudios.etimetable.android.ui.components.message
@@ -109,9 +109,8 @@ fun OnboardingScreen(
 
     Scaffold { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
-            BrandBar {
-                if (onCancel != null) TextButton(onClick = onCancel) { Text(stringResource(R.string.back)) }
-            }
+            // changing the group later is a page like the others; the first start is not
+            if (onCancel != null) PageBar(stringResource(R.string.change_enrollment), onCancel) else BrandBar()
             Text(
                 stringResource(R.string.onb_title),
                 style = MaterialTheme.typography.headlineSmall,

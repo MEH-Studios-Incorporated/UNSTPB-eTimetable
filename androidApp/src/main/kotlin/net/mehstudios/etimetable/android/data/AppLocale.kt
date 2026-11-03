@@ -21,6 +21,9 @@ import java.util.Locale
 object AppLocale {
     val supported = listOf("ro", "en")
 
+    /** Set just before a switch rebuilds the activity, so the new one fades in. */
+    var switching = false
+
     private const val PREFS = "locale"
     private const val KEY = "language"
 

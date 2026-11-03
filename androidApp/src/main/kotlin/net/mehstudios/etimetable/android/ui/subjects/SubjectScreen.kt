@@ -22,7 +22,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
@@ -48,7 +47,7 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import net.mehstudios.etimetable.android.R
 import net.mehstudios.etimetable.android.data.ActionResult
-import net.mehstudios.etimetable.android.ui.components.EtIcons
+import net.mehstudios.etimetable.android.ui.components.PageBar
 import net.mehstudios.etimetable.android.ui.components.label
 import net.mehstudios.etimetable.android.ui.components.message
 import net.mehstudios.etimetable.android.ui.components.shortDate
@@ -110,80 +109,81 @@ fun SubjectScreen(
     }
     val shown = slots.filter { !fitsOnly || (it.standing as? SlotStanding.Open)?.clash == null }
 
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-        TextButton(onClick = onBack, modifier = Modifier.padding(start = 4.dp, top = 8.dp)) {
-            Icon(EtIcons.ChevronLeft, contentDescription = null, modifier = Modifier.size(20.dp))
-            Text(stringResource(R.string.tab_subjects), modifier = Modifier.padding(start = 4.dp))
-        }
-        Row(
-            Modifier.padding(horizontal = 16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Box(Modifier.size(14.dp).background(dataset.subjectColor(subject.id), RoundedCornerShape(3.dp)))
-            Text(dataset.subjectName(subject.id), style = MaterialTheme.typography.headlineSmall)
-        }
-        Text(
-            subjectSubtitle(dataset, subject),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(start = 42.dp, end = 16.dp, top = 2.dp),
-        )
-        Row(
-            Modifier.fillMaxWidth().clickable { fitsOnly = !fitsOnly }.padding(start = 16.dp, end = 4.dp, top = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(Modifier.weight(1f)) {
-                Text(stringResource(R.string.subject_fits), style = MaterialTheme.typography.bodyLarge)
+    Column(Modifier.fillMaxSize()) {
+        PageBar(stringResource(R.string.page_subject), onBack)
+        Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
+            Row(
+                Modifier.padding(horizontal = 16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Box(Modifier.size(14.dp).background(dataset.subjectColor(subject.id), RoundedCornerShape(3.dp)))
+                Text(dataset.subjectName(subject.id), style = MaterialTheme.typography.headlineSmall)
+            }
+            Text(
+                subjectSubtitle(dataset, subject),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 42.dp, end = 16.dp, top = 2.dp),
+            )
+            Row(
+                Modifier.fillMaxWidth().clickable {
+                    fitsOnly = !fitsOnly
+                }.padding(start = 16.dp, end = 4.dp, top = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text(stringResource(R.string.subject_fits), style = MaterialTheme.typography.bodyLarge)
+                    Text(
+                        stringResource(R.string.subject_fits_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Checkbox(checked = fitsOnly, onCheckedChange = { fitsOnly = it })
+            }
+            result?.message()?.let {
                 Text(
-                    stringResource(R.string.subject_fits_hint),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    it,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
                 )
             }
-            Checkbox(checked = fitsOnly, onCheckedChange = { fitsOnly = it })
-        }
-        result?.message()?.let {
-            Text(
-                it,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-            )
-        }
-        HorizontalDivider(Modifier.padding(top = 8.dp))
+            HorizontalDivider(Modifier.padding(top = 8.dp))
 
-        Column(
-            Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background).padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            if (slots.isEmpty()) Muted(stringResource(R.string.subject_no_slots))
-            if (slots.isNotEmpty() && shown.isEmpty()) Muted(stringResource(R.string.subject_all_clash))
-            shown.groupBy { it.activity.type }.forEach { (type, group) ->
-                SectionTitle(type, group.size)
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-                    color = MaterialTheme.colorScheme.surface,
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
-                ) {
-                    Column {
-                        group.forEachIndexed { i, slot ->
-                            if (i > 0) HorizontalDivider()
-                            SlotRow(
-                                dataset,
-                                slot,
-                                erasmus,
-                                busy,
-                                onAdd = {
-                                    if (erasmus) {
-                                        apply(profile.withPick(slot.activity.id))
-                                    } else {
-                                        adding = slot.activity
-                                    }
-                                },
-                                onRemove = { apply(profile.without(slot.activity.id)) },
-                            )
+            Column(
+                Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background).padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                if (slots.isEmpty()) Muted(stringResource(R.string.subject_no_slots))
+                if (slots.isNotEmpty() && shown.isEmpty()) Muted(stringResource(R.string.subject_all_clash))
+                shown.groupBy { it.activity.type }.forEach { (type, group) ->
+                    SectionTitle(type, group.size)
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                        color = MaterialTheme.colorScheme.surface,
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+                    ) {
+                        Column {
+                            group.forEachIndexed { i, slot ->
+                                if (i > 0) HorizontalDivider()
+                                SlotRow(
+                                    dataset,
+                                    slot,
+                                    erasmus,
+                                    busy,
+                                    onAdd = {
+                                        if (erasmus) {
+                                            apply(profile.withPick(slot.activity.id))
+                                        } else {
+                                            adding = slot.activity
+                                        }
+                                    },
+                                    onRemove = { apply(profile.without(slot.activity.id)) },
+                                )
+                            }
                         }
                     }
                 }

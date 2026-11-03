@@ -34,15 +34,24 @@ Every choice can be changed later from the profile. Nothing is checked.
 
 ## Timetable
 
-- Day view: a timeline of the day with a line at the current time. Above
-  it, the next activity with its room and how long until it starts.
-- Week view: Monday to Friday side by side, with Saturday shown only when it
-  has something.
+- Three layouts, chosen in the profile (Orar, Aspect); each has a day and
+  a week view, and the profile also sets which of the two opens first:
+  - Timeline (default): the day on an hour scale with a line at the
+    current time; the week as columns of hours, Monday to Friday, Saturday
+    only when it has something.
+  - List: a card per class with the breaks between them written out
+    ("Pauză · 4 h"); the week as an agenda, day by day, free days marked.
+  - Table: one dense line per class (time, type letter, name, room); the
+    week as a table of starting times by days, like the faculty's sheet.
+- Above the day view, the next activity with its room and how long until
+  it starts.
 - The header shows the date range, the teaching week number and whether it
   is odd or even. Breaks are labelled as such instead of an empty week.
-- The top bar always shows the current teaching week and its parity
-  ("Săpt. 5, impară"), or "Vacanță" during a break. On Saturday and Sunday
-  it shows the coming week.
+- The top bar always shows the current teaching week as a small ticket:
+  the number in a solid block, "Săptămâna impară" beside it; "Vacanță"
+  during a break. On Saturday and Sunday it shows the coming week.
+- In the week view the arrows to the previous and next week sit next to
+  the dates.
 - A class card shows as much as its height allows: two hours or more get
   type, name on two lines, time, room and professor; an hour gets the name
   and one line with time, type and room.
@@ -85,11 +94,30 @@ Every choice can be changed later from the profile. Nothing is checked.
 
 ## Profile and settings
 
-Name, email, enrollment, group or picked subjects, language (same as the
-phone, Română or English; on Android 13 and newer this is the same setting
-as the phone's per-app language), light or dark
-theme (or the system's), notifications, the time of the last sync, sign
-out, app version.
+The profile is a menu, like the phone's own settings: a header with the
+student's initials, name, email and phone, then grouped rows that show
+their current value and open the next step:
+
+- Grupa și orarul: change group or subjects (shows the group, or the number
+  of Erasmus picks), update now (with the time of the last update, or that
+  a change waits to be sent).
+- Aplicația: Setări and Despre aplicație, each its own page.
+- Sign out, in red, on its own.
+
+Setări has two groups. General: language (same as the phone, Română or
+English; on Android 13 and newer this is the same setting as the phone's
+per-app language) and theme (same as the phone, light, dark). Orar: the
+layout and the view it opens on. Each row opens a sheet with the options
+and a short line about each. Despre aplicație has the FAIMA seal, the
+version, the privacy note, the FAIMA site and the Multimedia Entertainment
+Hub credit.
+
+Pages opened over a tab (profile, a professor, a subject, an announcement,
+changing the group) have the same top bar: a round back button and the
+page's name, which stay in place while the page scrolls.
+
+Changing the language fades the screen out and back in, since the app is
+drawn again in the new language.
 
 ## About and legal
 

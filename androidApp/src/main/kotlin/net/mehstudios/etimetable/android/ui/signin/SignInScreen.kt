@@ -53,7 +53,7 @@ import kotlinx.coroutines.launch
 import net.mehstudios.etimetable.AppInfo
 import net.mehstudios.etimetable.android.R
 import net.mehstudios.etimetable.android.data.ActionResult
-import net.mehstudios.etimetable.android.ui.components.LanguagePicker
+import net.mehstudios.etimetable.android.ui.components.LanguageToggle
 import net.mehstudios.etimetable.android.ui.components.MehCredit
 import net.mehstudios.etimetable.android.ui.components.message
 import net.mehstudios.etimetable.android.ui.theme.ButtonShape
@@ -131,7 +131,7 @@ fun SignInScreen(
                 .padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            LanguagePicker(Modifier.align(Alignment.End).padding(top = 8.dp), followPhone = false, short = true)
+            LanguageToggle(Modifier.align(Alignment.End).padding(top = 8.dp))
             Spacer(Modifier.height(if (creating) 4.dp else 16.dp))
             Image(
                 painter = painterResource(R.drawable.faima_seal),

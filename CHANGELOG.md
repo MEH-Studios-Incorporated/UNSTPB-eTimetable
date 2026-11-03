@@ -26,6 +26,10 @@ Each section is also the text of the matching GitHub release.
 - Romanian and English inside the app, chosen in the profile or on the
   sign-in screen, whatever the phone's language.
 - Light or dark theme in the profile, or the phone's setting (the default).
+- Three timetable layouts to choose from in the profile: Timeline, List
+  (cards with the breaks between classes, the week as an agenda) and Table
+  (dense rows, the week as a table of times and days like the faculty's
+  sheet), and whether the timetable opens on the day or the week.
 - A page for each professor: where they are now, their office hours and
   their classes this week. Tapping a name on a class opens it.
 - Labs and seminars name their assistant and the professor of the course.
@@ -50,8 +54,22 @@ Each section is also the text of the matching GitHub release.
 - The dashboard has a sidebar, page headers with their actions, groups
   listed by series and a cleaner look throughout.
 
+### Changed
+
+- The current week sits in a quieter badge: its number in a grey block,
+  "Săptămâna impară" beside it.
+- The profile is a menu: settings (language, theme, timetable layout and
+  the view it opens on) and the about page each have their own page, and
+  every choice opens a list of options.
+- Pages opened over a tab have a round back button and their name at the
+  top, which stay in place while the page scrolls.
+- Changing the language fades the screen out and back in instead of
+  redrawing it at once.
+
 ### Fixed
 
+- In the Romanian week view the "Azi" button was squeezed into a column of
+  letters; the week arrows now sit next to the dates.
 - One-hour classes no longer cut their text off: the card shows the name
   and one line with time, type and room.
 - Room codes are written the same everywhere, without a space after the

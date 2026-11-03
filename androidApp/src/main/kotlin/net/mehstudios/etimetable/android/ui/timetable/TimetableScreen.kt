@@ -16,6 +16,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -70,6 +71,8 @@ import kotlinx.datetime.isoDayNumber
 import kotlinx.datetime.minus
 import kotlinx.datetime.plus
 import net.mehstudios.etimetable.android.R
+import net.mehstudios.etimetable.android.data.StartView
+import net.mehstudios.etimetable.android.data.TimetableLayout
 import net.mehstudios.etimetable.android.ui.components.BrandBar
 import net.mehstudios.etimetable.android.ui.components.EtIcons
 import net.mehstudios.etimetable.android.ui.components.appLanguage
@@ -82,6 +85,7 @@ import net.mehstudios.etimetable.android.ui.components.subjectName
 import net.mehstudios.etimetable.android.ui.components.subjectShortName
 import net.mehstudios.etimetable.android.ui.components.weekRangeLabel
 import net.mehstudios.etimetable.android.ui.theme.ButtonShape
+import net.mehstudios.etimetable.android.ui.theme.LocalTimetableChoice
 import net.mehstudios.etimetable.android.ui.theme.TimeStyle
 import net.mehstudios.etimetable.model.Dataset
 import net.mehstudios.etimetable.model.Parity
@@ -118,7 +122,8 @@ fun TimetableScreen(
     openProfessor: (String) -> Unit,
     openSubject: (String) -> Unit,
 ) {
-    var mode by rememberSaveable { mutableStateOf(Mode.DAY) }
+    val prefs = LocalTimetableChoice.current.prefs
+    var mode by rememberSaveable { mutableStateOf(if (prefs.start == StartView.WEEK) Mode.WEEK else Mode.DAY) }
     var selectedText by rememberSaveable { mutableStateOf(now.date.toString()) }
     val selected = LocalDate.parse(selectedText)
     var opened by remember { mutableStateOf<Occurrence?>(null) }
@@ -150,17 +155,27 @@ fun TimetableScreen(
             Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 12.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            AnimatedContent(
-                targetState = if (mode ==
-                    Mode.DAY
-                ) {
-                    selected.longLabel()
-                } else {
-                    weekRangeLabel(weekDays.first(), weekDays.last())
-                },
-                transitionSpec = { fadeIn(tween(150)) togetherWith fadeOut(tween(150)) },
-                label = "title",
-            ) { Text(it, style = MaterialTheme.typography.headlineSmall) }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                AnimatedContent(
+                    targetState = if (mode == Mode.DAY) {
+                        selected.longLabel()
+                    } else {
+                        weekRangeLabel(weekDays.first(), weekDays.last())
+                    },
+                    transitionSpec = { fadeIn(tween(150)) togetherWith fadeOut(tween(150)) },
+                    label = "title",
+                    modifier = Modifier.weight(1f),
+                ) { Text(it, style = MaterialTheme.typography.headlineSmall) }
+                // the week arrows sit by the dates they change, leaving the row below room for "Today"
+                if (mode == Mode.WEEK) {
+                    IconButton(onClick = { select(selected.minus(7, DateTimeUnit.DAY)) }) {
+                        Icon(EtIcons.ChevronLeft, contentDescription = stringResource(R.string.previous_week))
+                    }
+                    IconButton(onClick = { select(selected.plus(7, DateTimeUnit.DAY)) }) {
+                        Icon(EtIcons.ChevronRight, contentDescription = stringResource(R.string.next_week))
+                    }
+                }
+            }
             val week = calendar.weekOf(selected)
             val subtitle = when {
                 week == null -> calendar.breakOn(selected)?.name?.get(appLanguage()).orEmpty()
@@ -180,28 +195,22 @@ fun TimetableScreen(
             SingleChoiceSegmentedButtonRow {
                 SegmentedButton(selected = mode == Mode.DAY, onClick = {
                     mode = Mode.DAY
-                }, shape = SegmentedButtonDefaults.itemShape(0, 2)) {
-                    Text(stringResource(R.string.day))
+                }, shape = SegmentedButtonDefaults.itemShape(0, 2), icon = {}) {
+                    Text(stringResource(R.string.day), maxLines = 1)
                 }
                 SegmentedButton(selected = mode == Mode.WEEK, onClick = {
                     mode = Mode.WEEK
-                }, shape = SegmentedButtonDefaults.itemShape(1, 2)) {
-                    Text(stringResource(R.string.week))
+                }, shape = SegmentedButtonDefaults.itemShape(1, 2), icon = {}) {
+                    Text(stringResource(R.string.week), maxLines = 1)
                 }
             }
             Spacer(Modifier.weight(1f))
-            if (mode == Mode.WEEK) {
-                IconButton(onClick = { select(selected.minus(7, DateTimeUnit.DAY)) }) {
-                    Icon(EtIcons.ChevronLeft, contentDescription = stringResource(R.string.previous_week))
-                }
-                IconButton(onClick = { select(selected.plus(7, DateTimeUnit.DAY)) }) {
-                    Icon(EtIcons.ChevronRight, contentDescription = stringResource(R.string.next_week))
-                }
-            }
             if (selected != now.date) {
-                OutlinedButton(shape = ButtonShape, onClick = {
-                    select(now.date)
-                }) { Text(stringResource(R.string.today)) }
+                OutlinedButton(
+                    shape = ButtonShape,
+                    onClick = { select(now.date) },
+                    contentPadding = PaddingValues(horizontal = 14.dp),
+                ) { Text(stringResource(R.string.today), maxLines = 1) }
             }
         }
 
@@ -222,7 +231,19 @@ fun TimetableScreen(
                         val day = pagerDays[page]
                         Column(Modifier.fillMaxSize()) {
                             if (day == now.date) NextCard(dataset, timetable, now) { opened = it }
-                            DayTimeline(dataset, timetable.on(day), now, Modifier.weight(1f)) { opened = it }
+                            val occurrences = timetable.on(day)
+                            when (prefs.layout) {
+                                TimetableLayout.TIMELINE ->
+                                    DayTimeline(dataset, occurrences, now, Modifier.weight(1f)) { opened = it }
+                                TimetableLayout.LIST -> DayList(dataset, occurrences, now, Modifier.weight(1f)) {
+                                    opened =
+                                        it
+                                }
+                                TimetableLayout.TABLE -> DayRows(dataset, occurrences, now, Modifier.weight(1f)) {
+                                    opened =
+                                        it
+                                }
+                            }
                         }
                     }
                 }
@@ -246,7 +267,11 @@ fun TimetableScreen(
                     val days = pagerDays.filter {
                         it.mondayOfWeek() == weekMonday
                     }.ifEmpty { (0 until 5).map { weekMonday.plus(it, DateTimeUnit.DAY) } }
-                    WeekGrid(dataset, days, timetable, now) { opened = it }
+                    when (prefs.layout) {
+                        TimetableLayout.TIMELINE -> WeekGrid(dataset, days, timetable, now) { opened = it }
+                        TimetableLayout.LIST -> WeekAgenda(dataset, days, timetable, now) { opened = it }
+                        TimetableLayout.TABLE -> WeekTable(dataset, days, timetable, now) { opened = it }
+                    }
                 }
             }
         }

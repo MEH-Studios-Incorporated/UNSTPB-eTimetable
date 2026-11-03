@@ -3,6 +3,8 @@
 
 package net.mehstudios.etimetable.android.ui.theme
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -15,6 +17,7 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import net.mehstudios.etimetable.android.data.ThemeMode
+import net.mehstudios.etimetable.android.data.TimetablePrefs
 
 private val LightColors = with(LightTokens) {
     lightColorScheme(
@@ -93,6 +96,9 @@ private val EtShapes = Shapes(
     large = RoundedCornerShape(8.dp),
 )
 
+/** The whole screen's opacity, lowered while the language changes; null outside MainActivity. */
+val LocalScreenFade = staticCompositionLocalOf<Animatable<Float, AnimationVector1D>?> { null }
+
 /** Whether the app is drawn dark: the student's choice, or the phone's when they made none. */
 val LocalDarkTheme = staticCompositionLocalOf { false }
 
@@ -100,6 +106,11 @@ val LocalDarkTheme = staticCompositionLocalOf { false }
 data class ThemeChoice(val mode: ThemeMode, val change: (ThemeMode) -> Unit)
 
 val LocalThemeChoice = staticCompositionLocalOf { ThemeChoice(ThemeMode.SYSTEM) {} }
+
+/** The timetable layout and the view it opens on, and how to change them. */
+data class TimetableChoice(val prefs: TimetablePrefs, val change: (TimetablePrefs) -> Unit)
+
+val LocalTimetableChoice = staticCompositionLocalOf { TimetableChoice(TimetablePrefs()) {} }
 
 @Composable
 fun EtTheme(mode: ThemeMode = ThemeMode.SYSTEM, content: @Composable () -> Unit) {
