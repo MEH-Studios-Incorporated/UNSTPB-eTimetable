@@ -71,6 +71,9 @@ Each section is also the text of the matching GitHub release.
 
 ### Fixed
 
+- Coming back from a professor, a subject, an announcement or the profile
+  reset the timetable to today's day view; it now stays on the day or week
+  you were looking at, and the subjects search keeps its text.
 - In the Romanian week view the "Azi" button was squeezed into a column of
   letters; the week arrows now sit next to the dates.
 - One-hour classes no longer cut their text off: the card shows the name

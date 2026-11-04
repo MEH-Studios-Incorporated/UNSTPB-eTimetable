@@ -41,6 +41,7 @@ import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -206,6 +207,9 @@ private fun MainScreen(
         }
     }
     val timetable = remember(dataset, profile) { StudentTimetable(dataset, profile) }
+    // each tab keeps its state (the day shown, day or week, a search) while a page sits over it;
+    // the pages over a tab start fresh every time they open
+    val tabs = rememberSaveableStateHolder()
     val unread = state.announcements.count { !it.read }
     val actions: @Composable () -> Unit = {
         WeekBadge(timetable.calendar, now.date)
@@ -319,16 +323,22 @@ private fun MainScreen(
                     target.profile -> ProfileScreen(state, onBack = {
                         showProfile = false
                     }, onChangeEnrollment, onSyncNow, onSignOut)
-                    target.tab == Tab.TIMETABLE -> TimetableScreen(
-                        dataset,
-                        timetable,
-                        now,
-                        actions,
-                        openProfessor = { professorId = it },
-                        openSubject = { subjectId = it },
-                    )
-                    target.tab == Tab.SUBJECTS -> SubjectsScreen(dataset, timetable, actions) { subjectId = it }
-                    else -> AnnouncementsScreen(state.announcements, actions) { announcementId = it }
+                    else -> tabs.SaveableStateProvider(target.tab.name) {
+                        when (target.tab) {
+                            Tab.TIMETABLE -> TimetableScreen(
+                                dataset,
+                                timetable,
+                                now,
+                                actions,
+                                openProfessor = { professorId = it },
+                                openSubject = { subjectId = it },
+                            )
+                            Tab.SUBJECTS -> SubjectsScreen(dataset, timetable, actions) { subjectId = it }
+                            Tab.ANNOUNCEMENTS -> AnnouncementsScreen(state.announcements, actions) {
+                                announcementId = it
+                            }
+                        }
+                    }
                 }
             }
         }
