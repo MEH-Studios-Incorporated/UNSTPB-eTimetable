@@ -82,6 +82,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.work.runtime)
+    implementation(libs.androidx.glance.appwidget)
     implementation(libs.androidx.core.ktx)
     implementation(libs.ktor.client.okhttp)
     debugImplementation(libs.androidx.compose.ui.tooling)
