@@ -59,6 +59,8 @@ class AppRepository(
     private val api: ApiClient,
     private val sync: Sync,
     private val session: SessionStore,
+    /** Called after every change to what the app shows, so the widgets can follow. */
+    private val changed: () -> Unit = {},
 ) {
     private val _state = MutableStateFlow(AppState())
     val state: StateFlow<AppState> = _state.asStateFlow()
@@ -180,6 +182,7 @@ class AppRepository(
                 announcements = announcements,
             )
         }
+        changed()
     }
 
     private suspend fun ResponseException.toRefused(): ActionResult.Refused {

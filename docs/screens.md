@@ -150,13 +150,20 @@ connection; nothing else changes.
 
 ## Widgets
 
+One widget, "Orarul de azi", that changes its layout with the size it is
+given on the home screen (design/mockups/Widgets.png):
+
 | Size | Shows |
 | --- | --- |
-| Small | The next activity: time, subject, room |
-| Medium | The rest of today |
-| Large | The rest of today and the start of tomorrow |
+| Small (2 x 2) | The class happening now ("Acum, până la 14:00") or the next one ("În 25 min", "Azi", "Mâine", a day name): time, subject, type and room |
+| Medium (4 x 2) | The date and the teaching week, then the rest of today, one line per class with its room; once today is over, the next day with classes |
+| Large (4 x 4) | Today's remaining classes in full, then the next day with classes |
 
-Tapping a widget opens the app on that activity or day.
+It reads the app's offline copy, so it works without the app open and
+without signal, and uses the phone's light or dark theme. It is redrawn
+after every update of the app's data, every 5 minutes while a class starts
+within the hour, otherwise at the next class's start or end and at least
+hourly. Tapping it opens the app.
 
 ## Public page (web, part of the server)
 

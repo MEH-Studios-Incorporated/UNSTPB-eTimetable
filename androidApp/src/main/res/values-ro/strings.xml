@@ -143,6 +143,16 @@
     <string name="settings_general">General</string>
     <string name="menu_studies">Grupa și orarul</string>
     <string name="menu_app">Aplicația</string>
+    <string name="widget_label">Orarul de azi</string>
+    <string name="widget_description">Următoarea oră, restul zilei și, dacă are loc, ziua de mâine.</string>
+    <string name="widget_now">Acum, până la %1$s</string>
+    <string name="widget_in_minutes">În %1$d min</string>
+    <string name="widget_today">Azi</string>
+    <string name="widget_tomorrow">Mâine</string>
+    <string name="widget_week">Săpt. %1$d · %2$s</string>
+    <string name="widget_done_today">Nu mai ai ore azi.</string>
+    <string name="widget_nothing">Nicio oră în zilele următoare.</string>
+    <string name="widget_no_group">Deschide eTimetable și alege-ți grupa.</string>
     <string name="about">Despre aplicație</string>
     <string name="version">Versiunea %1$s</string>
     <string name="privacy_title">Confidențialitate</string>

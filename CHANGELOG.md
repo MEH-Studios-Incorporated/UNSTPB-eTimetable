@@ -26,6 +26,10 @@ Each section is also the text of the matching GitHub release.
 - Romanian and English inside the app, chosen in the profile or on the
   sign-in screen, whatever the phone's language.
 - Light or dark theme in the profile, or the phone's setting (the default).
+- A home screen widget, "Orarul de azi", in three sizes: the class now or
+  next ("În 25 min"), the rest of the day, or today and the next day with
+  classes. It works offline, follows the phone's light or dark theme and
+  opens the app when tapped.
 - Three timetable layouts to choose from in the profile: Timeline, List
   (cards with the breaks between classes, the week as an agenda) and Table
   (dense rows, the week as a table of times and days like the faculty's
