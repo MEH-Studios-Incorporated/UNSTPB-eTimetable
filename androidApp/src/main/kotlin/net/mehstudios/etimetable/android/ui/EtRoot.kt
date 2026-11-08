@@ -63,6 +63,7 @@ import net.mehstudios.etimetable.android.ui.components.WeekBadge
 import net.mehstudios.etimetable.android.ui.components.appLanguage
 import net.mehstudios.etimetable.android.ui.onboarding.OnboardingScreen
 import net.mehstudios.etimetable.android.ui.professors.ProfessorScreen
+import net.mehstudios.etimetable.android.ui.professors.ProfessorsScreen
 import net.mehstudios.etimetable.android.ui.profile.ProfileScreen
 import net.mehstudios.etimetable.android.ui.signin.SignInScreen
 import net.mehstudios.etimetable.android.ui.subjects.SubjectScreen
@@ -77,7 +78,7 @@ import kotlin.time.Clock
 
 private enum class Phase { LOADING, SIGN_IN, WAITING, ONBOARDING, MAIN }
 
-private enum class Tab { TIMETABLE, SUBJECTS, ANNOUNCEMENTS }
+private enum class Tab { TIMETABLE, SUBJECTS, PROFESSORS, ANNOUNCEMENTS }
 
 /** Picks the screen from the app state: sign-in, waiting for data, onboarding or the app itself. */
 @Composable
@@ -146,6 +147,7 @@ fun EtRoot(container: AppContainer) {
                     onSyncNow = { scope.launch { repository.refresh() } },
                     onSignOut = { scope.launch { repository.signOut() } },
                     markRead = { id -> scope.launch { repository.markRead(id) } },
+                    markAllRead = { scope.launch { repository.markAllRead() } },
                     saveProfile = repository::saveProfile,
                     reportProblem = repository::reportTimetableProblem,
                 )
@@ -192,6 +194,7 @@ private fun MainScreen(
     onSyncNow: () -> Unit,
     onSignOut: () -> Unit,
     markRead: (String) -> Unit,
+    markAllRead: () -> Unit,
     saveProfile: suspend (Profile) -> ActionResult,
     reportProblem: suspend (TimetableReportRequest) -> ActionResult,
 ) {
@@ -258,6 +261,12 @@ private fun MainScreen(
                         label = { Text(stringResource(R.string.tab_subjects)) },
                     )
                     NavigationBarItem(
+                        selected = tab == Tab.PROFESSORS,
+                        onClick = { tab = Tab.PROFESSORS },
+                        icon = { Icon(EtIcons.Search, contentDescription = null) },
+                        label = { Text(stringResource(R.string.find_teacher)) },
+                    )
+                    NavigationBarItem(
                         selected = tab == Tab.ANNOUNCEMENTS,
                         onClick = { tab = Tab.ANNOUNCEMENTS },
                         icon = {
@@ -271,7 +280,7 @@ private fun MainScreen(
                                 Icon(EtIcons.Bell, contentDescription = null)
                             }
                         },
-                        label = { Text(stringResource(R.string.tab_announcements)) },
+                        label = { Text(stringResource(R.string.nav_announcements)) },
                     )
                 }
             }
@@ -338,7 +347,11 @@ private fun MainScreen(
                                 reportProblem = reportProblem,
                             )
                             Tab.SUBJECTS -> SubjectsScreen(dataset, timetable, actions) { subjectId = it }
-                            Tab.ANNOUNCEMENTS -> AnnouncementsScreen(state.announcements, actions) {
+                            Tab.PROFESSORS -> ProfessorsScreen(dataset, timetable.calendar, now, actions) {
+                                professorId =
+                                    it
+                            }
+                            Tab.ANNOUNCEMENTS -> AnnouncementsScreen(state.announcements, actions, markAllRead) {
                                 announcementId = it
                             }
                         }

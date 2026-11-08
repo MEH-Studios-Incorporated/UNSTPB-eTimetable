@@ -41,6 +41,12 @@ SELECT json, read FROM announcement ORDER BY pinned DESC, published_at DESC;
 markAnnouncementRead:
 UPDATE announcement SET read = 1 WHERE id = ?;
 
+markAllAnnouncementsRead:
+UPDATE announcement SET read = 1;
+
+markAnnouncementUnread:
+UPDATE announcement SET read = 0 WHERE id = ?;
+
 countUnread:
 SELECT count(*) FROM announcement WHERE read = 0;
 

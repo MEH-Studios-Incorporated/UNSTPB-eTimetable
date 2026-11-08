@@ -4,6 +4,7 @@
 package net.mehstudios.etimetable.android.ui.professors
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,15 +15,23 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -36,6 +45,7 @@ import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.isoDayNumber
 import kotlinx.datetime.plus
 import net.mehstudios.etimetable.android.R
+import net.mehstudios.etimetable.android.ui.components.BrandBar
 import net.mehstudios.etimetable.android.ui.components.LinkText
 import net.mehstudios.etimetable.android.ui.components.PageBar
 import net.mehstudios.etimetable.android.ui.components.dayName
@@ -53,6 +63,68 @@ import net.mehstudios.etimetable.schedule.TeachingCalendar
 import net.mehstudios.etimetable.schedule.mondayOfWeek
 import net.mehstudios.etimetable.schedule.professorDay
 import net.mehstudios.etimetable.schedule.professorStatus
+import java.text.Normalizer
+
+@Composable
+fun ProfessorsScreen(
+    dataset: Dataset,
+    calendar: TeachingCalendar,
+    now: LocalDateTime,
+    actions: @Composable () -> Unit,
+    open: (String) -> Unit,
+) {
+    var query by rememberSaveable { mutableStateOf("") }
+    var activeOnly by rememberSaveable { mutableStateOf(false) }
+    val professors = remember(dataset, query, activeOnly, now) {
+        val q = fold(query)
+        dataset.professors.filter { p ->
+            val subjects = dataset.activities.filter {
+                it.professorId == p.id
+            }.mapNotNull { dataset.subjectsById[it.subjectId] }
+            val text =
+                p.displayName + " " + p.email.orEmpty() + " " + subjects.joinToString { it.name.ro + " " + it.name.en }
+            fold(text).contains(q) &&
+                (!activeOnly || calendar.professorStatus(dataset, p.id, now) is ProfessorStatus.Now)
+        }.sortedBy { fold(it.name) }
+    }
+    Column(Modifier.fillMaxSize()) {
+        BrandBar { actions() }
+        Text(
+            stringResource(R.string.find_teacher),
+            style = MaterialTheme.typography.headlineSmall,
+            modifier = Modifier.padding(16.dp),
+        )
+        OutlinedTextField(
+            value = query,
+            onValueChange = { query = it },
+            singleLine = true,
+            label = { Text(stringResource(R.string.prof_search)) },
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+        )
+        Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(stringResource(R.string.prof_active_only), modifier = Modifier.weight(1f))
+            Switch(checked = activeOnly, onCheckedChange = { activeOnly = it })
+        }
+        if (professors.isEmpty()) Text(stringResource(R.string.prof_search_empty), modifier = Modifier.padding(16.dp))
+        LazyColumn(Modifier.weight(1f)) {
+            items(professors, key = { it.id }) { p ->
+                Column(
+                    Modifier.fillMaxWidth().clickable {
+                        open(p.id)
+                    }.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Text(p.displayName.trim(), style = MaterialTheme.typography.titleMedium)
+                    Status(dataset, calendar.professorStatus(dataset, p.id, now))
+                }
+                HorizontalDivider()
+            }
+        }
+    }
+}
+
+private fun fold(text: String): String = Normalizer.normalize(text.trim().lowercase(), Normalizer.Form.NFD)
+    .replace(Regex("\\p{M}"), "")
 
 /** Where a professor is now, their office hours and what they teach this week. */
 @Composable
@@ -69,7 +141,7 @@ fun ProfessorScreen(
     val weekend = now.date.isWeekend()
     val monday = now.date.mondayOfWeek().let { if (weekend) it.plus(7, DateTimeUnit.DAY) else it }
     val days = remember(dataset, professorId, monday) {
-        (0 until 6).map { monday.plus(it, DateTimeUnit.DAY) }
+        (0 until 7).map { monday.plus(it, DateTimeUnit.DAY) }
             .map { it to calendar.professorDay(dataset, professorId, it) }
             .filter { it.second.isNotEmpty() }
     }
@@ -87,11 +159,29 @@ fun ProfessorScreen(
                 }
                 Text(professor.name, style = MaterialTheme.typography.headlineSmall)
                 Status(dataset, calendar.professorStatus(dataset, professorId, now))
+                Text(
+                    stringResource(R.string.prof_status_note),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                val office = dataset.roomsById[professor.officeRoomId]
+                val building = dataset.buildingsById[office?.buildingId]
+                Text(
+                    stringResource(R.string.prof_office, office?.code ?: stringResource(R.string.prof_not_provided)),
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+                building?.let {
+                    Text(
+                        listOfNotNull(it.name, it.address).joinToString(" · "),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                }
                 professor.email?.let { email ->
                     LinkText(stringResource(R.string.write_email) + ": " + email, MaterialTheme.typography.bodyMedium) {
                         uri.openUri("mailto:$email")
                     }
                 }
+                if (professor.email.isNullOrBlank()) Muted(stringResource(R.string.prof_email_none))
             }
 
             HorizontalDivider(Modifier.padding(16.dp))
@@ -158,6 +248,24 @@ private fun Status(dataset: Dataset, status: ProfessorStatus) {
             modifier = Modifier.padding(start = 8.dp),
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
+        )
+    }
+    val slot = when (status) {
+        is ProfessorStatus.Now -> status.slot
+        is ProfessorStatus.LaterToday -> status.slot
+        ProfessorStatus.NothingMoreToday -> null
+    }
+    slot?.let {
+        val room = dataset.roomsById[it.activity?.roomId ?: it.officeHour?.roomId]
+        val building = dataset.buildingsById[room?.buildingId]
+        Text(
+            listOfNotNull(
+                it.activity?.let { a -> dataset.subjectName(a.subjectId) } ?: stringResource(R.string.office_hours),
+                room?.code ?: stringResource(R.string.prof_not_provided),
+                building?.address,
+            ).joinToString(" · "),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }

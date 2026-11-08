@@ -30,6 +30,7 @@ import kotlinx.html.unsafe
 enum class Section(val label: String, val href: String) {
     OVERVIEW("Prezentare", "/admin"),
     SEMESTERS("Semestre și orar", "/admin/semesters"),
+    SCHEDULE("Gestionare orar", "/admin/schedule"),
     SUBJECTS("Materii", "/admin/subjects"),
     PROFESSORS("Profesori", "/admin/professors"),
     ROOMS("Săli", "/admin/rooms"),
@@ -197,7 +198,7 @@ td .btn, td button { padding: 5px 10px; font-size: 13px; }
 .field { margin: 0 0 14px; }
 label { display: block; font-size: 13px; font-weight: 600; margin: 0 0 6px; }
 label.check { display: flex; gap: 8px; align-items: center; font-weight: 500; font-size: 14px; }
-input[type=text], input[type=email], input[type=password], input[type=date], input[type=search], textarea, select {
+input[type=text], input[type=email], input[type=password], input[type=date], input[type=search], input[type=number], textarea, select {
   width: 100%; max-width: 560px; padding: 9px 12px; border: 1px solid var(--strong); border-radius: 6px; background: var(--surface);
   font: inherit; color: var(--text); }
 input:focus, textarea:focus, select:focus { outline: 2px solid var(--primary-soft); border-color: var(--primary); }
@@ -220,6 +221,7 @@ ul.problems { margin: 8px 0 0; padding-left: 20px; }
 .filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
 .filters input, .filters select { width: auto; min-width: 180px; }
 .filters input[type=search] { flex: 1 1 260px; max-width: 420px; }
+.filters input[type=checkbox] { min-width: 0; width: auto; }
 .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; }
 .buildings { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
 .buildings .card { margin: 0; }

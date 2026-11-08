@@ -66,9 +66,14 @@ fun Route.apiRoutes(services: Services) {
         }
 
         get("/announcements") {
-            call.respond(services.announcements.page(call.request.queryParameters["before"]))
+            call.respond(
+                services.announcements.page(
+                    call.request.queryParameters["before"],
+                    pinnedOnly =
+                    call.request.queryParameters["pinned"] == "true",
+                ),
+            )
         }
-
         rateLimit(AUTH_RATE_LIMIT) {
             post("/auth/signup") {
                 call.respond(HttpStatusCode.Created, services.accounts.signup(call.receive<SignupRequest>()))

@@ -98,6 +98,8 @@ class AppRepository(
                     }
                 }
                 true
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Log.w(TAG, "Sync failed", e)
                 false
@@ -177,6 +179,11 @@ class AppRepository(
 
     suspend fun markRead(announcementId: String) {
         withContext(Dispatchers.IO) { store.markRead(announcementId) }
+        readStore(signedIn = _state.value.signedIn, email = _state.value.email)
+    }
+
+    suspend fun markAllRead() {
+        withContext(Dispatchers.IO) { store.markAllRead() }
         readStore(signedIn = _state.value.signedIn, email = _state.value.email)
     }
 

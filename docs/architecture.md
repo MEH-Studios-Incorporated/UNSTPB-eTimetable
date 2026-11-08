@@ -106,6 +106,8 @@ The app keeps everything it shows in SQLite:
   A changed one is downloaded whole; for one faculty that is a few hundred
   kilobytes, compressed.
 - Announcements are paged, newest first, and kept after download.
+  The cache keeps 100 recent posts and up to 100 pinned posts fetched
+  separately, so older pinned notices are not lost at the recent-post limit.
 - The student's profile is stored on the server and cached on the phone, so
   edits made offline are sent on the next sync.
 

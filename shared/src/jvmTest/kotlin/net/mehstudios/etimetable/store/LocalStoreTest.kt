@@ -39,7 +39,7 @@ class LocalStoreTest {
     }
 
     @Test
-    fun updatingAnAnnouncementKeepsItRead() {
+    fun editedTextBecomesUnreadButPinChangesKeepItRead() {
         store.saveAnnouncements(listOf(announcement("a", 1), announcement("b", 2)))
         store.markRead("a")
         assertEquals(1, store.unreadCount())
@@ -47,8 +47,12 @@ class LocalStoreTest {
         store.saveAnnouncements(listOf(announcement("a", 1, title = "edited")))
         val a = store.announcements().first { it.announcement.id == "a" }
         assertEquals("edited", a.announcement.title)
-        assertEquals(true, a.read)
-        assertEquals(1, store.unreadCount())
+        assertEquals(false, a.read)
+        assertEquals(2, store.unreadCount())
+        store.markAllRead()
+        store.saveAnnouncements(listOf(announcement("a", 1, title = "edited", pinned = true)))
+        assertEquals(true, store.announcements().first { it.announcement.id == "a" }.read)
+        assertEquals(0, store.unreadCount())
     }
 
     @Test
