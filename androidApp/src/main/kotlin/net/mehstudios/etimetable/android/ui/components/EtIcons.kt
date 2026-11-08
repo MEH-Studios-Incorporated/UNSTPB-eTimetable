@@ -22,6 +22,14 @@ object EtIcons {
     val ChevronRight = icon("ChevronRight", "M9 6l6 6-6 6", width = 2f)
     val Search = icon("Search", "M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM20 20l-4-4", width = 2f)
     val Pin = icon("Pin", "M12 17v5M5 17h14l-2-4V5H7v8z", width = 2f)
+    val Eye = icon("Eye", "M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z")
+    val EyeOff =
+        icon(
+            "EyeOff",
+            "M3 3l18 18M10.6 6.1A9 9 0 0 1 12 6c6.5 0 10 6 10 6a17 17 0 0 1-2.1 2.8" +
+                "M6.2 6.2C3.5 8 2 12 2 12s3.5 6 10 6a9 9 0 0 0 3.8-.8M9.9 9.9a3 3 0 0 0 4.2 4.2",
+            width = 2f,
+        )
 
     private fun icon(name: String, path: String, width: Float = 1.75f) = ImageVector.Builder(
         name = name,

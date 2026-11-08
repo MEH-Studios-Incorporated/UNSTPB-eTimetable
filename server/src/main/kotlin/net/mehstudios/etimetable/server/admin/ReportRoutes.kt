@@ -1,0 +1,221 @@
+// Copyright (c) 2026 Multimedia Entertainment Hub LLC
+// SPDX-License-Identifier: LicenseRef-Proprietary
+
+package net.mehstudios.etimetable.server.admin
+
+import io.ktor.http.HttpStatusCode
+import io.ktor.http.encodeURLParameter
+import io.ktor.server.html.respondHtml
+import io.ktor.server.request.receiveParameters
+import io.ktor.server.response.respond
+import io.ktor.server.response.respondRedirect
+import io.ktor.server.routing.Route
+import io.ktor.server.sessions.get
+import io.ktor.server.sessions.sessions
+import kotlinx.datetime.toLocalDateTime
+import kotlinx.html.*
+import net.mehstudios.etimetable.schedule.FacultyTimeZone
+import net.mehstudios.etimetable.server.Services
+import net.mehstudios.etimetable.server.reports.REPORT_PAGE_SIZE
+import net.mehstudios.etimetable.server.reports.ReportStatus
+import net.mehstudios.etimetable.server.reports.TimetableReport
+import java.security.MessageDigest
+import java.util.Base64
+import java.util.UUID
+import kotlin.time.Instant
+
+internal fun Route.reportRoutes(services: Services) {
+    page("/reports", services) { admin ->
+        val closed = call.parameters["status"] == "closed"
+        val page = call.parameters["page"]?.toIntOrNull()?.coerceIn(0, 1_000_000) ?: 0
+        val reports = services.reports.page(closed, page)
+        val filter = if (closed) "closed" else "open"
+        call.respondHtml {
+            adminPage(
+                "Probleme de orar",
+                admin,
+                Section.REPORTS,
+                context = { +"Sesizări trimise de studenți despre activitățile din orar." },
+            ) {
+                div("filters") {
+                    a(href = "/admin/reports", classes = "btn ${if (closed) "secondary" else ""}") { +"Deschise" }
+                    a(href = "/admin/reports?status=closed", classes = "btn ${if (closed) "" else "secondary"}") {
+                        +"Închise"
+                    }
+                }
+                if (reports.isEmpty()) {
+                    p("card") { +"Nicio sesizare pe această pagină." }
+                } else {
+                    div("scroll") {
+                        table {
+                            thead {
+                                tr {
+                                    th { +"Activitate" }
+                                    th { +"Student" }
+                                    th { +"Problemă" }
+                                    th { +"Trimisă" }
+                                    th { +"Stare" }
+                                }
+                            }
+                            tbody {
+                                reports.take(REPORT_PAGE_SIZE).forEach { report ->
+                                    tr {
+                                        td {
+                                            a(href = "/admin/reports/${report.id}") { +report.snapshot.subjectName }
+                                            div("hint") { +report.snapshot.semesterName }
+                                            div("hint") { +classTime(report) }
+                                        }
+                                        td {
+                                            +report.studentName
+                                            div("hint") { +report.studentEmail }
+                                        }
+                                        td { +report.description.take(160) }
+                                        td { +reportTime(report.createdAt) }
+                                        td { +report.status.label() }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                div("form-actions") {
+                    if (page > 0) {
+                        a(href = "/admin/reports?status=$filter&page=${page - 1}", classes = "btn secondary") {
+                            +"Pagina precedentă"
+                        }
+                    }
+                    if (reports.size > REPORT_PAGE_SIZE) {
+                        a(href = "/admin/reports?status=$filter&page=${page + 1}", classes = "btn secondary") {
+                            +"Pagina următoare"
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    page("/reports/{report}", services) { admin ->
+        val id = reportId(call.parameters["report"]) ?: return@page call.respond(HttpStatusCode.NotFound)
+        val report = services.reports.find(id) ?: return@page call.respond(HttpStatusCode.NotFound)
+        val dataset = services.datasets.dataset(report.semesterId)
+        val canEdit = dataset?.activitiesById?.containsKey(report.activityId) == true
+        val csrf = call.sessions.get<AdminCookie>()?.token?.let(::reportCsrf).orEmpty()
+        call.respondHtml {
+            adminPage(
+                "Sesizare de orar",
+                admin,
+                Section.REPORTS,
+                context = {
+                    a(href = "/admin/reports") { +"Probleme de orar" }
+                    +" · ${reportTime(report.createdAt)}"
+                },
+                actions = {
+                    if (canEdit) {
+                        val semester = report.semesterId.encodeURLParameter()
+                        val activity = report.activityId.encodeURLParameter()
+                        val back = "/admin/reports/${report.id}".encodeURLParameter()
+                        a(href = "/admin/semesters/$semester/activities/$activity?back=$back", classes = "btn") {
+                            +"Editează activitatea"
+                        }
+                    }
+                },
+            ) {
+                div("card") {
+                    h2 { +report.snapshot.subjectName }
+                    p { +report.snapshot.semesterName }
+                    p { +classTime(report) }
+                    p { +"Săptămâni: ${weeksLabel(report.snapshot.activity.slot.weeks) ?: "toate"}" }
+                    p { +"Sală: ${report.snapshot.room ?: "nespecificată"}" }
+                    p { +"Profesor: ${report.snapshot.professorName ?: "nespecificat"}" }
+                    p { +"Grupe: ${report.snapshot.audience.ifBlank { "nespecificate" }}" }
+                    p("hint") { +"Datele activității la momentul trimiterii sesizării." }
+                    if (!canEdit) {
+                        p("notice") {
+                            +"Activitatea nu mai există în orar. Sesizarea păstrează datele originale."
+                        }
+                    }
+                }
+                div("card") {
+                    h2 { +"Trimisă de" }
+                    p { +report.studentName }
+                    p("hint") { +report.studentEmail }
+                }
+                div("card") {
+                    h2 { +"Problema semnalată" }
+                    p {
+                        style = "white-space: pre-wrap; overflow-wrap: anywhere"
+                        +report.description
+                    }
+                }
+                if (report.status == ReportStatus.OPEN) {
+                    div("card") {
+                        h2 { +"Închide sesizarea" }
+                        p("hint") { +"Corectează activitatea înainte să marchezi problema ca rezolvată." }
+                        form(action = "/admin/reports/${report.id}/review", method = FormMethod.post) {
+                            hiddenInput(name = "csrf") { value = csrf }
+                            div("form-actions") {
+                                button {
+                                    name = "status"
+                                    value = ReportStatus.FIXED.value
+                                    +"Marchează rezolvată"
+                                }
+                                button(classes = "secondary") {
+                                    name = "status"
+                                    value = ReportStatus.DISMISSED.value
+                                    +"Respinge sesizarea"
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    p("notice") { +"${report.status.label()} · ${report.reviewedAt?.let(::reportTime).orEmpty()}" }
+                }
+            }
+        }
+    }
+
+    action("/reports/{report}/review", services) { admin ->
+        val form = call.receiveParameters()
+        val expected = call.sessions.get<AdminCookie>()?.token?.let(::reportCsrf).orEmpty()
+        val supplied = form["csrf"].orEmpty()
+        if (expected.isEmpty() || !MessageDigest.isEqual(expected.toByteArray(), supplied.toByteArray())) {
+            return@action call.respond(HttpStatusCode.Forbidden)
+        }
+        val id = reportId(call.parameters["report"]) ?: return@action call.respond(HttpStatusCode.NotFound)
+        val status = ReportStatus.entries.singleOrNull { it.value == form["status"] && it != ReportStatus.OPEN }
+            ?: return@action call.respond(HttpStatusCode.UnprocessableEntity)
+        if (services.reports.find(id) == null) return@action call.respond(HttpStatusCode.NotFound)
+        if (!services.reports.review(id, status, admin.id)) {
+            return@action call.respondHtml(HttpStatusCode.Conflict) {
+                adminPage("Sesizare deja închisă", admin, Section.REPORTS) {
+                    p("notice") { +"Alt editor a închis deja această sesizare. Starea nu a fost schimbată." }
+                    a(href = "/admin/reports/$id", classes = "btn secondary") { +"Vezi sesizarea" }
+                }
+            }
+        }
+        call.respondRedirect("/admin/reports/$id")
+    }
+}
+
+private fun reportId(value: String?): UUID? = runCatching { UUID.fromString(value) }.getOrNull()
+
+private fun reportCsrf(token: String): String = Base64.getUrlEncoder().withoutPadding().encodeToString(
+    MessageDigest.getInstance("SHA-256").digest("timetable-report:$token".toByteArray()),
+)
+
+private fun ReportStatus.label(): String = when (this) {
+    ReportStatus.OPEN -> "Deschisă"
+    ReportStatus.FIXED -> "Rezolvată"
+    ReportStatus.DISMISSED -> "Respinsă"
+}
+
+private fun classTime(report: TimetableReport): String {
+    val activity = report.snapshot.activity
+    val day = DAY_NAMES[activity.slot.isoDay - 1]
+    return "${TYPE_NAMES[activity.type]} · $day, ${activity.slot.start} - ${activity.slot.end}"
+}
+
+private fun reportTime(instant: Instant): String {
+    val local = instant.toLocalDateTime(FacultyTimeZone)
+    return "${longDate(local.date)}, ${local.time.toString().take(5)}"
+}

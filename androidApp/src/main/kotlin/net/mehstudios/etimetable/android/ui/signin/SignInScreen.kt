@@ -24,6 +24,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -53,6 +55,7 @@ import kotlinx.coroutines.launch
 import net.mehstudios.etimetable.AppInfo
 import net.mehstudios.etimetable.android.R
 import net.mehstudios.etimetable.android.data.ActionResult
+import net.mehstudios.etimetable.android.ui.components.EtIcons
 import net.mehstudios.etimetable.android.ui.components.LanguageToggle
 import net.mehstudios.etimetable.android.ui.components.MehCredit
 import net.mehstudios.etimetable.android.ui.components.message
@@ -228,17 +231,32 @@ private fun Field(
     capitalization: KeyboardCapitalization = KeyboardCapitalization.None,
     secret: Boolean = false,
 ) {
+    var revealed by rememberSaveable { mutableStateOf(false) }
     OutlinedTextField(
         value = value,
         onValueChange = onChange,
         label = { Text(stringResource(label)) },
         singleLine = true,
-        visualTransformation = if (secret) PasswordVisualTransformation() else VisualTransformation.None,
+        visualTransformation = if (secret && !revealed) PasswordVisualTransformation() else VisualTransformation.None,
         keyboardOptions = KeyboardOptions(
             keyboardType = type,
             capitalization = capitalization,
             imeAction = ImeAction.Next,
         ),
+        trailingIcon = if (secret) {
+            {
+                IconButton(onClick = { revealed = !revealed }) {
+                    Icon(
+                        imageVector = if (revealed) EtIcons.EyeOff else EtIcons.Eye,
+                        contentDescription = stringResource(
+                            if (revealed) R.string.hide_password else R.string.show_password,
+                        ),
+                    )
+                }
+            }
+        } else {
+            null
+        },
         modifier = modifier,
     )
 }

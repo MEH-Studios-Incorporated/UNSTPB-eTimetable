@@ -81,6 +81,21 @@ Announcement
 : id, title, body (Markdown), published at, author (an admin), optional
   pinned flag. Every student sees every announcement.
 
+Timetable report
+: id, student id, semester id, activity id, description, class snapshot,
+  creation time, status (open, fixed or dismissed), and closure time and
+  administrator. The server creates the snapshot from the current dataset,
+  including the subject, slot, teacher, room and audience. It survives
+  timetable edits and imports. Reports belong to the student's account and
+  are deleted with it; only dashboard staff can read them.
+
+Descriptions are trimmed and must contain 10 to 2,000 characters. Only
+activities in the current semester can be reported. An account has at most
+one open report for the same semester and activity, and can submit five
+reports in any rolling hour, including reports closed during that hour.
+Closing a report changes its status, not the class. Correcting a class uses
+the existing activity editor and dataset sync.
+
 ## Rules computed in `shared/`
 
 - Week number and parity for a date, with breaks and overrides.
@@ -114,6 +129,12 @@ formats, with Wednesday 28 October 2026 in week 5, as on the mockups.
 | `POST /api/v1/auth/signup`, `/login`, `/logout` | Session token. |
 | `GET`, `PUT /api/v1/me` | The student's profile. Erasmus picks are checked for overlaps. |
 | `DELETE /api/v1/me` | Deletes the account and everything stored for it. |
+| `POST /api/v1/timetable-reports` | Signed-in student submits `semesterId`, `activityId`, `description`; returns `201` with the report `id`. |
 | `PUT`, `DELETE /api/v1/me/push-tokens/<token>` | Register or remove a device. |
 
 The dashboard lives under `/admin` and is not part of the API.
+
+Report submissions return `422` for an invalid description or stale class,
+`409` with `report_already_open` for a duplicate open report, and `429`
+with `too_many_requests` and a `Retry-After` header when the hourly
+allowance is used. The API does not expose a list of reports.

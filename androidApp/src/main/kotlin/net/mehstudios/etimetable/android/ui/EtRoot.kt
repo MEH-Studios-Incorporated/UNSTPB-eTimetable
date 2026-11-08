@@ -69,6 +69,7 @@ import net.mehstudios.etimetable.android.ui.subjects.SubjectScreen
 import net.mehstudios.etimetable.android.ui.subjects.SubjectsScreen
 import net.mehstudios.etimetable.android.ui.theme.ButtonShape
 import net.mehstudios.etimetable.android.ui.timetable.TimetableScreen
+import net.mehstudios.etimetable.api.TimetableReportRequest
 import net.mehstudios.etimetable.model.Profile
 import net.mehstudios.etimetable.schedule.StudentTimetable
 import net.mehstudios.etimetable.schedule.facultyNow
@@ -146,6 +147,7 @@ fun EtRoot(container: AppContainer) {
                     onSignOut = { scope.launch { repository.signOut() } },
                     markRead = { id -> scope.launch { repository.markRead(id) } },
                     saveProfile = repository::saveProfile,
+                    reportProblem = repository::reportTimetableProblem,
                 )
             }
         }
@@ -191,6 +193,7 @@ private fun MainScreen(
     onSignOut: () -> Unit,
     markRead: (String) -> Unit,
     saveProfile: suspend (Profile) -> ActionResult,
+    reportProblem: suspend (TimetableReportRequest) -> ActionResult,
 ) {
     val dataset = state.dataset ?: return
     val profile = state.profile ?: return
@@ -332,6 +335,7 @@ private fun MainScreen(
                                 actions,
                                 openProfessor = { professorId = it },
                                 openSubject = { subjectId = it },
+                                reportProblem = reportProblem,
                             )
                             Tab.SUBJECTS -> SubjectsScreen(dataset, timetable, actions) { subjectId = it }
                             Tab.ANNOUNCEMENTS -> AnnouncementsScreen(state.announcements, actions) {

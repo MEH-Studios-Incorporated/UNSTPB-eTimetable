@@ -15,10 +15,11 @@ subject, room or professor anywhere opens its page.
 1. Sign in with email and password, or create an account with first name,
    last name, email, phone number and the password typed twice. A "remember
    me" box keeps the session; without it the session ends when the app is
-   closed. The FAIMA seal sits above the form; the footer is a small
-   Multimedia Entertainment Hub credit (mark and copyright, no links; those
-   are on the About page). A RO / EN switch in the top
-   corner changes the language before signing in.
+   closed. Each password field has its own show or hide control, so the
+   confirmation can be checked without exposing both fields. The FAIMA seal
+   sits above the form; the footer is a small Multimedia Entertainment Hub
+   credit (mark and copyright, no links; those are on the About page). A RO /
+   EN switch in the top corner changes the language before signing in.
 2. A forgotten password is reset by email when the server has email
    configured, otherwise by an admin from the dashboard.
 3. Enrollment: national or Erasmus.
@@ -62,6 +63,12 @@ Every choice can be changed later from the profile. Nothing is checked.
   assistant and, below, the professor of the subject's course for the same
   series. When the timetable names nobody the sheet says so. Every name
   opens that professor's page.
+- The class sheet has "Report a timetable problem". The form identifies
+  the selected class and asks what is wrong and what should change, with a
+  10 to 2,000 character description. It confirms only after the server
+  accepts the report. A failed request keeps the text for retry; reports
+  are not queued offline. Duplicate and hourly-limit messages explain why
+  the report could not be sent. The timetable remains usable offline.
 
 ## Subjects
 
@@ -127,7 +134,8 @@ last sync, then:
 - Privacy policy: what the server keeps (email, password hash, name, phone
   number, enrollment, group or picked slots, language, push tokens) and what it
   does not (location, contacts, analytics or tracking), how to delete the
-  account.
+  account. Timetable reports and their class details are visible to the
+  staff managing the timetable and are deleted with the account.
 - Terms of use: the timetable is for information; the faculty's official
   announcements prevail.
 - Open source licenses: generated at build time from the dependencies,
@@ -188,3 +196,13 @@ office, office hours one per line, their activities); rooms by building
 (building names and addresses, each room's week); announcements (write,
 preview, publish, edit, pin); student accounts (administrators only: search,
 a new password that signs them out, delete); admin accounts.
+
+Timetable reports have a sidebar entry and an open count on the overview.
+The list separates open reports from closed ones. A report shows the
+student's name and email, description, original class details, submission
+time and status.
+"Edit class" opens the activity's existing editor when the class still
+exists. Staff save any correction there, then return to the report and
+mark it fixed. "Dismiss" closes a report without changing the timetable.
+Closed reports remain available as history until the student deletes the
+account. Both administrators and editors can handle reports.

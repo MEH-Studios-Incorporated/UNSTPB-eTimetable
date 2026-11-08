@@ -123,6 +123,7 @@ fun Route.adminRoutes(services: Services) {
         announcementRoutes(services)
         adminListRoutes(services)
         editRoutes(services)
+        reportRoutes(services)
     }
 }
 
@@ -132,6 +133,7 @@ private suspend fun RoutingContext.overview(services: Services, admin: Admin) {
     val dataset = current?.dataset
     val students = services.accounts.counts()
     val announcements = services.announcements.page(before = null, limit = 100)
+    val openReports = services.reports.openCount()
     val today = Clock.System.facultyNow().date
     call.respondHtml {
         adminPage(
@@ -148,6 +150,14 @@ private suspend fun RoutingContext.overview(services: Services, admin: Admin) {
                 a(href = "/admin/announcements#new", classes = "btn") { +"Anunț nou" }
             },
         ) {
+            if (openReports > 0) {
+                p("notice") {
+                    a(href = "/admin/reports") {
+                        val label = if (openReports == 1) "sesizare de orar" else "sesizări de orar"
+                        +"$openReports $label așteaptă verificarea."
+                    }
+                }
+            }
             if (dataset == null) {
                 div("card") {
                     h2 { +"Niciun semestru în aplicație" }

@@ -6,6 +6,7 @@ package net.mehstudios.etimetable.android.data
 import android.util.Log
 import io.ktor.client.plugins.ResponseException
 import io.ktor.client.statement.bodyAsText
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,6 +19,7 @@ import net.mehstudios.etimetable.api.ApiClient
 import net.mehstudios.etimetable.api.ErrorCodes
 import net.mehstudios.etimetable.api.LoginRequest
 import net.mehstudios.etimetable.api.SignupRequest
+import net.mehstudios.etimetable.api.TimetableReportRequest
 import net.mehstudios.etimetable.api.decodeApiError
 import net.mehstudios.etimetable.model.Dataset
 import net.mehstudios.etimetable.model.Profile
@@ -154,6 +156,23 @@ class AppRepository(
             signOutLocally()
         }
         readStore(signedIn = false, email = null)
+    }
+
+    /** Reports need a server receipt; a failed submission stays in the form for retry. */
+    suspend fun reportTimetableProblem(request: TimetableReportRequest): ActionResult {
+        val token = session.token() ?: return ActionResult.Refused(ErrorCodes.UNAUTHORIZED)
+        return withContext(Dispatchers.IO) {
+            try {
+                api.reportTimetableProblem(token, request)
+                ActionResult.Done
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: ResponseException) {
+                if (e.response.status.value == 401) ActionResult.Refused(ErrorCodes.UNAUTHORIZED) else e.toRefused()
+            } catch (e: Exception) {
+                ActionResult.NoConnection
+            }
+        }
     }
 
     suspend fun markRead(announcementId: String) {

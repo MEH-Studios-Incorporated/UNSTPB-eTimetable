@@ -71,6 +71,7 @@ import kotlinx.datetime.isoDayNumber
 import kotlinx.datetime.minus
 import kotlinx.datetime.plus
 import net.mehstudios.etimetable.android.R
+import net.mehstudios.etimetable.android.data.ActionResult
 import net.mehstudios.etimetable.android.data.StartView
 import net.mehstudios.etimetable.android.data.TimetableLayout
 import net.mehstudios.etimetable.android.ui.components.BrandBar
@@ -87,6 +88,7 @@ import net.mehstudios.etimetable.android.ui.components.weekRangeLabel
 import net.mehstudios.etimetable.android.ui.theme.ButtonShape
 import net.mehstudios.etimetable.android.ui.theme.LocalTimetableChoice
 import net.mehstudios.etimetable.android.ui.theme.TimeStyle
+import net.mehstudios.etimetable.api.TimetableReportRequest
 import net.mehstudios.etimetable.model.Dataset
 import net.mehstudios.etimetable.model.Parity
 import net.mehstudios.etimetable.model.WeekRule
@@ -121,12 +123,21 @@ fun TimetableScreen(
     actions: @Composable () -> Unit,
     openProfessor: (String) -> Unit,
     openSubject: (String) -> Unit,
+    reportProblem: suspend (TimetableReportRequest) -> ActionResult,
 ) {
     val prefs = LocalTimetableChoice.current.prefs
     var mode by rememberSaveable { mutableStateOf(if (prefs.start == StartView.WEEK) Mode.WEEK else Mode.DAY) }
     var selectedText by rememberSaveable { mutableStateOf(now.date.toString()) }
     val selected = LocalDate.parse(selectedText)
-    var opened by remember { mutableStateOf<Occurrence?>(null) }
+    var openedId by rememberSaveable(dataset.semester.id) { mutableStateOf<String?>(null) }
+    var openedDate by rememberSaveable(dataset.semester.id) { mutableStateOf<String?>(null) }
+    val opened = dataset.activitiesById[openedId]?.let { activity ->
+        openedDate?.let { Occurrence(activity, LocalDate.parse(it)) }
+    }
+    fun open(occurrence: Occurrence) {
+        openedId = occurrence.activity.id
+        openedDate = occurrence.date.toString()
+    }
     val calendar = timetable.calendar
     val scope = rememberCoroutineScope()
 
@@ -230,19 +241,13 @@ fun TimetableScreen(
                     ) { page ->
                         val day = pagerDays[page]
                         Column(Modifier.fillMaxSize()) {
-                            if (day == now.date) NextCard(dataset, timetable, now) { opened = it }
+                            if (day == now.date) NextCard(dataset, timetable, now, ::open)
                             val occurrences = timetable.on(day)
                             when (prefs.layout) {
                                 TimetableLayout.TIMELINE ->
-                                    DayTimeline(dataset, occurrences, now, Modifier.weight(1f)) { opened = it }
-                                TimetableLayout.LIST -> DayList(dataset, occurrences, now, Modifier.weight(1f)) {
-                                    opened =
-                                        it
-                                }
-                                TimetableLayout.TABLE -> DayRows(dataset, occurrences, now, Modifier.weight(1f)) {
-                                    opened =
-                                        it
-                                }
+                                    DayTimeline(dataset, occurrences, now, Modifier.weight(1f), ::open)
+                                TimetableLayout.LIST -> DayList(dataset, occurrences, now, Modifier.weight(1f), ::open)
+                                TimetableLayout.TABLE -> DayRows(dataset, occurrences, now, Modifier.weight(1f), ::open)
                             }
                         }
                     }
@@ -268,9 +273,9 @@ fun TimetableScreen(
                         it.mondayOfWeek() == weekMonday
                     }.ifEmpty { (0 until 5).map { weekMonday.plus(it, DateTimeUnit.DAY) } }
                     when (prefs.layout) {
-                        TimetableLayout.TIMELINE -> WeekGrid(dataset, days, timetable, now) { opened = it }
-                        TimetableLayout.LIST -> WeekAgenda(dataset, days, timetable, now) { opened = it }
-                        TimetableLayout.TABLE -> WeekTable(dataset, days, timetable, now) { opened = it }
+                        TimetableLayout.TIMELINE -> WeekGrid(dataset, days, timetable, now, ::open)
+                        TimetableLayout.LIST -> WeekAgenda(dataset, days, timetable, now, ::open)
+                        TimetableLayout.TABLE -> WeekTable(dataset, days, timetable, now, ::open)
                     }
                 }
             }
@@ -281,9 +286,13 @@ fun TimetableScreen(
         ActivitySheet(
             dataset,
             it,
-            onDismiss = { opened = null },
+            onDismiss = {
+                openedId = null
+                openedDate = null
+            },
             openProfessor = openProfessor,
             openSubject = openSubject,
+            reportProblem = reportProblem,
         )
     }
 }

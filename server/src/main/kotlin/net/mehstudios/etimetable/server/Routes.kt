@@ -27,10 +27,12 @@ import net.mehstudios.etimetable.api.ErrorCodes
 import net.mehstudios.etimetable.api.Health
 import net.mehstudios.etimetable.api.LoginRequest
 import net.mehstudios.etimetable.api.SignupRequest
+import net.mehstudios.etimetable.api.TimetableReportRequest
 import net.mehstudios.etimetable.model.Profile
 import net.mehstudios.etimetable.server.accounts.checkProfile
 import net.mehstudios.etimetable.server.db.query
 import net.mehstudios.etimetable.server.db.transaction
+import net.mehstudios.etimetable.server.reports.ReportLimitExceeded
 import java.util.UUID
 
 const val STUDENT_AUTH = "student"
@@ -75,6 +77,16 @@ fun Route.apiRoutes(services: Services) {
         }
 
         authenticate(STUDENT_AUTH) {
+            post("/timetable-reports") {
+                val request = call.receive<TimetableReportRequest>()
+                try {
+                    val receipt = services.reports.submit(call.studentId(), request, services.datasets.current())
+                    call.respond(HttpStatusCode.Created, receipt)
+                } catch (e: ReportLimitExceeded) {
+                    call.response.header(HttpHeaders.RetryAfter, e.retryAfterSeconds)
+                    call.respond(HttpStatusCode.TooManyRequests, ApiError(ErrorCodes.TOO_MANY_REQUESTS))
+                }
+            }
             post("/auth/logout") {
                 call.bearerToken()?.let { services.accounts.logout(it) }
                 call.respond(HttpStatusCode.NoContent)
