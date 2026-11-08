@@ -35,6 +35,7 @@ import net.mehstudios.etimetable.server.announcements.AnnouncementRepository
 import net.mehstudios.etimetable.server.dataset.DatasetRepository
 import net.mehstudios.etimetable.server.db.createDataSource
 import net.mehstudios.etimetable.server.db.migrate
+import net.mehstudios.etimetable.server.reports.TimetableReports
 import net.mehstudios.etimetable.server.site.siteRoutes
 import org.slf4j.LoggerFactory
 import org.slf4j.event.Level
@@ -60,6 +61,7 @@ class Services(val db: DataSource) {
     val announcements = AnnouncementRepository(db)
     val accounts = Accounts(db)
     val admins = AdminAccounts(db)
+    val reports = TimetableReports(db)
 }
 
 fun Application.module(services: Services, secureCookies: Boolean = false, downloads: Downloads = Downloads()) {

@@ -92,6 +92,13 @@ class ApiClient(engine: HttpClientEngine, private val baseUrl: String) {
         http.delete(url("/api/v1/me")) { bearerAuth(token) }
     }
 
+    suspend fun reportTimetableProblem(token: String, request: TimetableReportRequest): TimetableReportReceipt =
+        http.post(url("/api/v1/timetable-reports")) {
+            bearerAuth(token)
+            contentType(ContentType.Application.Json)
+            setBody(request)
+        }.body()
+
     fun close() = http.close()
 }
 

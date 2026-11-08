@@ -42,6 +42,8 @@ object ErrorCodes {
     const val UNAUTHORIZED = "unauthorized"
     const val UNKNOWN_ACTIVITY = "unknown_activity"
     const val UNKNOWN_GROUP = "unknown_group"
+    const val INVALID_REPORT = "invalid_report"
+    const val REPORT_ALREADY_OPEN = "report_already_open"
 
     /** [ApiError.details] holds the ids of the two clashing activities. */
     const val CLASH = "clash"

@@ -25,6 +25,8 @@
     <string name="error_missing_name">Completează prenumele și numele.</string>
     <string name="error_invalid_phone">Acesta nu pare un număr de telefon.</string>
     <string name="password">Parolă</string>
+    <string name="show_password">Arată parola</string>
+    <string name="hide_password">Ascunde parola</string>
     <string name="sign_in">Conectează-te</string>
     <string name="create_account">Creează un cont</string>
     <string name="have_account">Am deja un cont</string>
@@ -156,7 +158,7 @@
     <string name="about">Despre aplicație</string>
     <string name="version">Versiunea %1$s</string>
     <string name="privacy_title">Confidențialitate</string>
-    <string name="privacy_text">Serverul păstrează emailul, un hash al parolei, numele, numărul de telefon, grupa sau orele alese și limba. Nu păstrează locația, contactele sau date despre utilizare. Ștergerea contului le șterge pe toate.</string>
+    <string name="privacy_text">Serverul păstrează emailul, un hash al parolei, numele, numărul de telefon, grupa sau orele alese și limba. Dacă semnalezi o problemă cu orarul, personalul autorizat poate vedea numele, emailul, descrierea ta și detaliile orei. Nu păstrează locația, contactele sau date despre utilizare. Ștergerea contului șterge și sesizările tale.</string>
     <string name="faima_site">Site-ul FAIMA</string>
     <string name="meh_site">mehstudios.net</string>
     <string name="copyright_rights">© 2026. Toate drepturile rezervate.</string>
@@ -192,4 +194,17 @@
     <string name="subject_no_slots">Materia nu are ore în orar.</string>
     <string name="subject_all_clash">Toate orele se suprapun cu ceva din orarul tău.</string>
     <string name="error_clash">Se suprapune cu ceva din orarul tău.</string>
+    <string name="timetable_report">Semnalează o problemă cu orarul</string>
+    <string name="report_description">Ce este greșit la această oră?</string>
+    <string name="report_hint">Descrie sala, ora, profesorul sau alt detaliu greșit și ce trebuie schimbat (cel puțin 10 caractere). Personalul care se ocupă de orar va vedea numele, emailul, detaliile orei și descrierea ta. Nu include parole sau alte informații private. Cel mult cinci sesizări pe oră.</string>
+    <string name="report_length">%1$d / %2$d</string>
+    <string name="report_send">Trimite sesizarea</string>
+    <string name="report_done">Gata</string>
+    <string name="report_sent">Sesizarea a fost primită. Personalul care se ocupă de orar o poate verifica.</string>
+    <string name="report_no_connection">Nu am putut confirma trimiterea. Păstrează formularul deschis și încearcă din nou când ai conexiune. Dacă sesizarea a fost deja primită, nu va fi creată încă una.</string>
+    <string name="report_already_open">Ai deja o sesizare deschisă pentru această oră. Personalul care se ocupă de orar o va verifica.</string>
+    <string name="report_rate_limited">Ai trimis cinci sesizări în ultima oră. Așteaptă înainte să încerci din nou.</string>
+    <string name="report_stale_class">Ora sau semestrul nu mai este actual. Revino și actualizează orarul înainte să trimiți sesizarea.</string>
+    <string name="report_invalid">Descrie problema folosind între 10 și 2000 de caractere.</string>
+    <string name="report_sign_in">Sesiunea a expirat. Deconectează-te și autentifică-te din nou înainte să trimiți sesizarea.</string>
 </resources>

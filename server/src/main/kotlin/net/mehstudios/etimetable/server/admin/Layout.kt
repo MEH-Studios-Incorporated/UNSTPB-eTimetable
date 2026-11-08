@@ -34,6 +34,7 @@ enum class Section(val label: String, val href: String) {
     PROFESSORS("Profesori", "/admin/professors"),
     ROOMS("Săli", "/admin/rooms"),
     ANNOUNCEMENTS("Anunțuri", "/admin/announcements"),
+    REPORTS("Probleme de orar", "/admin/reports"),
     STUDENTS("Studenți", "/admin/students"),
     ADMINS("Administratori", "/admin/admins"),
 }

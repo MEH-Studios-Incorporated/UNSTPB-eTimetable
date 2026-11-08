@@ -6,6 +6,10 @@ Each section is also the text of the matching GitHub release.
 
 ### Added
 
+- Students can report an incorrect class from its details on Android.
+  The dashboard keeps the class as it was reported, links to its editor,
+  and lets the secretariat mark the report fixed or dismiss it. Each
+  account can send five reports per hour, with one open report per class.
 - Android app: sign in or create an account, then choose a group and
   half-group, or, for Erasmus students, the course and lab slots to attend.
   A slot that overlaps one already picked is refused and the clash named.
@@ -61,6 +65,8 @@ Each section is also the text of the matching GitHub release.
 
 ### Changed
 
+- Password fields on Android have a show or hide control. The password and
+  confirmation fields are controlled separately when creating an account.
 - The dashboard has a sidebar, page headers with their actions, groups
   listed by series and a cleaner look throughout.
 - The current week sits in a quieter badge: its number in a grey block,

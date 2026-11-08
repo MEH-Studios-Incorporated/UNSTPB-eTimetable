@@ -64,6 +64,21 @@ queries, without an ORM.
 Students are a separate table, with Argon2id password hashes and session
 tokens of which only a SHA-256 is stored.
 
+Timetable problem reports are stored separately from the semester dataset.
+They keep the student's description and a server-generated snapshot of the
+class, so a later timetable edit or import does not change what was
+reported. The dashboard shows the student's name and email so staff can
+follow up. Reports are available only to dashboard administrators and
+editors, and are deleted with the student's account. They do not enter the
+dataset or its offline cache.
+
+Submitting a report requires a student session and a connection. The server
+accepts at most five reports per account in a rolling hour and one open
+report per class and semester. It locks the student row while checking the
+limit and inserting, so simultaneous requests, multiple sessions and server
+restarts do not bypass the limit. Duplicate or invalid reports do not use
+the allowance. A rate-limited response includes `Retry-After` in seconds.
+
 ## Who runs the server
 
 We ship the server; we do not host it. UNSTPB decides where it runs and
@@ -135,6 +150,12 @@ At the start of each semester an admin enters or imports:
 Editors post announcements there. The dashboard checks entries with the
 same rules as the app (for example, a room or professor booked twice at the
 same time).
+
+The reports section shows open reports first and has a separate closed
+list. Staff can open the existing activity editor from a report, then mark
+it fixed after saving the correction, or dismiss it when no correction is
+needed. Closing a report does not edit the timetable. These actions use
+the dashboard's existing session and same-origin form protection.
 
 A tool in `tools/` that reads FAIMA's published timetable into the CSV
 format is for development only, to get realistic data.

@@ -25,6 +25,8 @@ notifications and the iOS app are next.
 - A professor timetable: what each professor teaches, where and when, and
   their office hours.
 - Faculty announcements with push notifications.
+- Report an incorrect class from its details. The secretariat reviews the
+  report in the dashboard and can correct the class or dismiss the report.
 - Home screen widgets with today's classes and the next one.
 - Native apps: Jetpack Compose on Android, SwiftUI on iOS, with the
   timetable logic shared in Kotlin.
@@ -66,7 +68,7 @@ and looks like something the faculty would put its name on.
   the server too. It runs from a Docker image next to PostgreSQL.
 - The faculty's dashboard at `/admin`: semesters and their holidays, the
   timetable imported from one spreadsheet (and exported back to it),
-  announcements and dashboard accounts.
+  announcements, timetable problem reports and dashboard accounts.
 - The shared Kotlin code computes timetables, week numbers and clashes, and
   keeps an offline copy on the phone.
 - The iOS app builds on CI and shows the app name from the shared Kotlin
