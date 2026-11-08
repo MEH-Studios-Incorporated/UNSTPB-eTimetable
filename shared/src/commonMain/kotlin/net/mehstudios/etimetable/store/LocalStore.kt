@@ -34,12 +34,15 @@ class LocalStore(driver: SqlDriver) {
 
     /** Adds new announcements and updates known ones, keeping their read state. */
     fun saveAnnouncements(announcements: List<Announcement>) = queries.transaction {
+        val existing = announcements().associate { it.announcement.id to it.announcement }
         announcements.forEach {
             val json = AppJson.encodeToString(it)
             val published = it.publishedAt.toEpochMilliseconds()
             val pinned = if (it.pinned) 1L else 0L
             queries.insertAnnouncementIfNew(it.id, published, pinned, json)
             queries.updateAnnouncement(published, pinned, json, it.id)
+            val old = existing[it.id]
+            if (old != null && (old.title != it.title || old.body != it.body)) queries.markAnnouncementUnread(it.id)
         }
     }
 
@@ -62,6 +65,8 @@ class LocalStore(driver: SqlDriver) {
     }
 
     fun markRead(announcementId: String) = queries.markAnnouncementRead(announcementId)
+
+    fun markAllRead() = queries.markAllAnnouncementsRead()
 
     fun unreadCount(): Long = queries.countUnread().executeAsOne()
 

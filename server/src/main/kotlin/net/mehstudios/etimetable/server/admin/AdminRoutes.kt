@@ -124,6 +124,7 @@ fun Route.adminRoutes(services: Services) {
         adminListRoutes(services)
         editRoutes(services)
         reportRoutes(services)
+        scheduleRoutes(services)
     }
 }
 
@@ -655,14 +656,28 @@ private fun FlowContent.groupsBySeries(dataset: Dataset) {
 
 private fun Route.announcementRoutes(services: Services) {
     page("/announcements", services) { admin ->
-        val announcements = services.announcements.page(before = null, limit = 100)
-        call.respondHtml { announcementsPage(admin, announcements, draft = null, msg = call.parameters["msg"]) }
+        val announcements = services.announcements.page(before = call.parameters["before"], limit = 20)
+        call.respondHtml {
+            announcementsPage(
+                admin,
+                announcements,
+                draft = null,
+                msg = call.parameters["msg"],
+            )
+        }
     }
     action("/announcements", services) { admin ->
         val draft = Draft.from(call.receiveParameters())
         if (draft.preview || draft.error != null) {
-            val announcements = services.announcements.page(before = null, limit = 100)
-            return@action call.respondHtml { announcementsPage(admin, announcements, draft, msg = null) }
+            val announcements = services.announcements.page(before = null, limit = 20)
+            return@action call.respondHtml {
+                announcementsPage(
+                    admin,
+                    announcements,
+                    draft,
+                    msg = null,
+                )
+            }
         }
         services.announcements.publish(draft.title, draft.body, draft.author, pinned = draft.pinned)
         call.respondRedirect("/admin/announcements?msg=${"Anunțul a fost publicat.".encodeURLParameter()}")
@@ -703,7 +718,9 @@ private class Draft(
     val preview: Boolean,
 ) {
     val error: String? get() =
-        if (title.isBlank() ||
+        if (title.length > 200 || body.length > 20_000 || author.length > 100) {
+            "Titlul poate avea 200 de caractere, textul 20.000 și semnătura 100."
+        } else if (title.isBlank() ||
             body.isBlank() ||
             author.isBlank()
         ) {
@@ -754,7 +771,7 @@ private fun HTML.announcementsPage(admin: Admin, announcements: List<Announcemen
                     }
                 }
                 p("meta") { +"${a.author} · ${dateTime(a)}" }
-                div("body") { markdown(a.body) }
+                p { +a.body.take(240) }
                 div("form-actions") {
                     a(href = "/admin/announcements/${a.id}", classes = "btn secondary") { +"Editează" }
                     form(action = "/admin/announcements/${a.id}/pin", method = FormMethod.post, classes = "inline") {
@@ -768,6 +785,17 @@ private fun HTML.announcementsPage(admin: Admin, announcements: List<Announcemen
                 }
             }
         }
+        if (announcements.size ==
+            20
+        ) {
+            a(
+                href = "/admin/announcements?before=${announcements.last().id.encodeURLParameter()}",
+                classes = "btn secondary",
+            ) {
+                +"Anunțuri mai vechi"
+            }
+        }
+        a(href = "/admin/announcements", classes = "btn secondary") { +"Cele mai noi" }
     }
 }
 
@@ -805,7 +833,10 @@ private fun FlowContent.announcementForm(action: String, draft: Draft?, submit: 
                     required = true
                     +draft?.body.orEmpty()
                 }
-                p("hint") { +"**îngroșat**, *cursiv*, [link](https://faima.upb.ro), liste cu - la început de rând." }
+                p("hint") {
+                    +"**îngroșat**, *cursiv*, [link](https://faima.upb.ro). "
+                    +"Pentru liste, scrie fiecare element pe un rând nou, cu spațiu după cratimă: - primul element."
+                }
             }
             field("author", "Semnat de") {
                 textInput(name = "author") {

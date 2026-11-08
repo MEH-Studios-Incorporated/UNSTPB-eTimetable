@@ -7,6 +7,7 @@ import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.plugins.ClientRequestException
+import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.ServerResponseException
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.expectSuccess
@@ -40,6 +41,11 @@ sealed interface DatasetFetch {
 class ApiClient(engine: HttpClientEngine, private val baseUrl: String) {
     private val http = HttpClient(engine) {
         install(ContentNegotiation) { json(AppJson) }
+        install(HttpTimeout) {
+            requestTimeoutMillis = 30_000
+            connectTimeoutMillis = 10_000
+            socketTimeoutMillis = 30_000
+        }
         expectSuccess = true
     }
 
@@ -62,8 +68,11 @@ class ApiClient(engine: HttpClientEngine, private val baseUrl: String) {
     }
 
     /** Newest first, one page; pass the last id of a page as [before] for the next one. */
-    suspend fun announcements(before: String? = null): List<Announcement> =
-        http.get(url("/api/v1/announcements")) { before?.let { parameter("before", it) } }.body()
+    suspend fun announcements(before: String? = null, pinnedOnly: Boolean = false): List<Announcement> =
+        http.get(url("/api/v1/announcements")) {
+            before?.let { parameter("before", it) }
+            if (pinnedOnly) parameter("pinned", true)
+        }.body()
 
     suspend fun signup(request: SignupRequest): SessionResponse = http.post(url("/api/v1/auth/signup")) {
         contentType(ContentType.Application.Json)

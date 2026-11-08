@@ -125,7 +125,7 @@ formats, with Wednesday 28 October 2026 in week 5, as on the mockups.
 | Method and path | What it returns |
 | --- | --- |
 | `GET /api/v1/dataset` | The current semester with structure, subjects, professors, rooms and activities. `ETag` for caching. |
-| `GET /api/v1/announcements?before=<id>` | Announcements, newest first, 20 per page. |
+| `GET /api/v1/announcements?before=<id>` | Announcements, newest first, 20 per page; `pinned=true` pages only pinned posts. |
 | `POST /api/v1/auth/signup`, `/login`, `/logout` | Session token. |
 | `GET`, `PUT /api/v1/me` | The student's profile. Erasmus picks are checked for overlaps. |
 | `DELETE /api/v1/me` | Deletes the account and everything stored for it. |

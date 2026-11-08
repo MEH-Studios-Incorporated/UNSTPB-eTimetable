@@ -49,7 +49,19 @@ class Sync(private val api: ApiClient, private val store: LocalStore, private va
             all += page
             before = page.last().id
         }
-        store.replaceAnnouncements(all.take(ANNOUNCEMENT_LIMIT))
+        val pinned = mutableListOf<Announcement>()
+        before = null
+        while (pinned.size < ANNOUNCEMENT_LIMIT) {
+            val page = api.announcements(before, pinnedOnly = true)
+            if (page.isEmpty()) break
+            pinned += page
+            before = page.last().id
+        }
+        store.replaceAnnouncements(
+            (all.take(ANNOUNCEMENT_LIMIT) + pinned.take(ANNOUNCEMENT_LIMIT)).distinctBy {
+                it.id
+            },
+        )
     }
 
     /**

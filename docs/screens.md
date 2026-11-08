@@ -85,6 +85,13 @@ Every choice can be changed later from the profile. Nothing is checked.
 
 ## Professors
 
+Android has a Teachers tab. Search matches a teacher's name without
+diacritics, email or subject name. A switch shows only people scheduled
+to teach or hold office hours now. Each result opens the teacher's page.
+The current or next activity includes the room and available building
+address. The page also shows the office, email and missing-contact labels.
+Locations are inferred from the timetable, not tracked from the teacher.
+
 - A searchable list with each professor's current status in one line:
   teaching (subject, room, until when), office hours (room, until when),
   next activity today, or nothing more today.
@@ -92,6 +99,10 @@ Every choice can be changed later from the profile. Nothing is checked.
   weekend), office hours, office, email.
 
 ## Announcements
+
+Android can search titles, text and authors, show only unread items and
+mark all downloaded announcements as read. A title or body edit marks the
+item unread again; changing its pin alone does not.
 
 - Previews, newest first, pinned ones on top, unread ones marked: title, two
   lines of text, date and author.
@@ -184,6 +195,15 @@ dashboard for the secretariat, a line drawing of the Rectorat behind it, the
 UNSTPB and FAIMA logos and the Multimedia Entertainment Hub credit.
 
 ## Admin dashboard (web, part of the server)
+
+The Gestionare orar section searches subject names, teachers, rooms and
+groups across the current semester. It can filter by day or show classes
+without a room or teacher. Staff select up to 200 activities, choose a room
+or teacher and/or shift the times by minutes, then preview and confirm.
+The preview lists the resulting slots and any new booking conflicts.
+Moves across midnight are refused. A changed semester revision requires
+staff to reload instead of overwriting another editor's work.
+The announcement list has 20 posts per page, with links to older posts.
 
 A dark sidebar with the sections, each page with a title, a context line and
 its main actions on the right: an overview (today's week, counts, a list of

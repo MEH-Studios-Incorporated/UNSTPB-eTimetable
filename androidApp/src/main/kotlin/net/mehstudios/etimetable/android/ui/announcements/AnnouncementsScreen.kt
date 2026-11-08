@@ -18,12 +18,19 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -48,8 +55,16 @@ import net.mehstudios.etimetable.store.StoredAnnouncement
 fun AnnouncementsScreen(
     announcements: List<StoredAnnouncement>,
     actions: @Composable () -> Unit,
+    markAllRead: () -> Unit,
     open: (String) -> Unit,
 ) {
+    var query by rememberSaveable { mutableStateOf("") }
+    var unreadOnly by rememberSaveable { mutableStateOf(false) }
+    val visible = announcements.filter {
+        (!unreadOnly || !it.read) &&
+            (it.announcement.title + " " + markdownPreview(it.announcement.body) + " " + it.announcement.author)
+                .contains(query.trim(), ignoreCase = true)
+    }
     Column(Modifier.fillMaxSize()) {
         BrandBar { actions() }
         Text(
@@ -57,15 +72,35 @@ fun AnnouncementsScreen(
             style = MaterialTheme.typography.headlineSmall,
             modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 8.dp),
         )
-        if (announcements.isEmpty()) {
+        OutlinedTextField(
+            value = query,
+            onValueChange = { query = it },
+            singleLine = true,
+            label = { Text(stringResource(R.string.announcements_search)) },
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+        )
+        Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+            FilterChip(selected = unreadOnly, onClick = {
+                unreadOnly = !unreadOnly
+            }, label = { Text(stringResource(R.string.announcements_unread)) })
+            TextButton(
+                onClick = markAllRead,
+                enabled = announcements.any {
+                    !it.read
+                },
+            ) { Text(stringResource(R.string.announcements_mark_all)) }
+        }
+        if (visible.isEmpty()) {
             Text(
-                stringResource(R.string.announcements_empty),
+                stringResource(
+                    if (announcements.isEmpty()) R.string.announcements_empty else R.string.announcements_no_matches,
+                ),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(16.dp),
             )
         }
         LazyColumn(Modifier.fillMaxSize()) {
-            items(announcements, key = { it.announcement.id }) { stored ->
+            items(visible, key = { it.announcement.id }) { stored ->
                 val a = stored.announcement
                 Row(
                     Modifier.fillMaxWidth().clickable { open(a.id) }.padding(horizontal = 16.dp, vertical = 14.dp),

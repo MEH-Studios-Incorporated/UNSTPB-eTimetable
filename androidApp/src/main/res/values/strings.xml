@@ -206,4 +206,17 @@
     <string name="report_stale_class">This class or semester is no longer current. Go back and update the timetable before reporting it.</string>
     <string name="report_invalid">Describe the problem using 10 to 2000 characters.</string>
     <string name="report_sign_in">Your session has ended. Sign out and sign in again before sending the report.</string>
+    <string name="find_teacher">Teachers</string>
+    <string name="nav_announcements">News</string>
+    <string name="prof_search">Search by teacher, email or subject</string>
+    <string name="prof_active_only">Teaching or office hours now</string>
+    <string name="prof_search_empty">No teachers match these filters.</string>
+    <string name="prof_status_note">Based on the published timetable. This is not a live location.</string>
+    <string name="prof_office">Office: %1$s</string>
+    <string name="prof_not_provided">Not provided</string>
+    <string name="prof_email_none">No email address provided.</string>
+    <string name="announcements_search">Search announcements</string>
+    <string name="announcements_unread">Unread only</string>
+    <string name="announcements_mark_all">Mark all as read</string>
+    <string name="announcements_no_matches">No announcements match these filters.</string>
 </resources>

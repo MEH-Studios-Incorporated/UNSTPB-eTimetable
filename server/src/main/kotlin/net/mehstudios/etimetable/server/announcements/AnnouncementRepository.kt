@@ -18,11 +18,16 @@ const val ANNOUNCEMENT_PAGE_SIZE = 20
 
 class AnnouncementRepository(private val db: DataSource, private val clock: Clock = Clock.System) {
     /** Newest first; [before] is the id of the last announcement of the previous page. */
-    suspend fun page(before: String?, limit: Int = ANNOUNCEMENT_PAGE_SIZE): List<Announcement> = db.transaction { c ->
+    suspend fun page(
+        before: String?,
+        limit: Int = ANNOUNCEMENT_PAGE_SIZE,
+        pinnedOnly: Boolean = false,
+    ): List<Announcement> = db.transaction { c ->
         val columns = "id, title, body, author, pinned, published_at"
         val rows = if (before == null) {
             c.query(
-                "SELECT $columns FROM announcement ORDER BY published_at DESC, id DESC LIMIT ?",
+                "SELECT $columns FROM announcement WHERE (NOT ? OR pinned) ORDER BY published_at DESC, id DESC LIMIT ?",
+                pinnedOnly,
                 limit,
                 row = ::toAnnouncement,
             )
@@ -30,9 +35,10 @@ class AnnouncementRepository(private val db: DataSource, private val clock: Cloc
             c.query(
                 """
                 SELECT $columns FROM announcement
-                WHERE (published_at, id) < (SELECT published_at, id FROM announcement WHERE id = ?)
+                WHERE (NOT ? OR pinned) AND (published_at, id) < (SELECT published_at, id FROM announcement WHERE id = ?)
                 ORDER BY published_at DESC, id DESC LIMIT ?
                 """.trimIndent(),
+                pinnedOnly,
                 before,
                 limit,
                 row = ::toAnnouncement,

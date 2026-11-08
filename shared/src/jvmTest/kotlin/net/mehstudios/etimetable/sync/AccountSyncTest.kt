@@ -31,9 +31,16 @@ class AccountSyncTest {
     private val engine = MockEngine { request ->
         when (request.url.encodedPath) {
             "/api/v1/announcements" -> {
+                val source = if (request.url.parameters["pinned"] ==
+                    "true"
+                ) {
+                    serverAnnouncements.filter { it.pinned }
+                } else {
+                    serverAnnouncements
+                }
                 val before = request.url.parameters["before"]
-                val start = if (before == null) 0 else serverAnnouncements.indexOfFirst { it.id == before } + 1
-                respond(AppJson.encodeToString(serverAnnouncements.drop(start).take(20)), headers = json)
+                val start = if (before == null) 0 else source.indexOfFirst { it.id == before } + 1
+                respond(AppJson.encodeToString(source.drop(start).take(20)), headers = json)
             }
             "/api/v1/me" -> {
                 if (request.method == HttpMethod.Put) {
@@ -85,5 +92,13 @@ class AccountSyncTest {
     @Test
     fun noSemesterYet() = runTest {
         assertEquals(DatasetUpdate.NO_SEMESTER, sync.refreshDataset())
+    }
+
+    @Test
+    fun anOldPinnedPostSurvivesTheRecentPostLimit() = runTest {
+        serverAnnouncements = (1..130).map { announcement(it).let { a -> if (it == 129) a.copy(pinned = true) else a } }
+        sync.refreshAnnouncements()
+        assertEquals(101, store.announcements().size)
+        assertEquals("a129", store.announcements().first().announcement.id)
     }
 }

@@ -45,8 +45,13 @@ class DatasetRepository(private val db: DataSource) {
     }
 
     /** Stores [dataset] in place of everything its semester had. */
-    suspend fun replace(dataset: Dataset, makeCurrent: Boolean) = db.transaction { c ->
+    suspend fun replace(dataset: Dataset, makeCurrent: Boolean, expectedVersion: Long? = null) = db.transaction { c ->
         val semesterId = dataset.semester.id
+        if (expectedVersion != null) {
+            val version = c.query("SELECT version FROM semester WHERE id = ? FOR UPDATE", semesterId) { it.getLong(1) }
+                .singleOrNull()
+            check(version == expectedVersion) { "Orarul a fost modificat. Reîncarcă pagina și verifică selecția." }
+        }
         c.update(
             """
             INSERT INTO semester (id, data) VALUES (?, ?::jsonb)
@@ -96,6 +101,10 @@ class DatasetRepository(private val db: DataSource) {
     /** Any semester, current or not. */
     suspend fun dataset(semesterId: String): Dataset? = db.transaction { c ->
         if (c.query("SELECT 1 FROM semester WHERE id = ?", semesterId) { 1 }.isEmpty()) null else load(c, semesterId)
+    }
+
+    suspend fun version(semesterId: String): Long? = db.transaction { c ->
+        c.query("SELECT version FROM semester WHERE id = ?", semesterId) { it.getLong(1) }.singleOrNull()
     }
 
     /** Changes a semester's calendar and keeps its items. */

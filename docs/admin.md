@@ -135,13 +135,25 @@ La import, spațiile dintre corp și număr se scot singure: `BN 212 b` devine
 Excel în română salvează CSV cu punct și virgulă; serverul acceptă și virgulă.
 Diacriticele se păstrează dacă fișierul este salvat ca "CSV UTF-8".
 
-## Anunțuri
+## Gestionare orar în browser
+
+**Gestionare orar** caută după materie, profesor, sală sau grupă, cu filtre
+pentru zi și activități fără sală sau profesor. Bifează activitățile de
+modificat (cel mult 200), alege sala sau profesorul și, opțional, deplasarea
+în minute. **Previzualizează modificările** arată noile ore și suprapunerile
+noi. Numai **Confirmă și salvează** le publică. Dacă alt editor a modificat
+orarul între timp, reîncarcă pagina și verifică selecția. Linkul fiecărei
+activități deschide editorul complet.
+
+## Publicarea anunțurilor
 
 **Anunțuri** are un formular cu titlu, text și semnătură. Textul acceptă
 Markdown simplu: `**îngroșat**`, `*cursiv*`, `[link](https://...)`, liste cu
-`-`. **Previzualizează** arată anunțul așa cum apare în aplicație, fără să-l
+`- ` urmat de text, de exemplu `- Primul element`, fiecare element pe un rând
+nou. **Previzualizează** arată anunțul așa cum apare în aplicație, fără să-l
 publice. Un anunț fixat apare primul în aplicație. Anunțurile ajung la toți
-studenții; notificările push vin într-o versiune următoare.
+studenții. Lista are câte 20 de anunțuri pe pagină, cu acces la cele mai
+vechi.
 
 Un anunț publicat se poate **edita**: textul nou ajunge în aplicații la
 următoarea sincronizare, iar data publicării rămâne aceeași.
