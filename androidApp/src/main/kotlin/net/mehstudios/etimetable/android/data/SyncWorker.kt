@@ -7,7 +7,9 @@ import android.content.Context
 import androidx.work.Constraints
 import androidx.work.CoroutineWorker
 import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
@@ -27,6 +29,14 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                 .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
                 .build()
             WorkManager.getInstance(context).enqueueUniquePeriodicWork("sync", ExistingPeriodicWorkPolicy.KEEP, request)
+        }
+
+        /** One sync as soon as there is a network, such as after a push. */
+        fun syncNow(context: Context) {
+            val online = Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()
+            val request = OneTimeWorkRequestBuilder<SyncWorker>().setConstraints(online).build()
+            WorkManager.getInstance(context)
+                .enqueueUniqueWork("sync-now", ExistingWorkPolicy.REPLACE, request)
         }
     }
 }

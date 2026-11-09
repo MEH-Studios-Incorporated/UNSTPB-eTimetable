@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Copyright (c) 2026 Multimedia Entertainment Hub LLC
+  SPDX-License-Identifier: LicenseRef-Proprietary
+
+  The bell of the announcements tab (EtIcons.Bell), white as Android wants a status bar icon.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:pathData="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4zM10 21h4"
+        android:strokeWidth="1.75"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+</vector>

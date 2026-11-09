@@ -18,6 +18,7 @@ import kotlinx.coroutines.withContext
 import net.mehstudios.etimetable.api.ApiClient
 import net.mehstudios.etimetable.api.ErrorCodes
 import net.mehstudios.etimetable.api.LoginRequest
+import net.mehstudios.etimetable.api.PushPlatform
 import net.mehstudios.etimetable.api.SignupRequest
 import net.mehstudios.etimetable.api.TimetableReportRequest
 import net.mehstudios.etimetable.api.decodeApiError
@@ -61,6 +62,10 @@ class AppRepository(
     private val api: ApiClient,
     private val sync: Sync,
     private val session: SessionStore,
+    /** This phone's push token, or null when the build has no push. */
+    private val pushToken: suspend () -> String? = { null },
+    /** The announcement notifications in the status bar. */
+    private val notifications: PostedNotifications = PostedNotifications.None,
     /** Called after every change to what the app shows, so the widgets can follow. */
     private val changed: () -> Unit = {},
 ) {
@@ -74,7 +79,10 @@ class AppRepository(
     suspend fun load() {
         if (!started) {
             started = true
-            if (session.token() != null && !session.remember()) withContext(Dispatchers.IO) { signOutLocally() }
+            val token = session.token()
+            if (token != null && !session.remember()) {
+                withContext(Dispatchers.IO) { signOutLocally(endOnServer = token) }
+            }
         }
         val token = session.token()
         readStore(signedIn = token != null, email = session.email())
@@ -85,6 +93,7 @@ class AppRepository(
         _state.update { it.copy(syncing = true) }
         val ok = withContext(Dispatchers.IO) {
             try {
+                endSessionOnServer()
                 val update = sync.refreshDataset()
                 _state.update { it.copy(noSemester = update == DatasetUpdate.NO_SEMESTER) }
                 sync.refreshAnnouncements()
@@ -97,6 +106,7 @@ class AppRepository(
                         Log.w(TAG, "Profile sync refused", e)
                     }
                 }
+                registerPush()
                 true
             } catch (e: CancellationException) {
                 throw e
@@ -152,10 +162,47 @@ class AppRepository(
         return result
     }
 
+    /**
+     * Whether a student is signed in on this phone; push messages are shown only then. A
+     * session without "remember me" ends when the app closes, which [load] only notices when
+     * the app opens again; a push that starts the app in the background counts it as ended.
+     */
+    suspend fun signedIn(): Boolean = session.token() != null && (started || session.remember())
+
+    /**
+     * Tells the server where to send announcements. [fresh] is a token Firebase just
+     * handed out; without it the current one is sent if the server does not have it yet.
+     */
+    suspend fun registerPush(fresh: String? = null) {
+        val token = session.token() ?: return
+        withContext(Dispatchers.IO) {
+            try {
+                val push = fresh ?: pushToken() ?: return@withContext
+                if (push == session.pushToken()) return@withContext
+                api.registerPushToken(token, push, PushPlatform.ANDROID)
+                session.savePushToken(push)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                // the next sync tries again
+                Log.w(TAG, "Push registration failed", e)
+            }
+        }
+    }
+
     suspend fun signOut() {
         withContext(Dispatchers.IO) {
-            session.token()?.let { token -> runCatching { api.logout(token) } }
-            signOutLocally()
+            val token = session.token()
+            val ended = token != null &&
+                run {
+                    // so this phone stops getting announcements for an account that left it
+                    session.pushToken()?.let { push ->
+                        runCatching { api.removePushToken(token, push) }
+                    }
+                    runCatching { api.logout(token) }.isSuccess
+                }
+            // offline, the next sync ends the session, which also removes the push token
+            signOutLocally(endOnServer = if (ended) null else token)
         }
         readStore(signedIn = false, email = null)
     }
@@ -178,17 +225,37 @@ class AppRepository(
     }
 
     suspend fun markRead(announcementId: String) {
+        notifications.cancel(announcementId)
         withContext(Dispatchers.IO) { store.markRead(announcementId) }
         readStore(signedIn = _state.value.signedIn, email = _state.value.email)
     }
 
     suspend fun markAllRead() {
+        notifications.cancelAll()
         withContext(Dispatchers.IO) { store.markAllRead() }
         readStore(signedIn = _state.value.signedIn, email = _state.value.email)
     }
 
-    private suspend fun signOutLocally() {
-        session.clear()
+    /** Ends a session left over from signing out offline; tried again on every sync until it works. */
+    private suspend fun endSessionOnServer() {
+        val ended = session.endedSession() ?: return
+        try {
+            api.logout(ended)
+            session.forgetEndedSession()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: ResponseException) {
+            // 401: the server has already ended it
+            if (e.response.status.value == 401) session.forgetEndedSession()
+        } catch (e: Exception) {
+            Log.w(TAG, "Ending the old session failed", e)
+        }
+    }
+
+    /** [endOnServer] is a session the server still has, ended at the next sync. */
+    private suspend fun signOutLocally(endOnServer: String? = null) {
+        notifications.cancelAll()
+        session.clear(endOnServer)
         store.clearAccount()
     }
 

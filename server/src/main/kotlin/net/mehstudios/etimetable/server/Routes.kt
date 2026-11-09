@@ -26,6 +26,8 @@ import net.mehstudios.etimetable.api.ApiError
 import net.mehstudios.etimetable.api.ErrorCodes
 import net.mehstudios.etimetable.api.Health
 import net.mehstudios.etimetable.api.LoginRequest
+import net.mehstudios.etimetable.api.MAX_PUSH_TOKEN
+import net.mehstudios.etimetable.api.PushTokenRequest
 import net.mehstudios.etimetable.api.SignupRequest
 import net.mehstudios.etimetable.api.TimetableReportRequest
 import net.mehstudios.etimetable.model.Profile
@@ -37,6 +39,7 @@ import java.util.UUID
 
 const val STUDENT_AUTH = "student"
 val AUTH_RATE_LIMIT = RateLimitName("auth")
+val PUSH_TOKEN_RATE_LIMIT = RateLimitName("push-token")
 
 data class StudentPrincipal(val studentId: UUID)
 
@@ -103,6 +106,20 @@ fun Route.apiRoutes(services: Services) {
                 services.accounts.saveProfile(call.studentId(), profile)
                 call.respond(profile)
             }
+            rateLimit(PUSH_TOKEN_RATE_LIMIT) {
+                put("/me/push-tokens/{token}") {
+                    val token = call.pushToken()
+                    val request = call.receive<PushTokenRequest>()
+                    val session = call.bearerToken()
+                        ?: throw ApiProblem(HttpStatusCode.Unauthorized, ApiError(ErrorCodes.UNAUTHORIZED))
+                    services.pushTokens.register(call.studentId(), session, token, request.platform)
+                    call.respond(HttpStatusCode.NoContent)
+                }
+            }
+            delete("/me/push-tokens/{token}") {
+                services.pushTokens.remove(call.studentId(), call.pushToken())
+                call.respond(HttpStatusCode.NoContent)
+            }
             delete("/me") {
                 services.accounts.delete(call.studentId())
                 call.respond(HttpStatusCode.NoContent)
@@ -113,6 +130,14 @@ fun Route.apiRoutes(services: Services) {
 
 private fun RoutingCall.studentId(): UUID = principal<StudentPrincipal>()?.studentId
     ?: throw ApiProblem(HttpStatusCode.Unauthorized, ApiError(ErrorCodes.UNAUTHORIZED))
+
+private fun RoutingCall.pushToken(): String {
+    val token = parameters["token"].orEmpty()
+    if (token.isBlank() || token.length > MAX_PUSH_TOKEN) {
+        throw ApiProblem(HttpStatusCode.BadRequest, ErrorCodes.BAD_REQUEST)
+    }
+    return token
+}
 
 private fun RoutingCall.bearerToken(): String? =
     request.header(HttpHeaders.Authorization)?.removePrefix("Bearer ")?.trim()

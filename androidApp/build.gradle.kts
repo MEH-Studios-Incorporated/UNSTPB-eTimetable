@@ -15,6 +15,11 @@ val versionCodeFromName = version.toString().split('.').map { it.toIntOrNull() ?
 // Release builds get the university's server address through -PapiBaseUrl.
 val apiBaseUrl = providers.gradleProperty("apiBaseUrl").getOrElse("http://127.0.0.1:8080")
 
+// The Firebase app that delivers announcements, from the Firebase console's Android app
+// settings. Without them the app works as before, with no push. They are not secret, but
+// they belong to whoever publishes the app, so they live in ~/.gradle/gradle.properties.
+fun firebase(name: String) = providers.gradleProperty(name).getOrElse("")
+
 android {
     namespace = "net.mehstudios.etimetable.android"
     compileSdk = 37
@@ -26,6 +31,9 @@ android {
         versionCode = versionCodeFromName
         versionName = version.toString()
         buildConfigField("String", "API_BASE_URL", "\"$apiBaseUrl\"")
+        buildConfigField("String", "FIREBASE_APP_ID", "\"${firebase("firebaseAppId")}\"")
+        buildConfigField("String", "FIREBASE_API_KEY", "\"${firebase("firebaseApiKey")}\"")
+        buildConfigField("String", "FIREBASE_PROJECT_ID", "\"${firebase("firebaseProjectId")}\"")
         manifestPlaceholders["usesCleartextTraffic"] = apiBaseUrl.startsWith("http://").toString()
     }
 
@@ -85,5 +93,7 @@ dependencies {
     implementation(libs.androidx.glance.appwidget)
     implementation(libs.androidx.core.ktx)
     implementation(libs.ktor.client.okhttp)
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.messaging)
     debugImplementation(libs.androidx.compose.ui.tooling)
 }

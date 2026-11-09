@@ -140,6 +140,58 @@ token (app uninstalled) is removed on the first error. The credentials (a
 Firebase service account and an APNs key) belong to whoever publishes the
 apps in the stores; the server reads them from the environment.
 
+What is built so far:
+
+- The server sends to Android only. `ETT_FCM_SERVICE_ACCOUNT` holds the
+  service account key file's JSON on one line; without it push is off and
+  the log says so at start. The server signs its own OAuth token with the
+  key (`server/.../push/GoogleAccessTokens.kt`), so it needs no Google
+  library. Tokens registered by iPhones are kept and skipped until APNs is
+  added together with the iOS app.
+- Messages carry only data (`kind`, `id`, `title` and the first 180
+  characters of the text without Markdown, `PushFields` in `shared/`). The
+  app builds the notification itself, so tapping it opens the announcement,
+  and starts a sync so the announcement is on the phone. While the main
+  screen is visible the app shows its own bar instead (`InAppAlerts`, which
+  knows the screen is visible because only it collects the alerts).
+- Sending runs in the background after the dashboard publishes, 8 messages
+  at a time. Editing an announcement sends nothing.
+- Google refuses the server's OAuth token when the server's clock is more
+  than a few minutes off. Before sending, the server reads Google's time
+  from the `Date` header of a HEAD request to the token endpoint
+  (`server/.../push/ClockCheck.kt`, checked at most once a minute). If the
+  two differ by more than 5 minutes, the announcement is still published
+  but nothing is sent, and the dashboard says how far the clock is off.
+  It is not sent later either; a way to send it again is still to do.
+- The app has no `google-services.json`. It sets Firebase up from three
+  Gradle properties (`firebaseAppId`, `firebaseApiKey`,
+  `firebaseProjectId`), so CI and anyone without them still build an app
+  that works, just without push.
+- A token is tied to the session that registered it last
+  (`push_token.session_token_hash`, deleted with the session). Signing
+  out ends the session and so removes the token. A phone that signs out
+  offline keeps the old session token (`SessionStore.endedSession`) and
+  ends it with `POST /auth/logout` on its next sync; until then the server
+  still sends, and the app drops what arrives. A session without "remember
+  me" is ended the same way when the app opens after being closed; a
+  push that starts the app in the background before that is dropped. An
+  admin setting a new password ends every session and removes their tokens
+  too.
+- One student keeps at most 10 tokens; registering an eleventh drops the
+  one updated longest ago. Tokens are at most 1024 characters (FCM's are
+  about 160). `PUT /me/push-tokens` allows 10 requests per student an hour;
+  the app sends its token only when Firebase changes it. The request log
+  shows these paths as `/me/push-tokens/<token>` (`loggedPath` in
+  `Application.kt`), so no token is written to the logs.
+- FCM answers that mean the token will never work (`UNREGISTERED` or
+  `SENDER_ID_MISMATCH` in `error.details`, or `INVALID_ARGUMENT` naming
+  the registration token) delete it. `429` and `5xx` are retried twice,
+  after `Retry-After` when FCM sends one (at most 30 s), otherwise after 1 s
+  and 2 s. When Google refuses the service account, the run stops with one
+  log line and Google is not asked again for a minute.
+- Announcement titles and the first 180 characters pass through Google's
+  servers. The privacy text in the app says so.
+
 ## Admin dashboard
 
 At the start of each semester an admin enters or imports:

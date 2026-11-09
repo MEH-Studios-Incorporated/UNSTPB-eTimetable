@@ -108,7 +108,16 @@ item unread again; changing its pin alone does not.
   lines of text, date and author.
 - Tapping one opens it in full, with its Markdown (paragraphs, lists, bold,
   italic, links) formatted, and marks it read.
-- A push notification opens the announcement directly.
+- A push notification opens the announcement directly. Reading an
+  announcement in the app removes its notification; signing out removes
+  all of them.
+- While the app is open, a new announcement shows as a slim bar above the
+  tab bar instead of a notification: "Anunț nou" and the title. Tapping it
+  opens the announcement; it hides itself after 6 seconds. When another
+  arrives while it shows, it is replaced by "Anunțuri noi, 2 anunțuri de
+  citit", which opens the announcements tab. The bar appears and goes
+  without animation. If the announcement is not on the phone yet, the
+  announcements tab shows until the sync brings it.
 
 ## Profile and settings
 
@@ -143,10 +152,13 @@ Opened from the profile. It shows the FAIMA seal, the app version and the
 last sync, then:
 
 - Privacy policy: what the server keeps (email, password hash, name, phone
-  number, enrollment, group or picked slots, language, push tokens) and what it
-  does not (location, contacts, analytics or tracking), how to delete the
-  account. Timetable reports and their class details are visible to the
-  staff managing the timetable and are deleted with the account.
+  number, enrollment, group or picked slots, language, the phone's push
+  token while signed in) and what it does not (location, contacts,
+  analytics or tracking), how to delete the account. New announcements
+  reach the phone through Google's Firebase Cloud Messaging, which carries
+  the title and the first lines of the text. Timetable reports and their
+  class details are visible to the staff managing the timetable and are
+  deleted with the account.
 - Terms of use: the timetable is for information; the faculty's official
   announcements prevail.
 - Open source licenses: generated at build time from the dependencies,

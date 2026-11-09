@@ -25,6 +25,7 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
+import io.ktor.http.encodeURLPathPart
 import io.ktor.serialization.kotlinx.json.json
 import net.mehstudios.etimetable.model.Announcement
 import net.mehstudios.etimetable.model.Dataset
@@ -96,6 +97,21 @@ class ApiClient(engine: HttpClientEngine, private val baseUrl: String) {
         contentType(ContentType.Application.Json)
         setBody(profile)
     }.body()
+
+    /** Registers this phone for announcements; [pushToken] comes from Firebase or Apple. */
+    suspend fun registerPushToken(token: String, pushToken: String, platform: PushPlatform) {
+        http.put(url("/api/v1/me/push-tokens/${pushToken.encodeURLPathPart()}")) {
+            bearerAuth(token)
+            contentType(ContentType.Application.Json)
+            setBody(PushTokenRequest(platform))
+        }
+    }
+
+    suspend fun removePushToken(token: String, pushToken: String) {
+        http.delete(url("/api/v1/me/push-tokens/${pushToken.encodeURLPathPart()}")) {
+            bearerAuth(token)
+        }
+    }
 
     suspend fun deleteAccount(token: String) {
         http.delete(url("/api/v1/me")) { bearerAuth(token) }

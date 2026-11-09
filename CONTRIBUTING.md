@@ -74,6 +74,24 @@ docker compose -f deploy/docker-compose.yml up --build
 cd iosApp && xcodegen generate && open iosApp.xcodeproj
 ```
 
+Push notifications need a Firebase project. Without one everything builds
+and runs, with no push. To try them, add the Android app's values from the
+Firebase console (Project settings, Your apps) to the ignored
+`~/.gradle/gradle.properties`:
+
+```properties
+firebaseAppId=1:123456789012:android:0123456789abcdef
+firebaseApiKey=AIza...
+firebaseProjectId=your-project
+```
+
+and start the dev server with the project's service account key:
+`ETT_FCM_SERVICE_ACCOUNT="$(jq -c . key.json)" tools/dev-server.sh`.
+Publish an announcement in the dashboard and it arrives on the emulator,
+which needs a Google Play system image. Your computer's clock has to be
+synchronized (`timedatectl set-ntp true`); otherwise Google answers `400`
+and the dashboard says the clock is off.
+
 The app's first screen says whether it reaches the server. Debug builds
 talk to `127.0.0.1:8080` on the device, which `tools/dev-server.sh` forwards
 to your machine with `adb reverse`. Use it rather than `./gradlew

@@ -33,7 +33,28 @@ The compose file passes the database ones to the server.
 | `ETT_PUBLIC_URL` | empty | The address people use; `https://` makes the dashboard cookie Secure |
 | `ETT_ADMIN_EMAIL`, `ETT_ADMIN_PASSWORD` | empty | First dashboard account, created only while there is none |
 | `ETT_ANDROID_URL`, `ETT_IOS_URL` | empty | Download links on the public page at `/` (a store page or a hosted file); empty shows "în curând" |
+| `ETT_FCM_SERVICE_ACCOUNT` | empty | Firebase service account key (JSON); empty turns push off |
 | `ETT_IMAGE` | the latest release on GHCR | Image to run, for pinning a version |
+
+## Push notifications
+
+The server sends new announcements to Android phones through the Firebase
+project the Android app is published with. In the Firebase console, open
+Project settings, Service accounts, and generate a new private key. Put the
+downloaded file on one line into `deploy/.env`:
+
+```sh
+echo "ETT_FCM_SERVICE_ACCOUNT='$(jq -c . service-account.json)'" >> deploy/.env
+```
+
+The log says at start whether push is on and for which project. The key
+lets anyone send messages to the app's users: keep it out of version
+control and delete the downloaded file once it is in `.env`.
+
+The host's clock must be synchronized (`timedatectl set-ntp true`). Google
+refuses the server's sign-in when the clock is more than a few minutes off,
+and no notification goes out. The dashboard says so when an announcement is
+published on such a server.
 
 ## HTTPS and reverse proxies
 
