@@ -204,6 +204,8 @@ fun ActivitySheet(
                 "${occurrence.date.longLabel()}, ${activity.slot.start} - ${activity.slot.end}",
                 style = MaterialTheme.typography.bodyLarge,
             )
+            // every change since the last syncs, in full
+            changesOf(activity.id).forEach { ChangeTag(it.text(), maxLines = 3) }
             Field(
                 stringResource(R.string.room),
                 listOfNotNull(

@@ -13,7 +13,7 @@ import kotlin.time.Instant
 class MigrationTest {
     /** A phone with the first release installed: its database is version 1, with a timetable in it. */
     @Test
-    fun anOldDatabaseKeepsItsTimetableAndGetsEvents() {
+    fun anOldDatabaseKeepsItsTimetableAndGetsEventsAndChangeNotes() {
         val copy = File.createTempFile("etimetable-v1", ".db").apply { deleteOnExit() }
         File("src/commonMain/sqldelight/databases/1.db").copyTo(copy, overwrite = true)
         val driver = JdbcSqliteDriver("jdbc:sqlite:${copy.path}")
@@ -27,6 +27,7 @@ class MigrationTest {
         assertEquals(null, store.events())
         store.saveEvents(emptyList(), "\"events\"")
         assertEquals("\"events\"", store.events()?.etag)
-        assertEquals(2L, EtimetableDatabase.Schema.version)
+        assertEquals(emptyList(), store.changeNotes())
+        assertEquals(3L, EtimetableDatabase.Schema.version)
     }
 }

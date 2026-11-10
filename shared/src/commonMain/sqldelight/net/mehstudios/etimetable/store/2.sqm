@@ -1,0 +1,12 @@
+-- Copyright (c) 2026 Multimedia Entertainment Hub LLC
+-- SPDX-License-Identifier: LicenseRef-Proprietary
+--
+-- Version 3: notes on changed classes.
+
+CREATE TABLE change_note (
+    activity_id TEXT NOT NULL,
+    kind TEXT NOT NULL,
+    seen_at INTEGER NOT NULL,
+    json TEXT NOT NULL,
+    PRIMARY KEY (activity_id, kind)
+);

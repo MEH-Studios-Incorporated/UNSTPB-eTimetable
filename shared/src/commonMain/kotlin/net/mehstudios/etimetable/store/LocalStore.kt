@@ -9,6 +9,7 @@ import net.mehstudios.etimetable.model.Announcement
 import net.mehstudios.etimetable.model.Dataset
 import net.mehstudios.etimetable.model.Event
 import net.mehstudios.etimetable.model.Profile
+import net.mehstudios.etimetable.schedule.ChangeNote
 import kotlin.time.Instant
 
 const val DATABASE_NAME = "etimetable.db"
@@ -29,9 +30,30 @@ class LocalStore(driver: SqlDriver) {
         CachedDataset(AppJson.decodeFromString(it.json), it.etag, Instant.fromEpochMilliseconds(it.checked_at))
     }
 
-    fun saveDataset(dataset: Dataset, etag: String?, checkedAt: Instant) {
-        queries.saveDataset(etag, AppJson.encodeToString(dataset), checkedAt.toEpochMilliseconds())
+    /** Saves a new dataset; with [changeNotes], they replace the stored notes in the same transaction. */
+    fun saveDataset(dataset: Dataset, etag: String?, checkedAt: Instant, changeNotes: List<ChangeNote>? = null) =
+        queries.transaction {
+            queries.saveDataset(etag, AppJson.encodeToString(dataset), checkedAt.toEpochMilliseconds())
+            if (changeNotes != null) {
+                queries.deleteAllChangeNotes()
+                changeNotes.forEach {
+                    queries.insertChangeNote(
+                        it.activityId,
+                        it.kind.name,
+                        it.seenAt.toEpochMilliseconds(),
+                        AppJson.encodeToString(it),
+                    )
+                }
+            }
+        }
+
+    /** Changes to the student's classes, oldest first. */
+    fun changeNotes(): List<ChangeNote> = queries.selectChangeNotes().executeAsList().map {
+        AppJson.decodeFromString(it)
     }
+
+    /** Drops the notes seen before [before]. */
+    fun pruneChangeNotes(before: Instant) = queries.deleteChangeNotesBefore(before.toEpochMilliseconds())
 
     fun markDatasetChecked(at: Instant) = queries.markDatasetChecked(at.toEpochMilliseconds())
 
@@ -94,6 +116,7 @@ class LocalStore(driver: SqlDriver) {
     fun clearAccount() = queries.transaction {
         queries.deleteProfile()
         queries.deleteAllAnnouncements()
+        queries.deleteAllChangeNotes()
     }
 
     /** [dirty] marks changes made offline that still have to reach the server. */

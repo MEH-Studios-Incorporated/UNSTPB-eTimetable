@@ -130,7 +130,6 @@
     <string name="page_professor">Professor</string>
     <string name="tab_events">Events</string>
     <string name="events_none">No events coming up.</string>
-    <string name="events_past">Past</string>
     <string name="event_open_link">Open the link</string>
     <string name="push_channel_events">Faculty events</string>
     <string name="push_channel_events_hint">New events from FAIMA, when the faculty sends them.</string>
@@ -247,4 +246,41 @@
     <string name="announcements_unread">Unread only</string>
     <string name="announcements_mark_all">Mark all as read</string>
     <string name="announcements_no_matches">No announcements match these filters.</string>
+    <string name="change_room_was">Room changed, was %1$s</string>
+    <string name="change_room">Room changed</string>
+    <string name="change_teacher_was">Teacher changed, was %1$s</string>
+    <string name="change_teacher">Teacher changed</string>
+    <string name="change_time">Time changed</string>
+    <string name="change_day_was">Day changed, was %1$s</string>
+    <string name="change_time_was">Time changed, was %1$s</string>
+    <string name="change_weeks_were">Weeks changed, were %1$s</string>
+    <string name="change_added">New in your timetable</string>
+    <string name="change_removed">Removed from your timetable</string>
+    <string name="change_removed_class">Removed from your timetable: %1$s</string>
+    <string name="change_several">Changed: %1$s</string>
+    <string name="change_kind_room">room</string>
+    <string name="change_kind_time">time</string>
+    <string name="change_kind_teacher">teacher</string>
+    <string name="now_until">Now, until %1$s</string>
+    <string name="time_left_hours">%1$d h %2$02d</string>
+    <string name="time_left_minutes">%1$d min</string>
+    <string name="time_left">left</string>
+    <string name="next_label">Next</string>
+    <plurals name="events_upcoming_count">
+        <item quantity="one">%d upcoming</item>
+        <item quantity="other">%d upcoming</item>
+    </plurals>
+    <string name="updated_at">updated %1$s</string>
+    <string name="updated_today">today at %1$s</string>
+    <string name="updated_yesterday">yesterday at %1$s</string>
+    <string name="updated_on">%1$s at %2$s</string>
+    <string name="events_past_count">Past (%1$d)</string>
+    <string name="events_past_show">Show</string>
+    <string name="events_past_hide">Hide</string>
+    <string name="yesterday">Yesterday</string>
+    <string name="announcements_pinned">Pinned</string>
+    <plurals name="announcements_unread_count">
+        <item quantity="one">%d unread announcement</item>
+        <item quantity="other">%d unread announcements</item>
+    </plurals>
 </resources>

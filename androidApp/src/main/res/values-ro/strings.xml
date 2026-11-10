@@ -131,7 +131,6 @@
     <string name="page_professor">Profesor</string>
     <string name="tab_events">Evenimente</string>
     <string name="events_none">Niciun eveniment programat.</string>
-    <string name="events_past">Trecute</string>
     <string name="event_open_link">Deschide linkul</string>
     <string name="push_channel_events">Evenimentele facultății</string>
     <string name="push_channel_events_hint">Evenimentele noi de la FAIMA, când facultatea le trimite.</string>
@@ -247,4 +246,43 @@
     <string name="announcements_unread">Doar necitite</string>
     <string name="announcements_mark_all">Marchează toate ca citite</string>
     <string name="announcements_no_matches">Niciun anunț nu corespunde filtrelor.</string>
+    <string name="change_room_was">Sală schimbată, era %1$s</string>
+    <string name="change_room">Sală schimbată</string>
+    <string name="change_teacher_was">Profesor schimbat, era %1$s</string>
+    <string name="change_teacher">Profesor schimbat</string>
+    <string name="change_time">Oră schimbată</string>
+    <string name="change_day_was">Zi schimbată, era %1$s</string>
+    <string name="change_time_was">Oră schimbată, era %1$s</string>
+    <string name="change_weeks_were">Săptămâni schimbate, erau %1$s</string>
+    <string name="change_added">Nou în orarul tău</string>
+    <string name="change_removed">Scos din orarul tău</string>
+    <string name="change_removed_class">Scos din orarul tău: %1$s</string>
+    <string name="change_several">Schimbat: %1$s</string>
+    <string name="change_kind_room">sala</string>
+    <string name="change_kind_time">ora</string>
+    <string name="change_kind_teacher">profesorul</string>
+    <string name="now_until">Acum, până la %1$s</string>
+    <string name="time_left_hours">%1$d h %2$02d</string>
+    <string name="time_left_minutes">%1$d min</string>
+    <string name="time_left">rămase</string>
+    <string name="next_label">Urmează</string>
+    <plurals name="events_upcoming_count">
+        <item quantity="one">%d urmează</item>
+        <item quantity="few">%d urmează</item>
+        <item quantity="other">%d urmează</item>
+    </plurals>
+    <string name="updated_at">actualizat %1$s</string>
+    <string name="updated_today">azi la %1$s</string>
+    <string name="updated_yesterday">ieri la %1$s</string>
+    <string name="updated_on">%1$s la %2$s</string>
+    <string name="events_past_count">Trecute (%1$d)</string>
+    <string name="events_past_show">Arată</string>
+    <string name="events_past_hide">Ascunde</string>
+    <string name="yesterday">Ieri</string>
+    <string name="announcements_pinned">Fixate</string>
+    <plurals name="announcements_unread_count">
+        <item quantity="one">%d anunț necitit</item>
+        <item quantity="few">%d anunțuri necitite</item>
+        <item quantity="other">%d de anunțuri necitite</item>
+    </plurals>
 </resources>

@@ -50,8 +50,30 @@ Every choice can be changed later from the profile. Nothing is checked.
     ("Pauză · 4 h"); the week as an agenda, day by day, free days marked.
   - Table: one dense line per class (time, type letter, name, room); the
     week as a table of starting times by days, like the faculty's sheet.
-- Above the day view, the next activity with its room and how long until
-  it starts.
+- Above today's day view, the class on now: "Acum, până la 12:00", the
+  subject, type, room and professor, and on the right the time left ("1 h
+  36 rămase", "36 min rămase"), which changes once a minute. The next class
+  follows on one line under it ("Urmează Informatică aplicată · EC 004",
+  its time on the right). Between classes the card shows only the next one,
+  with how long until it starts.
+- Changes to the student's own classes are marked in the `change` yellow
+  for 7 days, or until the class has met once since the change, whichever
+  comes first:
+  - a class card in the day view, the agenda and the card above today get
+    a tag: "Sală schimbată, era BN 024", "Oră schimbată, era 10:00 -
+    12:00", "Zi schimbată, era luni, 10:00", "Săptămâni schimbate, erau
+    săptămâni impare", "Profesor schimbat, era Conf. dr. I. Marinescu",
+    "Nou în orarul tău"; with several changes, "Schimbat: sala, ora";
+  - where there is no room for a tag (the week grid, the week table, the
+    dense rows, an hour long block on the timeline) a yellow dot that reads
+    out the same text;
+  - a class taken out of the timetable shows as a yellow line on the days
+    it would have met ("Scos din orarul tău: Marketing, Proiect, 16:00 -
+    18:00");
+  - the class sheet lists every change in full.
+  The first sync, a new semester and a change of group make no notes; only
+  a new timetable from the faculty does.
+- Pull down on the day or week view to sync.
 - The header shows the date range, the teaching week number and whether it
   is odd or even. Breaks are labelled as such instead of an empty week.
 - The top bar always shows the current teaching week as a small ticket:
@@ -115,8 +137,11 @@ Android can search titles, text and authors, show only unread items and
 mark all downloaded announcements as read. A title or body edit marks the
 item unread again; changing its pin alone does not.
 
-- Previews, newest first, pinned ones on top, unread ones marked: title, two
-  lines of text, date and author.
+- Previews, pinned ones on top under "Fixate", then newest first under a
+  heading per day ("Azi", "Ieri", "Luni, 9 noiembrie"), unread ones marked:
+  title, two lines of text, date and author. Pull down to sync.
+- The Announcements tab shows the number of unread announcements on its
+  icon (up to "99+").
 - Tapping one opens it in full, with its Markdown (paragraphs, lists, bold,
   italic, links) formatted, and marks it read.
 - A push notification opens the announcement directly. Reading an
@@ -132,12 +157,16 @@ item unread again; changing its pin alone does not.
 
 ## Events
 
+- Under the title, how many events are coming and when the app last
+  synced: "2 urmează · actualizat azi la 10:20" ("ieri la", or the date).
 - Cards, the coming events first, all the same size: the picture cut to
   16:9 on top, the title under it on one line, then one line with the day,
   the time and the place ("Joi, 19 noiembrie, 10:00 - 14:00 · Aula BN").
-  Until the picture loads, the card keeps its size on a plain surface.
-- Below them, "Trecute": events that ended in the last 60 days, the latest
-  first, slightly dimmed.
+  Until the picture loads, the card keeps its size on a plain surface; the
+  picture fades in over 150 ms.
+- Below them, "Trecute (3)", folded: tapping it shows the events that ended
+  in the last 60 days, the latest first, slightly dimmed.
+- Pull down to sync.
 - Tapping a card opens the event: the picture fills the top of the page
   (square for a photo, up to 3:4 for a poster) and fades into the
   background, where the title starts; the back button floats over it. Then
@@ -145,6 +174,13 @@ item unread again; changing its pin alone does not.
   "Deschide linkul" when there is a link.
 - A notification for a new event opens it; it has its own channel,
   "Evenimentele facultății". Events have no read state and no badge.
+
+Lists animate their items into place in 150 ms when they change (an
+announcement arrives, the past events unfold). With the phone's animations
+turned off (animator duration scale 0, "Remove animations" in the
+accessibility settings) these animations, the picture fade and the
+pull-to-refresh indicator's movement are skipped; the indicator only
+appears for a sync the student pulled for.
 
 ## Profile and settings
 

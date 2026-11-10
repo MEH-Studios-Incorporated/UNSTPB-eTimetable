@@ -25,6 +25,7 @@ import net.mehstudios.etimetable.api.decodeApiError
 import net.mehstudios.etimetable.model.Dataset
 import net.mehstudios.etimetable.model.Event
 import net.mehstudios.etimetable.model.Profile
+import net.mehstudios.etimetable.schedule.ChangeNote
 import net.mehstudios.etimetable.store.LocalStore
 import net.mehstudios.etimetable.store.StoredAnnouncement
 import net.mehstudios.etimetable.sync.DatasetUpdate
@@ -43,6 +44,8 @@ data class AppState(
     val announcements: List<StoredAnnouncement> = emptyList(),
     /** Earliest first; past ones stay a while, under "Trecute". */
     val events: List<Event> = emptyList(),
+    /** Changes to the student's classes from the last syncs; the screens pick the ones still shown. */
+    val changes: List<ChangeNote> = emptyList(),
     val syncing: Boolean = false,
     val lastSyncFailed: Boolean = false,
 )
@@ -287,7 +290,7 @@ class AppRepository(
         val (cached, profile, announcements) = withContext(Dispatchers.IO) {
             Triple(store.dataset(), store.profile(), store.announcements())
         }
-        val events = withContext(Dispatchers.IO) { store.events()?.events.orEmpty() }
+        val (events, changes) = withContext(Dispatchers.IO) { store.events()?.events.orEmpty() to store.changeNotes() }
         _state.update {
             it.copy(
                 loaded = true,
@@ -299,6 +302,7 @@ class AppRepository(
                 profileUnsent = profile?.dirty == true,
                 announcements = announcements,
                 events = events,
+                changes = changes,
             )
         }
         changed()

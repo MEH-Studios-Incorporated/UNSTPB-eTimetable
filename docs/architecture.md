@@ -104,7 +104,10 @@ The app keeps everything it shows in SQLite:
   activities) comes from one endpoint, versioned with an `ETag`. An
   unchanged timetable costs one request answered with `304 Not Modified`.
   A changed one is downloaded whole; for one faculty that is a few hundred
-  kilobytes, compressed.
+  kilobytes, compressed. Before saving a changed one, the app compares the
+  student's own classes with the copy it had and keeps a note for each
+  moved room, new day or time, other professor, and class added or
+  removed (see "On the phone" in `data-model.md`).
 - Announcements are paged, newest first, and kept after download.
   The cache keeps 100 recent posts and up to 100 pinned posts fetched
   separately, so older pinned notices are not lost at the recent-post limit.
@@ -119,8 +122,9 @@ The app keeps everything it shows in SQLite:
 - The student's profile is stored on the server and cached on the phone, so
   edits made offline are sent on the next sync.
 
-The app syncs when opened, after a push, and periodically in the background
-(WorkManager on Android, background refresh on iOS).
+The app syncs when opened, after a push, when the student pulls down on
+the timetable, the announcements or the events, and periodically in the
+background (WorkManager on Android, background refresh on iOS).
 
 ## Accounts
 

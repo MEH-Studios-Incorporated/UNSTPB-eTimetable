@@ -3,8 +3,10 @@
 
 package net.mehstudios.etimetable.android.ui.events
 
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,32 +16,55 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import coil3.compose.LocalPlatformContext
+import coil3.request.ImageRequest
+import coil3.request.crossfade
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.minus
 import kotlinx.datetime.toLocalDateTime
 import net.mehstudios.etimetable.android.R
 import net.mehstudios.etimetable.android.data.imageUrl
 import net.mehstudios.etimetable.android.ui.components.BackButton
 import net.mehstudios.etimetable.android.ui.components.BrandBar
+import net.mehstudios.etimetable.android.ui.components.EtIcons
 import net.mehstudios.etimetable.android.ui.components.MarkdownText
+import net.mehstudios.etimetable.android.ui.components.RefreshBox
+import net.mehstudios.etimetable.android.ui.components.SectionHeading
 import net.mehstudios.etimetable.android.ui.components.longLabel
+import net.mehstudios.etimetable.android.ui.components.reducedMotion
+import net.mehstudios.etimetable.android.ui.components.shortDate
 import net.mehstudios.etimetable.android.ui.theme.ButtonShape
 import net.mehstudios.etimetable.model.Event
 import net.mehstudios.etimetable.schedule.FacultyTimeZone
@@ -65,61 +90,123 @@ fun Event.whenAndWhere(withPlace: Boolean = true): String {
     return listOfNotNull(span, place?.takeIf { withPlace }).joinToString(" · ")
 }
 
-/** The Events tab: cards with a picture and a title, the coming ones first, then the past ones. */
+/**
+ * The Events tab: a line with how many are coming and when the list was last synced, cards
+ * with a picture and a title, the coming ones first, then the past ones folded under "Trecute".
+ */
 @Composable
-fun EventsScreen(events: List<Event>, now: Instant, actions: @Composable () -> Unit, open: (String) -> Unit) {
+fun EventsScreen(
+    events: List<Event>,
+    now: Instant,
+    updatedAt: Instant?,
+    actions: @Composable () -> Unit,
+    refresh: suspend () -> Unit,
+    open: (String) -> Unit,
+) {
     val (past, upcoming) = events.partition { it.over < now }
+    var showPast by rememberSaveable { mutableStateOf(false) }
+    val still = reducedMotion()
     Column(Modifier.fillMaxSize()) {
         BrandBar { actions() }
-        LazyColumn(
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier.fillMaxSize(),
-        ) {
-            item {
-                Text(
-                    stringResource(R.string.tab_events),
-                    style = MaterialTheme.typography.headlineSmall,
-                    modifier = Modifier.padding(top = 12.dp),
-                )
-            }
-            if (upcoming.isEmpty()) {
-                item {
-                    Text(
-                        stringResource(R.string.events_none),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+        RefreshBox(refresh, Modifier.fillMaxSize()) {
+            LazyColumn(
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.fillMaxSize(),
+            ) {
+                item(key = "title") {
+                    Column(Modifier.padding(top = 12.dp)) {
+                        Text(stringResource(R.string.tab_events), style = MaterialTheme.typography.headlineSmall)
+                        summary(upcoming.size, updatedAt, now)?.let {
+                            Text(
+                                it,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
                 }
-            }
-            items(upcoming, key = { it.id }) { EventCard(it, past = false) { open(it.id) } }
-            if (past.isNotEmpty()) {
-                item { SectionTitle(stringResource(R.string.events_past)) }
-                // the latest past one first: the one students may still look for
-                items(past.reversed(), key = { it.id }) { EventCard(it, past = true) { open(it.id) } }
+                if (upcoming.isEmpty()) {
+                    item(key = "none") {
+                        Text(
+                            stringResource(R.string.events_none),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+                items(upcoming, key = { it.id }) {
+                    EventCard(it, past = false, Modifier.moving(this, still)) { open(it.id) }
+                }
+                if (past.isNotEmpty()) {
+                    item(key = "past") {
+                        PastToggle(past.size, showPast, Modifier.moving(this, still)) { showPast = !showPast }
+                    }
+                    if (showPast) {
+                        // the latest past one first: the one students may still look for
+                        items(past.reversed(), key = { it.id }) {
+                            EventCard(it, past = true, Modifier.moving(this, still)) { open(it.id) }
+                        }
+                    }
+                }
             }
         }
     }
 }
 
+/** List items fade and slide into place in 150 ms, or jump when the phone has animations off. */
+private fun Modifier.moving(scope: LazyItemScope, still: Boolean): Modifier = if (still) {
+    this
+} else {
+    with(scope) { animateItem(fadeInSpec = tween(150), placementSpec = tween(150), fadeOutSpec = tween(150)) }
+}
+
+/** "2 urmează · actualizat azi la 10:20" */
 @Composable
-private fun SectionTitle(text: String) {
-    Text(
-        text,
-        style = MaterialTheme.typography.labelLarge,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(top = 12.dp),
-    )
+private fun summary(upcoming: Int, updatedAt: Instant?, now: Instant): String? {
+    val count = if (upcoming > 0) pluralStringResource(R.plurals.events_upcoming_count, upcoming, upcoming) else null
+    val updated = updatedAt?.let { at ->
+        val local = at.toLocalDateTime(FacultyTimeZone)
+        val today = now.toLocalDateTime(FacultyTimeZone).date
+        val time = local.time.toString().take(5)
+        val whenText = when (local.date) {
+            today -> stringResource(R.string.updated_today, time)
+            today.minus(1, DateTimeUnit.DAY) -> stringResource(R.string.updated_yesterday, time)
+            else -> stringResource(R.string.updated_on, local.date.shortDate(), time)
+        }
+        stringResource(R.string.updated_at, whenText)
+    }
+    return listOfNotNull(count, updated).joinToString(" · ").ifEmpty { null }
+}
+
+/** "Trecute (3)" with a rule and a chevron; folded by default. */
+@Composable
+private fun PastToggle(count: Int, open: Boolean, modifier: Modifier, toggle: () -> Unit) {
+    val action = stringResource(if (open) R.string.events_past_hide else R.string.events_past_show)
+    SectionHeading(
+        stringResource(R.string.events_past_count, count),
+        modifier.fillMaxWidth().padding(top = 4.dp).clip(RoundedCornerShape(6.dp))
+            .clickable(onClickLabel = action, role = Role.Button, onClick = toggle)
+            .semantics { stateDescription = action }
+            .padding(vertical = 10.dp),
+    ) {
+        Icon(
+            if (open) EtIcons.ChevronUp else EtIcons.ChevronDown,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(20.dp),
+        )
+    }
 }
 
 @Composable
-private fun EventCard(event: Event, past: Boolean, onClick: () -> Unit) {
+private fun EventCard(event: Event, past: Boolean, modifier: Modifier, onClick: () -> Unit) {
     Surface(
         onClick = onClick,
         shape = RoundedCornerShape(8.dp),
         color = MaterialTheme.colorScheme.surface,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-        modifier = Modifier.fillMaxWidth().alpha(if (past) 0.7f else 1f),
+        modifier = modifier.fillMaxWidth().alpha(if (past) 0.7f else 1f),
     ) {
         Column {
             Picture(event, Modifier.fillMaxWidth().aspectRatio(CARD_RATIO))
@@ -147,8 +234,14 @@ private fun EventCard(event: Event, past: Boolean, onClick: () -> Unit) {
 /** The picture from the cache or the server, on a plain surface while it loads. */
 @Composable
 private fun Picture(event: Event, modifier: Modifier) {
+    val context = LocalPlatformContext.current
+    val still = reducedMotion()
+    val request = remember(event.image, still) {
+        // fades in over 150 ms once loaded; at once when the phone has animations off
+        ImageRequest.Builder(context).data(imageUrl(event.image)).crossfade(if (still) 0 else 150).build()
+    }
     AsyncImage(
-        model = imageUrl(event.image),
+        model = request,
         contentDescription = null,
         contentScale = ContentScale.Crop,
         modifier = modifier.background(MaterialTheme.colorScheme.surfaceVariant),
