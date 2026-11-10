@@ -10,6 +10,12 @@ A bottom bar with four tabs: Timetable, Subjects, Professors,
 Announcements. The profile opens from the top bar on every tab. Tapping a
 subject, room or professor anywhere opens its page.
 
+The apps run in portrait only. A timetable reads top to bottom and every
+screen is laid out for a phone held upright; a sideways version of each
+would only be more to build and test. Android 16 and newer ignore the lock on screens at least
+600 dp wide (tablets, unfolded foldables), where the screens stretch to
+the width as they do on a wide phone.
+
 ## First start
 
 1. Sign in with email and password, or create an account with first name,
