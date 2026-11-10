@@ -13,6 +13,8 @@ data class ServerConfig(
     val firstAdminEmail: String? = null,
     val firstAdminPassword: String? = null,
     val downloads: Downloads = Downloads(),
+    /** A Firebase service account key file's JSON; without it no push is sent. */
+    val fcmServiceAccount: String? = null,
 ) {
     companion object {
         /** From the jar manifest, so it is the release tag; "dev" when run from the IDE. */
@@ -35,6 +37,7 @@ data class ServerConfig(
                     android = env["ETT_ANDROID_URL"]?.takeIf { it.isNotBlank() },
                     ios = env["ETT_IOS_URL"]?.takeIf { it.isNotBlank() },
                 ),
+                fcmServiceAccount = env["ETT_FCM_SERVICE_ACCOUNT"]?.takeIf { it.isNotBlank() },
             )
         }
     }

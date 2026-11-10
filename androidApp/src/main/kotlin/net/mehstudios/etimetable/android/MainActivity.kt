@@ -4,6 +4,7 @@
 package net.mehstudios.etimetable.android
 
 import android.content.Context
+import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -25,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
 import androidx.core.graphics.drawable.toDrawable
+import net.mehstudios.etimetable.android.data.AnnouncementNotifications
 import net.mehstudios.etimetable.android.data.AppLocale
 import net.mehstudios.etimetable.android.data.AppTheme
 import net.mehstudios.etimetable.android.data.TimetablePrefs
@@ -38,12 +40,17 @@ import net.mehstudios.etimetable.android.ui.theme.ThemeChoice
 import net.mehstudios.etimetable.android.ui.theme.TimetableChoice
 
 class MainActivity : ComponentActivity() {
+    /** An announcement a tapped notification asked for, until the main screen has opened it. */
+    private var openAnnouncement by mutableStateOf<String?>(null)
+
     override fun attachBaseContext(newBase: Context) {
         super.attachBaseContext(AppLocale.wrap(newBase))
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // after a rotation the intent is the same, but the announcement was already opened
+        if (savedInstanceState == null) openAnnouncement = intent.announcement()
         enableEdgeToEdge()
         val container = (application as EtimetableApp).container
         setContent {
@@ -78,10 +85,20 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                     CompositionLocalProvider(LocalScreenFade provides fade) {
-                        Box(Modifier.fillMaxSize().graphicsLayer { alpha = fade.value }) { EtRoot(container) }
+                        Box(Modifier.fillMaxSize().graphicsLayer { alpha = fade.value }) {
+                            EtRoot(container, openAnnouncement) { openAnnouncement = null }
+                        }
                     }
                 }
             }
         }
     }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        intent.announcement()?.let { openAnnouncement = it }
+    }
+
+    private fun Intent?.announcement() = this?.getStringExtra(AnnouncementNotifications.EXTRA_ID)
 }

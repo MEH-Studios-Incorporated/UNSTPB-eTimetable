@@ -157,7 +157,7 @@
     <string name="about">About the app</string>
     <string name="version">Version %1$s</string>
     <string name="privacy_title">Privacy</string>
-    <string name="privacy_text">The server keeps your email, a hash of your password, your name, your phone number, your group or picked subjects and your language. If you report a timetable problem, authorized timetable staff can see your name, email, description and the class details. It keeps no location, contacts or usage tracking. Deleting your account also removes your reports.</string>
+    <string name="privacy_text">The server keeps your email, a hash of your password, your name, your phone number, your group or picked subjects, your language and, while you are signed in, this phone\'s notification token. New announcements reach your phone through Google\'s Firebase Cloud Messaging, which carries their title and first lines. If you report a timetable problem, authorized timetable staff can see your name, email, description and the class details. It keeps no location, contacts or usage tracking. Deleting your account also removes your reports.</string>
     <string name="faima_site">FAIMA website</string>
     <string name="meh_site">mehstudios.net</string>
     <string name="copyright_owner" translatable="false">Multimedia Entertainment Hub LLC</string>
@@ -206,11 +206,30 @@
     <string name="report_stale_class">This class or semester is no longer current. Go back and update the timetable before reporting it.</string>
     <string name="report_invalid">Describe the problem using 10 to 2000 characters.</string>
     <string name="report_sign_in">Your session has ended. Sign out and sign in again before sending the report.</string>
-    <string name="find_teacher">Teachers</string>
-    <string name="nav_announcements">News</string>
-    <string name="prof_search">Search by teacher, email or subject</string>
+    <string name="push_channel">Faculty announcements</string>
+    <string name="push_channel_hint">
+        New announcements from FAIMA, the moment they are published.
+    </string>
+    <string name="push_ask_title">Get the faculty\'s announcements</string>
+    <string name="push_ask_text">
+        When FAIMA publishes an announcement, such as a room change or a new exam date, it
+        reaches your phone as a notification. Tapping it opens the announcement.
+    </string>
+    <string name="push_ask_later">
+        You can change this later in the phone\'s settings for eTimetable.
+    </string>
+    <string name="push_allow">Allow notifications</string>
+    <string name="push_not_now">Not now</string>
+    <string name="popup_new_announcement">New announcement</string>
+    <string name="popup_new_announcements">New announcements</string>
+    <plurals name="popup_to_read">
+        <item quantity="one">%d announcement to read</item>
+        <item quantity="other">%d announcements to read</item>
+    </plurals>
+    <string name="find_teacher">Professors</string>
+    <string name="prof_search">Search by professor, email or subject</string>
     <string name="prof_active_only">Teaching or office hours now</string>
-    <string name="prof_search_empty">No teachers match these filters.</string>
+    <string name="prof_search_empty">No professors match these filters.</string>
     <string name="prof_status_note">Based on the published timetable. This is not a live location.</string>
     <string name="prof_office">Office: %1$s</string>
     <string name="prof_not_provided">Not provided</string>

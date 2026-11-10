@@ -36,7 +36,8 @@ fun main() {
 
     val db = postgres.postgresDatabase
     migrate(db)
-    val services = Services(db)
+    // push is on when ETT_FCM_SERVICE_ACCOUNT is set, as on a real deployment
+    val services = Services(db, pushSenders(env["ETT_FCM_SERVICE_ACCOUNT"]), googleClockCheck())
     runBlocking {
         if (services.admins.bootstrap(DEV_ADMIN_EMAIL, DEV_ADMIN_PASSWORD)) {
             println("Dashboard: http://localhost:8080/admin, $DEV_ADMIN_EMAIL / $DEV_ADMIN_PASSWORD")

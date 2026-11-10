@@ -33,6 +33,9 @@ jobs:
           ETT_KEY_ALIAS: ${{ secrets.ETT_KEY_ALIAS }}
           ETT_KEY_PASSWORD: ${{ secrets.ETT_KEY_PASSWORD }}
           API_BASE_URL: ${{ vars.ETT_API_BASE_URL }}
+          FIREBASE_APP_ID: ${{ vars.ETT_FIREBASE_APP_ID }}
+          FIREBASE_API_KEY: ${{ vars.ETT_FIREBASE_API_KEY }}
+          FIREBASE_PROJECT_ID: ${{ vars.ETT_FIREBASE_PROJECT_ID }}
         run: |
           if [ -n "$KEYSTORE_BASE64" ]; then
             echo "$KEYSTORE_BASE64" | base64 -d >"$RUNNER_TEMP/release.jks"
@@ -40,7 +43,13 @@ jobs:
           else
             echo "::notice::ETT_KEYSTORE_BASE64 is not set; the APK is unsigned"
           fi
+          if [ -z "$FIREBASE_APP_ID" ] || [ -z "$FIREBASE_API_KEY" ] || [ -z "$FIREBASE_PROJECT_ID" ]; then
+            echo "::warning::ETT_FIREBASE_APP_ID, ETT_FIREBASE_API_KEY or ETT_FIREBASE_PROJECT_ID is not set; the APK gets no push"
+          fi
           ./gradlew -PappVersion="${GITHUB_REF_NAME#v}" ${API_BASE_URL:+-PapiBaseUrl="$API_BASE_URL"} \
+            ${FIREBASE_APP_ID:+-PfirebaseAppId="$FIREBASE_APP_ID"} \
+            ${FIREBASE_API_KEY:+-PfirebaseApiKey="$FIREBASE_API_KEY"} \
+            ${FIREBASE_PROJECT_ID:+-PfirebaseProjectId="$FIREBASE_PROJECT_ID"} \
             :androidApp:assembleRelease :server:installDist
           cp androidApp/build/outputs/apk/release/androidApp-release*.apk "etimetable-$GITHUB_REF_NAME.apk"
       - name: Publish the server image

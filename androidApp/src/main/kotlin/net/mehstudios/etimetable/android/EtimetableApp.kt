@@ -5,6 +5,7 @@ package net.mehstudios.etimetable.android
 
 import android.app.Application
 import net.mehstudios.etimetable.android.data.AppContainer
+import net.mehstudios.etimetable.android.data.Push
 import net.mehstudios.etimetable.android.data.SyncWorker
 
 class EtimetableApp : Application() {
@@ -13,6 +14,7 @@ class EtimetableApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        Push.start(this)
         container = AppContainer(this)
         SyncWorker.schedule(this)
     }

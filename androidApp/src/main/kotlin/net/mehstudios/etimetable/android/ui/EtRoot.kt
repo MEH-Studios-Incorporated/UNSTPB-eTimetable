@@ -3,6 +3,7 @@
 
 package net.mehstudios.etimetable.android.ui
 
+import android.os.Build
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
@@ -22,6 +23,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Button
@@ -45,22 +47,30 @@ import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import net.mehstudios.etimetable.android.R
 import net.mehstudios.etimetable.android.data.ActionResult
+import net.mehstudios.etimetable.android.data.AnnouncementAlert
 import net.mehstudios.etimetable.android.data.AppContainer
 import net.mehstudios.etimetable.android.data.AppState
+import net.mehstudios.etimetable.android.data.Push
 import net.mehstudios.etimetable.android.ui.announcements.AnnouncementScreen
 import net.mehstudios.etimetable.android.ui.announcements.AnnouncementsScreen
+import net.mehstudios.etimetable.android.ui.components.AnnouncementPopup
 import net.mehstudios.etimetable.android.ui.components.EtIcons
 import net.mehstudios.etimetable.android.ui.components.OfflineBar
 import net.mehstudios.etimetable.android.ui.components.WeekBadge
 import net.mehstudios.etimetable.android.ui.components.appLanguage
+import net.mehstudios.etimetable.android.ui.onboarding.NotificationsStep
 import net.mehstudios.etimetable.android.ui.onboarding.OnboardingScreen
 import net.mehstudios.etimetable.android.ui.professors.ProfessorScreen
 import net.mehstudios.etimetable.android.ui.professors.ProfessorsScreen
@@ -76,20 +86,29 @@ import net.mehstudios.etimetable.schedule.StudentTimetable
 import net.mehstudios.etimetable.schedule.facultyNow
 import kotlin.time.Clock
 
-private enum class Phase { LOADING, SIGN_IN, WAITING, ONBOARDING, MAIN }
+private enum class Phase { LOADING, SIGN_IN, WAITING, ONBOARDING, NOTIFICATIONS, MAIN }
 
 private enum class Tab { TIMETABLE, SUBJECTS, PROFESSORS, ANNOUNCEMENTS }
 
-/** Picks the screen from the app state: sign-in, waiting for data, onboarding or the app itself. */
+/**
+ * Picks the screen from the app state: sign-in, waiting for data, onboarding or the app
+ * itself. [openAnnouncement] comes from a tapped notification; [onOpened] says the main
+ * screen has taken it.
+ */
 @Composable
-fun EtRoot(container: AppContainer) {
+fun EtRoot(container: AppContainer, openAnnouncement: String? = null, onOpened: () -> Unit = {}) {
     val repository = container.repository
+    val context = LocalContext.current
+    // null until read from the preferences, off the main thread; saved, so a rotation or a
+    // language change does not go through the empty loading frame again
+    var askForPush by rememberSaveable { mutableStateOf<Boolean?>(null) }
     val state by repository.state.collectAsStateWithLifecycle()
     val online by container.connectivity.online.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     var editingEnrollment by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
+        if (askForPush == null) askForPush = withContext(Dispatchers.IO) { Push.shouldAsk(context) }
         repository.load()
         repository.refresh()
     }
@@ -105,10 +124,11 @@ fun EtRoot(container: AppContainer) {
     }
 
     val phase = when {
-        !state.loaded -> Phase.LOADING
+        !state.loaded || askForPush == null -> Phase.LOADING
         !state.signedIn -> Phase.SIGN_IN
         state.dataset == null -> Phase.WAITING
         state.profile?.enrollment == null || editingEnrollment -> Phase.ONBOARDING
+        askForPush == true -> Phase.NOTIFICATIONS
         else -> Phase.MAIN
     }
 
@@ -140,17 +160,36 @@ fun EtRoot(container: AppContainer) {
                         onCancel = if (state.profile?.enrollment != null) ({ editingEnrollment = false }) else null,
                     )
                 }
-                Phase.MAIN -> MainScreen(
-                    state = state,
-                    online = online,
-                    onChangeEnrollment = { editingEnrollment = true },
-                    onSyncNow = { scope.launch { repository.refresh() } },
-                    onSignOut = { scope.launch { repository.signOut() } },
-                    markRead = { id -> scope.launch { repository.markRead(id) } },
-                    markAllRead = { scope.launch { repository.markAllRead() } },
-                    saveProfile = repository::saveProfile,
-                    reportProblem = repository::reportTimetableProblem,
-                )
+                // Push.shouldAsk is false below Android 13, which has no such permission
+                Phase.NOTIFICATIONS -> if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    NotificationsStep {
+                        askForPush = false
+                        scope.launch {
+                            withContext(Dispatchers.IO) { Push.markAsked(context) }
+                            // a token Firebase made while the step was open reaches the server now
+                            repository.registerPush()
+                        }
+                    }
+                }
+                Phase.MAIN -> {
+                    // collected only here, so the bar is offered only while this screen shows
+                    val alert by container.alerts.current.collectAsStateWithLifecycle()
+                    MainScreen(
+                        state = state,
+                        openAnnouncement = openAnnouncement,
+                        onAnnouncementOpened = onOpened,
+                        alert = alert,
+                        onAlertDone = container.alerts::dismiss,
+                        online = online,
+                        onChangeEnrollment = { editingEnrollment = true },
+                        onSyncNow = { scope.launch { repository.refresh() } },
+                        onSignOut = { scope.launch { repository.signOut() } },
+                        markRead = { id -> scope.launch { repository.markRead(id) } },
+                        markAllRead = { scope.launch { repository.markAllRead() } },
+                        saveProfile = repository::saveProfile,
+                        reportProblem = repository::reportTimetableProblem,
+                    )
+                }
             }
         }
     }
@@ -189,6 +228,10 @@ private data class Place(
 @Composable
 private fun MainScreen(
     state: AppState,
+    openAnnouncement: String?,
+    onAnnouncementOpened: () -> Unit,
+    alert: AnnouncementAlert?,
+    onAlertDone: (AnnouncementAlert) -> Unit,
     online: Boolean,
     onChangeEnrollment: () -> Unit,
     onSyncNow: () -> Unit,
@@ -203,9 +246,14 @@ private fun MainScreen(
     var tab by rememberSaveable { mutableStateOf(Tab.TIMETABLE) }
     var showProfile by rememberSaveable { mutableStateOf(false) }
     var announcementId by rememberSaveable { mutableStateOf<String?>(null) }
+    // asked for by a notification or the in-app bar before the sync has brought it
+    var pendingAnnouncement by rememberSaveable { mutableStateOf<String?>(null) }
     var professorId by rememberSaveable { mutableStateOf<String?>(null) }
     var subjectId by rememberSaveable { mutableStateOf<String?>(null) }
-    val place = Place(tab, showProfile, announcementId, professorId, subjectId)
+    // only an announcement that is on the phone counts as open, so the tabs and the tab bar
+    // never wait under an announcement page that has nothing to show
+    val shownAnnouncement = announcementId?.takeIf { id -> state.announcements.any { it.announcement.id == id } }
+    val place = Place(tab, showProfile, shownAnnouncement, professorId, subjectId)
     val now by produceState(Clock.System.facultyNow()) {
         while (true) {
             delay(30_000)
@@ -222,16 +270,70 @@ private fun MainScreen(
         Avatar(initials(state)) { showProfile = true }
     }
 
+    // the announcements tab, with nothing open over it
+    fun showAnnouncements() {
+        tab = Tab.ANNOUNCEMENTS
+        showProfile = false
+        professorId = null
+        subjectId = null
+        announcementId = null
+        pendingAnnouncement = null
+    }
+
+    fun showAnnouncement(id: String) {
+        showAnnouncements()
+        pendingAnnouncement = id
+    }
+
+    fun selectTab(selected: Tab) {
+        tab = selected
+        pendingAnnouncement = null
+    }
+
+    // a tapped notification
+    LaunchedEffect(openAnnouncement) {
+        val id = openAnnouncement ?: return@LaunchedEffect
+        showAnnouncement(id)
+        onAnnouncementOpened()
+    }
+    // any page the student opens while waiting wins over the announcement still on its way
+    val otherPageOpen = tab != Tab.ANNOUNCEMENTS ||
+        showProfile ||
+        professorId != null ||
+        subjectId != null ||
+        announcementId != null
+    LaunchedEffect(otherPageOpen) { if (otherPageOpen) pendingAnnouncement = null }
+    // opens the announcement once it is on the phone; until then its tab shows
+    LaunchedEffect(pendingAnnouncement, state.announcements) {
+        val id = pendingAnnouncement ?: return@LaunchedEffect
+        if (state.announcements.any { it.announcement.id == id }) {
+            announcementId = id
+            pendingAnnouncement = null
+        }
+    }
+
     BackHandler(enabled = place.overlay) {
         when {
             professorId != null -> professorId = null
             subjectId != null -> subjectId = null
-            announcementId != null -> announcementId = null
+            shownAnnouncement != null -> announcementId = null
             else -> showProfile = false
         }
     }
 
     Scaffold(
+        // Scaffold puts this slot just above the tab bar
+        snackbarHost = {
+            AnnouncementPopup(
+                alert = alert,
+                onOpen = {
+                    onAlertDone(it)
+                    if (it.single) showAnnouncement(it.ids.first()) else showAnnouncements()
+                },
+                onDismiss = onAlertDone,
+                modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 8.dp),
+            )
+        },
         topBar = {
             AnimatedVisibility(
                 visible = !online,
@@ -250,25 +352,25 @@ private fun MainScreen(
                 NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
                     NavigationBarItem(
                         selected = tab == Tab.TIMETABLE,
-                        onClick = { tab = Tab.TIMETABLE },
+                        onClick = { selectTab(Tab.TIMETABLE) },
                         icon = { Icon(EtIcons.Calendar, contentDescription = null) },
-                        label = { Text(stringResource(R.string.tab_timetable)) },
+                        label = { TabLabel(stringResource(R.string.tab_timetable)) },
                     )
                     NavigationBarItem(
                         selected = tab == Tab.SUBJECTS,
-                        onClick = { tab = Tab.SUBJECTS },
+                        onClick = { selectTab(Tab.SUBJECTS) },
                         icon = { Icon(EtIcons.Book, contentDescription = null) },
-                        label = { Text(stringResource(R.string.tab_subjects)) },
+                        label = { TabLabel(stringResource(R.string.tab_subjects)) },
                     )
                     NavigationBarItem(
                         selected = tab == Tab.PROFESSORS,
-                        onClick = { tab = Tab.PROFESSORS },
+                        onClick = { selectTab(Tab.PROFESSORS) },
                         icon = { Icon(EtIcons.Search, contentDescription = null) },
-                        label = { Text(stringResource(R.string.find_teacher)) },
+                        label = { TabLabel(stringResource(R.string.find_teacher)) },
                     )
                     NavigationBarItem(
                         selected = tab == Tab.ANNOUNCEMENTS,
-                        onClick = { tab = Tab.ANNOUNCEMENTS },
+                        onClick = { selectTab(Tab.ANNOUNCEMENTS) },
                         icon = {
                             BadgedBox(badge = {
                                 if (unread >
@@ -280,7 +382,7 @@ private fun MainScreen(
                                 Icon(EtIcons.Bell, contentDescription = null)
                             }
                         },
-                        label = { Text(stringResource(R.string.nav_announcements)) },
+                        label = { TabLabel(stringResource(R.string.tab_announcements)) },
                     )
                 }
             }
@@ -326,12 +428,13 @@ private fun MainScreen(
                         saveProfile,
                         onBack = { subjectId = null },
                     )
-                    opened != null -> AnnouncementScreen(opened.announcement, markRead = {
-                        markRead(opened.announcement.id)
-                    }, onBack = {
-                        announcementId =
-                            null
-                    })
+                    // an announcement gone from the phone while its page leaves draws nothing:
+                    // falling through to the tabs would use their state key twice
+                    target.announcementId != null -> if (opened != null) {
+                        AnnouncementScreen(opened.announcement, markRead = {
+                            markRead(opened.announcement.id)
+                        }, onBack = { announcementId = null })
+                    }
                     target.profile -> ProfileScreen(state, onBack = {
                         showProfile = false
                     }, onChangeEnrollment, onSyncNow, onSignOut)
@@ -382,4 +485,14 @@ private fun initials(state: AppState): String {
     val letters = listOfNotNull(profile?.firstName?.firstOrNull(), profile?.lastName?.firstOrNull())
         .ifEmpty { listOfNotNull(state.email?.firstOrNull()) }
     return letters.joinToString("").uppercase()
+}
+
+/**
+ * A tab label on one line. It keeps the label size and only shrinks when a long label
+ * ("Announcements") does not fit a quarter of a narrow phone.
+ */
+@Composable
+private fun TabLabel(text: String) {
+    val size = MaterialTheme.typography.labelMedium.fontSize
+    Text(text, maxLines = 1, autoSize = TextAutoSize.StepBased(minFontSize = 10.sp, maxFontSize = size))
 }

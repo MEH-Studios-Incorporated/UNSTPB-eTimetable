@@ -21,17 +21,27 @@ import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
 import net.mehstudios.etimetable.api.AppJson
+import net.mehstudios.etimetable.api.PushPlatform
+import net.mehstudios.etimetable.api.SignupRequest
 import net.mehstudios.etimetable.model.Announcement
 import net.mehstudios.etimetable.model.Dataset
 import net.mehstudios.etimetable.server.admin.AdminRole
+import net.mehstudios.etimetable.server.push.ClockCheck
+import net.mehstudios.etimetable.server.push.PushResult
+import net.mehstudios.etimetable.server.push.PushSender
 import net.mehstudios.etimetable.server.timetable.TimetableSheet
+import java.util.Collections
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import kotlin.time.Clock
+import kotlin.time.Duration.Companion.hours
 
 class AdminRoutesTest {
-    private fun withDashboard(block: suspend ApplicationTestBuilder.(Services, HttpClient) -> Unit) = testApplication {
-        val services = Services(TestPostgres.freshDatabase())
+    private fun withDashboard(
+        services: Services = Services(TestPostgres.freshDatabase()),
+        block: suspend ApplicationTestBuilder.(Services, HttpClient) -> Unit,
+    ) = testApplication {
         services.admins.bootstrap("admin@faima.test", "parola-admin")
         application { module(services) }
         val browser = createClient {
@@ -148,6 +158,46 @@ class AdminRoutesTest {
 
         browser.submitForm("/admin/announcements/${published.id}/delete", parameters { })
         assertEquals(emptyList(), browser.get("/api/v1/announcements").body<List<Announcement>>())
+    }
+
+    @Test
+    fun publishingWithAWrongClockSaysSoAndSendsNothing() {
+        val sent = Collections.synchronizedList(mutableListOf<String>())
+        val services = servicesWithClockAhead(sent)
+        withDashboard(services) { _, browser ->
+            val session = services.accounts.signup(
+                SignupRequest("ana@stud.upb.ro", "parola-buna", "Ana", "Pop", "0712345678"),
+            ).token
+            val student = services.accounts.studentFor(session)!!
+            services.pushTokens.register(student, session, "phone-1", PushPlatform.ANDROID)
+            browser.login()
+
+            val response = browser.submitForm(
+                "/admin/announcements",
+                parameters {
+                    append("title", "Sală nouă")
+                    append("body", "Laboratorul se mută.")
+                    append("author", "Secretariat")
+                },
+            )
+
+            val page = browser.get(response.headers[HttpHeaders.Location]!!).bodyAsText()
+            assertTrue("ceasul serverului este cu 2 h înainte" in page, page)
+            val published = browser.get("/api/v1/announcements").body<List<Announcement>>()
+            assertEquals(listOf("Sală nouă"), published.map { it.title })
+            assertEquals(emptyList(), sent)
+        }
+    }
+
+    /** Push is on, but this server's clock is two hours ahead of Google's; [sent] gets tokens. */
+    private fun servicesWithClockAhead(sent: MutableList<String>): Services {
+        val gateway = PushSender { token, _ ->
+            sent += token
+            PushResult.SENT
+        }
+        val googleNow = Clock.System.now() - 2.hours
+        val senders = mapOf(PushPlatform.ANDROID to gateway)
+        return Services(TestPostgres.freshDatabase(), senders, ClockCheck({ googleNow }))
     }
 
     @Test

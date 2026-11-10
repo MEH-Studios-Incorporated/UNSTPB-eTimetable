@@ -6,6 +6,19 @@ Each section is also the text of the matching GitHub release.
 
 ### Added
 
+- New announcements arrive on Android phones as notifications, with the
+  title and the start of the text. Tapping one opens the announcement. The
+  first start asks for permission once, saying what notifications are for.
+  While the app is open, a slim bar above the tabs shows the title instead,
+  and tapping it opens the announcement. Several at once show as one bar
+  with how many there are to read. Reading an announcement in the app
+  clears its notification, and signing out clears them all and stops the
+  phone receiving announcements (after signing out offline, from the next
+  sync).
+  The server sends them when the deployment sets a Firebase service account
+  in `ETT_FCM_SERVICE_ACCOUNT`; without it nothing changes. When the
+  server's clock is more than 5 minutes off, Google refuses every message,
+  so the dashboard says so after publishing, with how far the clock is off.
 - The dashboard can search the entire schedule, find missing assignments,
   and change rooms, teachers or times for selected classes. A preview shows
   booking conflicts, and stale confirmations cannot overwrite newer edits.
