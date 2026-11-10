@@ -98,6 +98,37 @@ class ImportWizardTest {
         block(services, browser)
     }
 
+    @Test
+    fun anExcelFileGoesThroughTheSameWizard() = withDashboard { _, browser ->
+        val rows = Csv.parse(editedSheet())
+        val upload = browser.submitFormWithBinaryData(
+            "/admin/semesters/2026-1/import",
+            formData {
+                append(
+                    "sheet",
+                    net.mehstudios.etimetable.server.timetable.TestWorkbook.ofRows(rows),
+                    Headers.build { append(HttpHeaders.ContentDisposition, "filename=\"orar.xlsx\"") },
+                )
+            },
+        )
+        val draft = assertNotNull(upload.headers[HttpHeaders.Location]).removeSuffix("/columns")
+        assertTrue(draft.contains("/import/"), draft)
+        browser.submitForm("$draft/columns", parameters { append("keep", "1") })
+        val preview = browser.get("$draft/preview").bodyAsText()
+        assertTrue("EC210" in preview)
+        val broken = browser.submitFormWithBinaryData(
+            "/admin/semesters/2026-1/import",
+            formData {
+                append(
+                    "sheet",
+                    byteArrayOf('P'.code.toByte(), 'K'.code.toByte(), 3, 4, 9, 9),
+                    Headers.build { append(HttpHeaders.ContentDisposition, "filename=\"orar.xlsx\"") },
+                )
+            },
+        )
+        assertTrue("err=" in broken.headers[HttpHeaders.Location].orEmpty())
+    }
+
     /** The sample timetable with one room changed, one class removed and one added. */
     private fun editedSheet(): String {
         val rows = Csv.parse(TimetableSheet.export(sampleDataset())).map { it.toMutableList() }.toMutableList()

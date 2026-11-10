@@ -29,6 +29,8 @@ import net.mehstudios.etimetable.server.ApiProblem
 import net.mehstudios.etimetable.server.Services
 import net.mehstudios.etimetable.server.timetable.ColumnMatch
 import net.mehstudios.etimetable.server.timetable.Csv
+import net.mehstudios.etimetable.server.timetable.SheetFile
+import net.mehstudios.etimetable.server.timetable.SheetFileError
 import kotlin.time.Clock
 
 private const val MAX_TOKEN_NAME = 100
@@ -244,7 +246,12 @@ fun Route.adminApiRoutes(services: Services) {
             if (bytes.size > MAX_SHEET_BYTES) {
                 throw ApiProblem(HttpStatusCode.PayloadTooLarge, ApiError(ErrorCodes.BAD_REQUEST, "at most 5 MB"))
             }
-            val rows = Csv.parse(bytes.decodeToString())
+            val text = try {
+                SheetFile.text(bytes)
+            } catch (e: SheetFileError) {
+                throw ApiProblem(HttpStatusCode.BadRequest, ApiError(ErrorCodes.BAD_REQUEST, e.message.orEmpty()))
+            }
+            val rows = Csv.parse(text)
             val check = checkImport(existing, rows, ColumnMatch.detect(rows.firstOrNull().orEmpty()))
             val dryRun = call.request.queryParameters["dry_run"].let { it == "true" || it == "1" }
             if (dryRun) {
