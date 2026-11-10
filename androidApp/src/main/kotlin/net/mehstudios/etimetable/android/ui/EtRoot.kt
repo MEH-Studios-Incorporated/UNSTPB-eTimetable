@@ -366,7 +366,7 @@ private fun MainScreen(
                         selected = tab == Tab.PROFESSORS,
                         onClick = { selectTab(Tab.PROFESSORS) },
                         icon = { Icon(EtIcons.Search, contentDescription = null) },
-                        label = { TabLabel(stringResource(R.string.find_teacher)) },
+                        label = { TabLabel(stringResource(R.string.tab_professors)) },
                     )
                     NavigationBarItem(
                         selected = tab == Tab.ANNOUNCEMENTS,

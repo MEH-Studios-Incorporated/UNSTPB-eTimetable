@@ -48,6 +48,11 @@ data class TimetableReport(
     val status: ReportStatus,
     val createdAt: Instant,
     val reviewedAt: Instant?,
+    /**
+     * The closing administrator's email, read by [TimetableReports.find] only. Null while
+     * open, in [TimetableReports.page] and after that administrator was deleted.
+     */
+    val reviewedBy: String? = null,
 )
 
 class ReportLimitExceeded(val retryAfterSeconds: Int) : RuntimeException()
@@ -139,15 +144,16 @@ class TimetableReports(private val db: DataSource) {
 
     /** One extra row tells the page whether another page exists. */
     suspend fun page(closed: Boolean, page: Int): List<TimetableReport> = db.transaction { c ->
+        // A plain comparison on status, so the planner can use timetable_report_queue.
+        val status = if (closed) "r.status <> 'open'" else "r.status = 'open'"
         c.query(
             """
-            SELECT r.*, s.email AS student_email,
+            SELECT r.*, s.email AS student_email, NULL AS reviewer_email,
                 trim(concat_ws(' ', s.profile ->> 'firstName', s.profile ->> 'lastName')) AS student_name
             FROM timetable_report r JOIN student s ON s.id = r.student_id
-            WHERE (r.status <> 'open') = ?
+            WHERE $status
             ORDER BY r.created_at DESC, r.id DESC LIMIT ? OFFSET ?
             """.trimIndent(),
-            closed,
             REPORT_PAGE_SIZE + 1,
             page.coerceIn(0, 1_000_000) * REPORT_PAGE_SIZE,
         ) { it.report() }
@@ -156,9 +162,10 @@ class TimetableReports(private val db: DataSource) {
     suspend fun find(id: UUID): TimetableReport? = db.transaction { c ->
         c.query(
             """
-            SELECT r.*, s.email AS student_email,
+            SELECT r.*, s.email AS student_email, a.email AS reviewer_email,
                 trim(concat_ws(' ', s.profile ->> 'firstName', s.profile ->> 'lastName')) AS student_name
-            FROM timetable_report r JOIN student s ON s.id = r.student_id WHERE r.id = ?
+            FROM timetable_report r JOIN student s ON s.id = r.student_id
+            LEFT JOIN admin a ON a.id = r.reviewed_by WHERE r.id = ?
             """.trimIndent(),
             id,
         ) { it.report() }.singleOrNull()
@@ -189,6 +196,7 @@ class TimetableReports(private val db: DataSource) {
         ReportStatus.entries.single { it.value == getString("status") },
         getObject("created_at", OffsetDateTime::class.java).toInstant().toKotlinInstant(),
         getObject("reviewed_at", OffsetDateTime::class.java)?.toInstant()?.toKotlinInstant(),
+        getString("reviewer_email"),
     )
 }
 

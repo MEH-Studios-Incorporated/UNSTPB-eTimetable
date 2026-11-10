@@ -226,7 +226,7 @@
         <item quantity="few">%d anunțuri de citit</item>
         <item quantity="other">%d de anunțuri de citit</item>
     </plurals>
-    <string name="find_teacher">Profesori</string>
+    <string name="tab_professors">Profesori</string>
     <string name="prof_search">Caută după profesor, email sau materie</string>
     <string name="prof_active_only">La curs sau consultații acum</string>
     <string name="prof_search_empty">Niciun profesor nu corespunde filtrelor.</string>

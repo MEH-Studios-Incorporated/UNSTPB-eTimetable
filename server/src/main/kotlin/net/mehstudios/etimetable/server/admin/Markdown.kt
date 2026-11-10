@@ -45,6 +45,17 @@ fun FlowContent.markdown(text: String) {
     }
 }
 
+/**
+ * The text without Markdown marks, as the app's list previews show it, cut to
+ * [limit] code points so an emoji is never split.
+ */
+fun markdownPreview(text: String, limit: Int): String {
+    val plain = INLINE.replace(text) { it.groupValues[1].ifEmpty { it.groupValues[2] }.ifEmpty { it.groupValues[3] } }
+        .lines().joinToString(" ") { it.replace(LIST_ITEM, "").trim() }.replace(Regex("""\s+"""), " ").trim()
+    if (plain.codePointCount(0, plain.length) <= limit) return plain
+    return plain.substring(0, plain.offsetByCodePoints(0, limit)).trimEnd() + "..."
+}
+
 private fun FlowOrPhrasingContent.inline(text: String) {
     var at = 0
     for (match in INLINE.findAll(text)) {

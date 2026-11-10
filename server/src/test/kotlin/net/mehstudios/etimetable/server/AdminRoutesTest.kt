@@ -26,6 +26,8 @@ import net.mehstudios.etimetable.api.SignupRequest
 import net.mehstudios.etimetable.model.Announcement
 import net.mehstudios.etimetable.model.Dataset
 import net.mehstudios.etimetable.server.admin.AdminRole
+import net.mehstudios.etimetable.server.admin.markdownPreview
+import net.mehstudios.etimetable.server.announcements.ANNOUNCEMENT_PAGE_SIZE
 import net.mehstudios.etimetable.server.push.ClockCheck
 import net.mehstudios.etimetable.server.push.PushResult
 import net.mehstudios.etimetable.server.push.PushSender
@@ -33,6 +35,8 @@ import net.mehstudios.etimetable.server.timetable.TimetableSheet
 import java.util.Collections
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.hours
@@ -158,6 +162,29 @@ class AdminRoutesTest {
 
         browser.submitForm("/admin/announcements/${published.id}/delete", parameters { })
         assertEquals(emptyList(), browser.get("/api/v1/announcements").body<List<Announcement>>())
+    }
+
+    @Test
+    fun announcementListStripsMarkdownAndHasNoEmptyLastPage() = withDashboard { services, browser ->
+        browser.login()
+        services.announcements.publish("Primul", "**Atenție:** sala [EC105](https://upb.ro) se schimbă.", "Secretariat")
+        repeat(ANNOUNCEMENT_PAGE_SIZE - 1) { services.announcements.publish("Anunț $it", "Text $it", "Secretariat") }
+        val first = browser.get("/admin/announcements").bodyAsText()
+        assertFalse("Anunțuri mai vechi" in first)
+        services.announcements.publish("Ultimul", "Text", "Secretariat")
+        val newest = browser.get("/admin/announcements").bodyAsText()
+        val older = Regex("href=\"(/admin/announcements\\?before=[^\"]+)\"").find(newest)
+        val second = browser.get(assertNotNull(older).groupValues[1].replace("&amp;", "&")).bodyAsText()
+        assertTrue("Atenție: sala EC105 se schimbă." in second, second)
+        assertFalse("**Atenție:**" in second)
+        assertFalse("Anunțuri mai vechi" in second)
+    }
+
+    @Test
+    fun announcementPreviewCutsByCodePoints() {
+        val text = "a".repeat(239) + "\uD83D\uDE00" + "rest"
+        assertEquals("a".repeat(239) + "\uD83D\uDE00...", markdownPreview(text, 240))
+        assertEquals("unu doi", markdownPreview("- unu\n- doi", 240))
     }
 
     @Test

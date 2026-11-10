@@ -19,10 +19,11 @@ Each section is also the text of the matching GitHub release.
   in `ETT_FCM_SERVICE_ACCOUNT`; without it nothing changes. When the
   server's clock is more than 5 minutes off, Google refuses every message,
   so the dashboard says so after publishing, with how far the clock is off.
-- The dashboard can search the entire schedule, find missing assignments,
-  and change rooms, teachers or times for selected classes. A preview shows
+- The dashboard can search the entire schedule as you type, filter it by
+  day or to classes without a room or professor, and change rooms,
+  professors or times for up to 200 selected classes. A preview shows
   booking conflicts, and stale confirmations cannot overwrite newer edits.
-- Android has a searchable teacher directory with current teaching or
+- Android has a Professors tab: a searchable list with current teaching or
   office hours, rooms, contact details and the weekly schedule.
 - Announcements can be searched and filtered to unread on Android, with a
   mark-all-read action. Edited text becomes unread again. Dashboard
@@ -105,9 +106,6 @@ Each section is also the text of the matching GitHub release.
 
 ### Fixed
 
-- Schedule search results now update while an administrator types and clear
-  with the search field. Submitting a bulk edit without selected activities
-  keeps the page open and explains the error.
 - Coming back from a professor, a subject, an announcement or the profile
   reset the timetable to today's day view; it now stays on the day or week
   you were looking at, and the subjects search keeps its text.

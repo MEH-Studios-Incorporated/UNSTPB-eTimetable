@@ -69,7 +69,7 @@ internal fun Route.reportRoutes(services: Services) {
                                             +report.studentName
                                             div("hint") { +report.studentEmail }
                                         }
-                                        td { +report.description.take(160) }
+                                        td { +report.description.preview(160) }
                                         td { +reportTime(report.createdAt) }
                                         td { +report.status.label() }
                                     }
@@ -120,6 +120,8 @@ internal fun Route.reportRoutes(services: Services) {
                     }
                 },
             ) {
+                notice(call.parameters["msg"])
+                notice(call.parameters["err"], error = true)
                 div("card") {
                     h2 { +report.snapshot.subjectName }
                     p { +report.snapshot.semesterName }
@@ -168,7 +170,13 @@ internal fun Route.reportRoutes(services: Services) {
                         }
                     }
                 } else {
-                    p("notice") { +"${report.status.label()} · ${report.reviewedAt?.let(::reportTime).orEmpty()}" }
+                    p("notice") {
+                        +listOfNotNull(
+                            report.status.label(),
+                            report.reviewedAt?.let(::reportTime),
+                            report.reviewedBy ?: "cont de administrator șters",
+                        ).joinToString(" · ")
+                    }
                 }
             }
         }
@@ -195,6 +203,12 @@ internal fun Route.reportRoutes(services: Services) {
         }
         call.respondRedirect("/admin/reports/$id")
     }
+}
+
+/** Cut by code points, so an emoji or other surrogate pair is never split. */
+private fun String.preview(limit: Int): String {
+    if (codePointCount(0, length) <= limit) return this
+    return substring(0, offsetByCodePoints(0, limit)).trimEnd() + "..."
 }
 
 private fun reportId(value: String?): UUID? = runCatching { UUID.fromString(value) }.getOrNull()

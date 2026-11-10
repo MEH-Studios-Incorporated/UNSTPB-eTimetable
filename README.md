@@ -25,8 +25,8 @@ notifications for new announcements; the iOS app is next.
 - A professor timetable: what each professor teaches, where and when, and
   their office hours.
 - Faculty announcements with push notifications.
-- In-browser schedule search and bulk room, teacher and time changes,
-  with a preview before saving. Android has a teacher directory and
+- In-browser schedule search and bulk room, professor and time changes,
+  with a preview before saving. Android has a professor directory and
   announcement search.
 - Report an incorrect class from its details. The secretariat reviews the
   report in the dashboard and can correct the class or dismiss the report.

@@ -195,7 +195,7 @@
     <string name="error_clash">This overlaps something already in your timetable.</string>
     <string name="timetable_report">Report a timetable problem</string>
     <string name="report_description">What is wrong with this class?</string>
-    <string name="report_hint">Describe the incorrect room, time, teacher or other detail and what should change (at least 10 characters). Timetable staff will see your name, email, the class details and your description. Leave out passwords and other private information. Up to five reports per hour.</string>
+    <string name="report_hint">Describe the incorrect room, time, professor or other detail and what should change (at least 10 characters). Timetable staff will see your name, email, the class details and your description. Leave out passwords and other private information. Up to five reports per hour.</string>
     <string name="report_length">%1$d / %2$d</string>
     <string name="report_send">Send report</string>
     <string name="report_done">Done</string>
@@ -226,7 +226,7 @@
         <item quantity="one">%d announcement to read</item>
         <item quantity="other">%d announcements to read</item>
     </plurals>
-    <string name="find_teacher">Professors</string>
+    <string name="tab_professors">Professors</string>
     <string name="prof_search">Search by professor, email or subject</string>
     <string name="prof_active_only">Teaching or office hours now</string>
     <string name="prof_search_empty">No professors match these filters.</string>

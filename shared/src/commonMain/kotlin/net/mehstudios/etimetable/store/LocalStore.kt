@@ -32,7 +32,10 @@ class LocalStore(driver: SqlDriver) {
 
     fun markDatasetChecked(at: Instant) = queries.markDatasetChecked(at.toEpochMilliseconds())
 
-    /** Adds new announcements and updates known ones, keeping their read state. */
+    /**
+     * Adds new announcements and updates known ones. A known one keeps its read
+     * state unless its title or text changed, which makes it unread again.
+     */
     fun saveAnnouncements(announcements: List<Announcement>) = queries.transaction {
         val existing = announcements().associate { it.announcement.id to it.announcement }
         announcements.forEach {
@@ -48,7 +51,8 @@ class LocalStore(driver: SqlDriver) {
 
     /**
      * Makes the offline list equal to [announcements], the server's full list:
-     * new ones are added, known ones keep their read state, the rest go.
+     * new ones are added, known ones are updated as in [saveAnnouncements],
+     * the rest go.
      */
     fun replaceAnnouncements(announcements: List<Announcement>) = queries.transaction {
         if (announcements.isEmpty()) {
