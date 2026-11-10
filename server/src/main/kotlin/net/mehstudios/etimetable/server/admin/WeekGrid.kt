@@ -42,7 +42,8 @@ internal fun subjectColours(dataset: Dataset): Map<String, String> =
 
 /**
  * One block of the week. [colour] null draws a neutral block (office hours). [room] null
- * with [roomless] shows "Fără sală" in red; [who] is an optional last line.
+ * with [roomless] shows "Fără sală" in red; [who] is an optional last line. [state] marks
+ * what an import does to the class.
  */
 internal data class GridEntry(
     val id: String,
@@ -54,6 +55,7 @@ internal data class GridEntry(
     val who: String? = null,
     val colour: String? = null,
     val href: String? = null,
+    val state: ChangeKind? = null,
 )
 
 /**
@@ -261,10 +263,12 @@ private fun FlowContent.block(p: Placement, filter: WeekFilter, calendar: Teachi
         "office".takeIf { e.colour == null },
         "dim".takeUnless { runsIn(e.slot.weeks, filter.parity, calendar) },
         "on".takeIf { e.id == selected },
+        e.state?.let { "ch-${it.key}" },
     ).joinToString(" ")
     val time = "${e.slot.start} - ${e.slot.end}"
     val mark = weekMark(e.slot.weeks)
     val label = listOfNotNull(
+        e.state?.label,
         e.kind,
         e.title,
         "${DAY_NAMES[e.slot.isoDay - 1]} $time",
@@ -275,6 +279,7 @@ private fun FlowContent.block(p: Placement, filter: WeekFilter, calendar: Teachi
     val position = "--top: ${p.top}; --len: ${p.length}; --col: ${p.column}; --cols: ${p.columns}" +
         (e.colour?.let { "; --sc: $it" } ?: "")
     val content: FlowContent.() -> Unit = {
+        if (e.state != null) span("wg-state") { +e.state.label }
         if (e.kind != null || mark != null) {
             span("wg-kind") {
                 if (e.kind != null) +e.kind
@@ -314,8 +319,15 @@ private fun FlowContent.block(p: Placement, filter: WeekFilter, calendar: Teachi
 private fun FlowContent.legend(entries: List<GridEntry>) {
     val rules = entries.map { it.slot.weeks }.toSet()
     val office = entries.any { it.colour == null }
-    if (WeekRule.Odd !in rules && WeekRule.Even !in rules && !office) return
+    val states = entries.mapNotNull { it.state }.toSet()
+    if (WeekRule.Odd !in rules && WeekRule.Even !in rules && !office && states.isEmpty()) return
     div("wg-legend") {
+        ChangeKind.entries.filter { it in states }.forEach { kind ->
+            span {
+                span("wg-chip ch-${kind.key}")
+                +" ${kind.label.lowercase()}"
+            }
+        }
         if (WeekRule.Odd in rules) {
             span {
                 span("wg-mark") { +"Impară" }
@@ -392,6 +404,19 @@ a.wg-block:hover { box-shadow: 0 2px 8px rgba(0, 0, 0, 0.14); z-index: 1; }
 .wg-legend { display: flex; flex-wrap: wrap; gap: 6px 18px; padding: 0 14px 12px 70px; font-size: 13px; line-height: 18px; color: var(--muted); }
 .wg-swatch { display: inline-block; width: 14px; height: 10px; border: 1px dashed var(--border); border-left: 3px solid var(--muted);
   border-radius: 2px; background: var(--surface); vertical-align: -1px; }
+.wg-block.ch-added { border: 2px solid var(--ok); border-left: 4px solid var(--sc, var(--muted)); }
+.wg-block.ch-changed { background: var(--change); border-color: var(--change); color: #292929; }
+.wg-block.ch-changed .wg-kind, .wg-block.ch-changed .wg-mark { color: #292929; }
+.wg-block.ch-removed { background: var(--surface); border: 2px dashed var(--now); color: var(--muted); opacity: 0.65; }
+.wg-block.ch-removed.dim { opacity: 0.3; }
+.wg-block.ch-removed strong { text-decoration: line-through; }
+.wg-state { display: block; font-size: 11px; line-height: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+.ch-added .wg-state { color: var(--ok); }
+.ch-removed .wg-state { color: var(--now); }
+.wg-chip { display: inline-block; width: 14px; height: 10px; border-radius: 2px; vertical-align: -1px; box-sizing: border-box; }
+.wg-chip.ch-added { border: 2px solid var(--ok); }
+.wg-chip.ch-changed { background: var(--change); }
+.wg-chip.ch-removed { border: 2px dashed var(--now); }
 .wg-pick { display: inline-flex; align-items: center; gap: 8px; margin: 0; }
 .wg-pick label { margin: 0; color: var(--muted); font-size: 13px; font-weight: 500; }
 .wg-pick select { width: auto; max-width: 220px; padding: 6px 8px; font-size: 13px; }

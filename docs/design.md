@@ -106,11 +106,10 @@ the student is not touching the screen, apart from the current-time line.
 - The Multimedia Entertainment Hub mark appears next to the copyright on
   the About screen (34 dp, with the site and support links) and, smaller and
   without links, in the sign-in footer (20 dp).
-- The public page (`/`) ends on the dark ink colour with the UNSTPB logo
-  (the university's own 280 px white version from upb.ro) next to the white
-  FAIMA seal, and a line drawing of the Rectorat behind the secretariat
-  section. The drawing is ours, an outline of the building's front; the
-  university's emblem itself is never redrawn or cut up.
+- The public page (`/`) shows the seal in its top bar (black, white in the
+  dark theme) and ends on FAIMA's near-black (`#292929`, `#141414` in the
+  dark theme) with the white seal, the faculty's and the university's names
+  and the Multimedia Entertainment Hub mark beside "Dezvoltată de".
 - The launcher icon is the white seal on `#292929`, 60 dp wide inside the
   108 dp adaptive icon, so launchers that cut a circle keep the lettering.
   The same image is the monochrome (themed) icon.
@@ -174,6 +173,29 @@ brand colours):
   phone uses the app's own tokens in either theme, whatever the
   dashboard's theme, and its Card / Pagină and Luminos / Întunecat
   switches are radio buttons read by CSS.
+
+## Public page
+
+The page at `/` uses the same tokens and the same direction ("Evoluție"):
+a top bar with the seal, links to the sections, the RO / EN switch and
+"Descarcă"; the hero with the teaching week as the app's ticket ("7 ·
+Săptămâna impară · 9 - 13 noiembrie"), the headline, the store buttons and
+three short facts; one app screenshot in a 28 px rounded frame (the light
+one, the dark one under `prefers-color-scheme: dark`); "Cum funcționează"
+in four numbered steps on a `surface` band; "Ce face aplicația" as rows
+with a stroke icon and a hairline under each; "Pentru secretariat" as one
+bordered panel with the link to `/admin`; the privacy note; the footer.
+
+- It follows the system theme, with the dark column of the colour table.
+- A store button without a link is a grey dashed block with "în curând".
+- Motion: 150 ms for hover and focus colour changes and the buttons' 1 px
+  lift; smooth scrolling to the sections only without
+  `prefers-reduced-motion`, which also turns the transitions off.
+- From 720 px down the section links move to a second row of the top bar;
+  from 520 px down the gutters are 16 px and the store buttons full width.
+  Nothing scrolls sideways at 390 px.
+- Everything comes from the server: Libre Franklin from
+  `/admin/static`, the pictures from `/static`, no scripts.
 
 ## Platform behaviour
 

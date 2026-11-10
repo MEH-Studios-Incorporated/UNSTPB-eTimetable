@@ -27,6 +27,19 @@ Each section is also the text of the matching GitHub release.
   errors with their line number) and confirm. Nothing is saved before the
   confirmation, and a confirmation is refused if someone changed the
   timetable since the preview.
+- The import preview shows the week of one group after the import on the
+  hour grid, with added classes outlined in green, changed ones in yellow
+  and removed ones faded and dashed. A list picks the group among those
+  the import touches, starting with the one with most changes.
+- The import preview counts the student accounts the import touches, with
+  no names: students whose group or half-group gains, changes or loses a
+  class, Erasmus students who picked a changed or removed class, and
+  students with a removed class among their extra or dropped slots. The
+  confirm step says how many students lose a picked class.
+- A row with an error can be corrected from the import preview: "Corectează"
+  opens the row's cells as the columns were matched, and saving rewrites
+  that row in the uploaded file and shows the preview again, so a typo no
+  longer means editing the file and uploading it again.
 - API tokens for programs that send the timetable without the browser:
   administrators create them on the new "Tokenuri API" page (shown once,
   optional expiry, revocable), and a program sends the CSV to
@@ -144,6 +157,13 @@ Each section is also the text of the matching GitHub release.
 
 ### Changed
 
+- The public page at the server's address is laid out again: a top bar
+  with links to its sections, the teaching week as the app shows it ("7 ·
+  Săptămâna impară · 9 - 13 noiembrie"), one screenshot that follows the
+  browser's light or dark theme, how to start in four steps, what the app
+  does, a panel for the secretariat with the way to the dashboard, the
+  privacy note and a footer with the faculty, the university and support.
+  The whole page now has a dark theme and fits a 390 px phone screen.
 - The dashboard's announcements and events are paged tables (10, 25 or 50
   rows), the events split into "Următoare" and "Trecute", with "Anunț nou"
   and "Eveniment nou" buttons instead of a form above the list.

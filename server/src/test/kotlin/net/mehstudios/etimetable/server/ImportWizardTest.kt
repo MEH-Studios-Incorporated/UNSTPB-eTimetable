@@ -28,6 +28,9 @@ import io.ktor.server.testing.testApplication
 import net.mehstudios.etimetable.api.ApiError
 import net.mehstudios.etimetable.api.AppJson
 import net.mehstudios.etimetable.api.ErrorCodes
+import net.mehstudios.etimetable.api.SignupRequest
+import net.mehstudios.etimetable.model.Enrollment
+import net.mehstudios.etimetable.model.Profile
 import net.mehstudios.etimetable.server.admin.Admin
 import net.mehstudios.etimetable.server.admin.AdminRole
 import net.mehstudios.etimetable.server.admin.AuditFilter
@@ -187,7 +190,7 @@ class ImportWizardTest {
         assertTrue(Regex("<s>\\s*AN015\\s*</s>\\s*<mark>\\s*EC210\\s*</mark>").containsMatchIn(preview), preview)
         assertTrue("7 activități rămân neschimbate" in preview, preview)
         val removed = browser.get("$draft/preview?filter=removed").bodyAsText()
-        assertTrue("Eliminată" in removed && "Adăugată" !in removed)
+        assertTrue("kind removed" in removed && "kind added" !in removed)
         // nothing is saved by looking
         assertEquals(before, services.datasets.current()!!.dataset)
 
@@ -480,6 +483,122 @@ class ImportWizardTest {
         )
         assertEquals(HttpStatusCode.Forbidden, other.get("/admin/api-tokens").status)
         assertFalse("Tokenuri API" in other.get("/admin/semesters").bodyAsText())
+    }
+
+    private suspend fun Services.student(email: String, profile: Profile) {
+        val token = accounts.signup(SignupRequest(email, "parola-buna", "Ana", "Pop", "0712345678")).token
+        accounts.saveProfile(assertNotNull(accounts.studentFor(token)), profile.copy(firstName = "Ana"))
+    }
+
+    @Test
+    fun thePreviewShowsAGroupsWeekAndHowManyStudentsAreAffected() = withDashboard { services, browser ->
+        services.student("erasmus@stud.test", Profile(enrollment = Enrollment.Erasmus(setOf("contab-s", "calit-c"))))
+        services.student("grupa@stud.test", Profile(enrollment = Enrollment.National("1542E", "1542E/A")))
+        services.student("nimic@stud.test", Profile())
+        val draft = browser.draftFor(editedSheet())
+        browser.submitForm("$draft/columns", parameters { append("keep", "1") })
+
+        val preview = browser.get("$draft/preview").bodyAsText()
+        // 1541E loses its seminar on top of the two changes of the whole series
+        assertTrue(
+            Regex(
+                "<option value=\"1541E\" selected=\"selected\">1541E · 3 modificări</option>",
+            ).containsMatchIn(preview),
+            preview,
+        )
+        assertTrue("1542E · 2 modificări" in preview)
+        assertTrue(
+            Regex("class=\"wg-block ch-removed\"[^>]*title=\"Eliminată, Seminar, ").containsMatchIn(preview),
+            preview,
+        )
+        assertTrue("wg-block ch-added" in preview && "wg-block ch-changed" in preview)
+        val other = browser.get("$draft/preview?group=1542E").bodyAsText()
+        assertTrue(Regex("<option value=\"1542E\" selected=\"selected\">").containsMatchIn(other))
+        assertFalse("wg-block ch-removed" in other)
+        // the existing week pages look as before
+        val week = browser.get("/admin/semesters/2026-1/schedule?view=week").bodyAsText()
+        assertTrue("class=\"wg-block" in week && "wg-block ch-" !in week && "class=\"wg-state\"" !in week)
+
+        assertTrue(
+            Regex("<span class=\"n tnum\">2</span> conturi de studenți cu orarul schimbat").containsMatchIn(preview),
+            preview,
+        )
+        assertTrue(Regex("<span class=\"tnum\">1</span> Erasmus, care au ales").containsMatchIn(preview))
+        assertTrue(Regex("<span class=\"tnum\">1</span> din grupele sau semigrupele").containsMatchIn(preview))
+        assertTrue("Studenți care pierd o activitate aleasă (Erasmus sau adăugată în plus): 1." in preview, preview)
+        assertFalse("@stud.test" in preview || "Ana" in preview)
+
+        val version = assertNotNull(Regex("confirm\\?version=(\\d+)").find(preview)).groupValues[1]
+        val confirm = browser.get("$draft/confirm?version=$version").bodyAsText()
+        assertTrue("2 conturi de studenți cu orarul schimbat" in confirm, confirm)
+        assertTrue("Activitatea eliminată dispare și din alegerile Erasmus" in confirm, confirm)
+        assertTrue("activitățile adăugate în plus ale unui student care o avea." in confirm, confirm)
+    }
+
+    @Test
+    fun aRowWithAnErrorIsCorrectedFromThePreview() = withDashboard { services, browser ->
+        val draft = browser.draftFor(sheetWithError())
+        browser.submitForm("$draft/columns", parameters { append("keep", "1") })
+        val draftId = java.util.UUID.fromString(draft.substringAfterLast("/"))
+        val adminId = services.admins.list().single().id
+        val logged = services.audit.page(AuditFilter(), 0, 50).size
+        assertTrue("href=\"$draft/rows/2\"" in browser.get("$draft/preview").bodyAsText())
+
+        val form = browser.get("$draft/rows/2").bodyAsText()
+        assertTrue("Corectează rândul 2" in form, form)
+        assertTrue("zi necunoscută" in form)
+        assertTrue(Regex("name=\"cell_day\"[^>]*value=\"vinerea\"").containsMatchIn(form), form)
+        assertTrue(Regex("name=\"cell_id\"[^>]*value=\"micro-c\"").containsMatchIn(form), form)
+
+        // an empty row would shift the lines of the file
+        val empty = browser.submitForm(
+            "$draft/rows/2",
+            parameters { TimetableSheet.COLUMNS.forEach { append("cell_$it", "") } },
+        )
+        assertTrue(empty.headers[HttpHeaders.Location].orEmpty().startsWith("$draft/rows/2?err="))
+        assertTrue("vinerea" in services.importDrafts.get(draftId, adminId, "2026-1")!!.text)
+        val gone = browser.submitForm("$draft/rows/99", parameters { append("cell_day", "luni") })
+        assertTrue(gone.headers[HttpHeaders.Location].orEmpty().startsWith("$draft/preview?err="))
+
+        // only the admin who uploaded the file sees and corrects it
+        val (editor, password) = services.admins.createWithTemporaryPassword("editor@faima.test", AdminRole.EDITOR)
+        services.admins.changePassword(editor.id, password, "parola-noua-pentru-panou", keepSession = null)
+        val other = createClient {
+            install(HttpCookies)
+            sameSite()
+            followRedirects = false
+        }
+        other.submitForm(
+            "/admin/login",
+            parameters {
+                append("email", "editor@faima.test")
+                append("password", "parola-noua-pentru-panou")
+            },
+        )
+        val foreign = other.submitForm("$draft/rows/2", parameters { append("cell_day", "luni") })
+        assertTrue(foreign.headers[HttpHeaders.Location].orEmpty().startsWith("/admin/semesters/2026-1/import?err="))
+        assertTrue(other.get("$draft/rows/2").headers[HttpHeaders.Location].orEmpty().contains("import?err="))
+
+        val saved = browser.submitForm("$draft/rows/2", parameters { append("cell_day", "vineri") })
+        val back = saved.headers[HttpHeaders.Location].orEmpty()
+        assertTrue(back.startsWith("$draft/preview?msg="), back)
+        val stored = services.importDrafts.get(draftId, adminId, "2026-1")!!
+        assertEquals("orar.csv", stored.fileName)
+        assertEquals("vineri", Csv.parse(stored.text)[1][TimetableSheet.COLUMNS.indexOf("day")])
+        assertEquals(Csv.parse(sheetWithError()).size, Csv.parse(stored.text).size)
+        // the rest of the file is as it was uploaded
+        assertEquals(
+            sheetWithError().substringAfter("\r\n").substringAfter("\r\n"),
+            stored.text.substringAfter("\r\n").substringAfter("\r\n"),
+        )
+
+        val preview = browser.get(back).bodyAsText()
+        assertTrue("Rândul 2 a fost corectat" in preview, preview)
+        assertEquals(0, count(preview, "Rânduri cu erori"))
+        assertEquals(1, count(preview, "Modificate"))
+        assertTrue("confirm?version=" in preview)
+        assertTrue("orar.csv" in preview)
+        assertEquals(logged, services.audit.page(AuditFilter(), 0, 50).size)
     }
 
     @Test
