@@ -157,3 +157,28 @@ vechi.
 
 Un anunț publicat se poate **edita**: textul nou ajunge în aplicații la
 următoarea sincronizare, iar data publicării rămâne aceeași.
+
+## Evenimente
+
+**Evenimente** pune în fila cu același nume din aplicație carduri cu o
+imagine și titlul dedesubt. Formularul cere:
+
+- titlul, care apare sub imagine;
+- imaginea, JPEG sau PNG de cel mult 8 MB. Serverul o micșorează la cel mult
+  1600 px și o salvează ca JPEG, fără datele camerei (inclusiv locul unde a
+  fost făcută fotografia). O imagine lată (16:9) arată cel mai bine; un afiș
+  vertical apare întreg până la proporția 4:5, mai înalt de atât se taie;
+- data și ora de început; ora de sfârșit și, pentru un eveniment de mai multe
+  zile, data de sfârșit, ambele opționale;
+- locul, o descriere cu Markdown ca la anunțuri și un link (înscriere,
+  program), toate opționale.
+
+**Previzualizează** arată cardul și pagina evenimentului așa cum apar în
+aplicație. Imaginea se păstrează din prima trimitere, așa că o greșeală în
+formular nu cere încărcarea ei din nou. **Trimite notificare pe telefoane**
+este bifat pentru un eveniment nou; debifează-l pentru unul mai puțin
+important. Editarea nu trimite notificări.
+
+Aplicația arată evenimentele care urmează și, la **Trecute**, pe cele
+terminate în ultimele 60 de zile. Un eveniment se poate edita sau șterge;
+imaginea lui se șterge împreună cu el.

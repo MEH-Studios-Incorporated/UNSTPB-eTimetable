@@ -7,6 +7,7 @@ import io.ktor.client.plugins.ClientRequestException
 import io.ktor.http.HttpStatusCode
 import net.mehstudios.etimetable.api.ApiClient
 import net.mehstudios.etimetable.api.DatasetFetch
+import net.mehstudios.etimetable.api.EventsFetch
 import net.mehstudios.etimetable.model.Announcement
 import net.mehstudios.etimetable.store.LocalStore
 import kotlin.time.Clock
@@ -40,6 +41,15 @@ class Sync(private val api: ApiClient, private val store: LocalStore, private va
     }
 
     /** Downloads the newest announcements and drops the ones deleted on the server. */
+    /** Downloads the events when they changed; true when the list is new, so its pictures can be fetched. */
+    suspend fun refreshEvents(): Boolean = when (val fetch = api.events(store.events()?.etag)) {
+        EventsFetch.NotModified -> false
+        is EventsFetch.Fresh -> {
+            store.saveEvents(fetch.events, fetch.etag)
+            true
+        }
+    }
+
     suspend fun refreshAnnouncements() {
         val all = mutableListOf<Announcement>()
         var before: String? = null

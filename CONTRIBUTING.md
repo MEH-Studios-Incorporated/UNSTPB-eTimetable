@@ -28,7 +28,7 @@ You need:
 The checks CI runs on Linux:
 
 ```sh
-./gradlew ktlintCheck :shared:allTests :server:test :androidApp:lintDebug :androidApp:assembleDebug
+./gradlew ktlintCheck :shared:verifySqlDelightMigration :shared:allTests :server:test :androidApp:lintDebug :androidApp:assembleDebug
 tools/check-writing.sh
 shellcheck tools/*.sh
 ```

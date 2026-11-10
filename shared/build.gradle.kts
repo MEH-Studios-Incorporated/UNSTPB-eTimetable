@@ -59,6 +59,10 @@ sqldelight {
     databases {
         create("EtimetableDatabase") {
             packageName = "net.mehstudios.etimetable.store"
+            // one .db per released schema; verifyMigrations checks that the .sqm files
+            // turn each of them into the schema in Etimetable.sq
+            schemaOutputDirectory = file("src/commonMain/sqldelight/databases")
+            verifyMigrations = true
         }
     }
 }

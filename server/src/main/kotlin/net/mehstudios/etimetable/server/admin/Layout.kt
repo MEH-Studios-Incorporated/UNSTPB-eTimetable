@@ -35,6 +35,7 @@ enum class Section(val label: String, val href: String) {
     PROFESSORS("Profesori", "/admin/professors"),
     ROOMS("Săli", "/admin/rooms"),
     ANNOUNCEMENTS("Anunțuri", "/admin/announcements"),
+    EVENTS("Evenimente", "/admin/events"),
     REPORTS("Probleme de orar", "/admin/reports"),
     STUDENTS("Studenți", "/admin/students"),
     ADMINS("Administratori", "/admin/admins"),
@@ -198,7 +199,7 @@ td .btn, td button { padding: 5px 10px; font-size: 13px; }
 .field { margin: 0 0 14px; }
 label { display: block; font-size: 13px; font-weight: 600; margin: 0 0 6px; }
 label.check { display: flex; gap: 8px; align-items: center; font-weight: 500; font-size: 14px; }
-input[type=text], input[type=email], input[type=password], input[type=date], input[type=search], input[type=number], textarea, select {
+input[type=text], input[type=time], input[type=url], input[type=email], input[type=password], input[type=date], input[type=search], input[type=number], textarea, select {
   width: 100%; max-width: 560px; padding: 9px 12px; border: 1px solid var(--strong); border-radius: 6px; background: var(--surface);
   font: inherit; color: var(--text); }
 input:focus, textarea:focus, select:focus { outline: 2px solid var(--primary-soft); border-color: var(--primary); }
@@ -245,6 +246,16 @@ a.slot:hover { border-color: var(--primary); }
 .announcement .meta { color: var(--muted); font-size: 13px; margin: 0 0 10px; }
 .announcement .body { border-top: 1px solid var(--border); padding-top: 10px; }
 .announcement .body p:first-child { margin-top: 0; }
+.event-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; align-items: start; }
+.event-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.event-card img { display: block; width: 100%; height: auto; max-height: 260px; object-fit: cover; background: var(--alt); }
+.event-card .text { padding: 12px 14px 14px; }
+.event-card strong { display: block; font-size: 16px; line-height: 22px; }
+.event-card .meta { display: block; color: var(--muted); font-size: 13px; margin-top: 2px; }
+.event-card .form-actions { margin-top: 12px; }
+.event-card.past img { opacity: 0.6; }
+.preview .event-card { max-width: 360px; margin-bottom: 14px; }
+.current-image { display: block; max-width: 240px; border-radius: 6px; margin-bottom: 8px; }
 .preview { background: var(--surface); border: 1px dashed var(--strong); border-radius: 8px; padding: 18px 20px; }
 .preview .label { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px; }
 body.plain { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--ink); }

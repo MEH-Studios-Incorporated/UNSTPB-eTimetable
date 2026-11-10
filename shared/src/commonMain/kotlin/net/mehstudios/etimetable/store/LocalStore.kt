@@ -7,6 +7,7 @@ import app.cash.sqldelight.db.SqlDriver
 import net.mehstudios.etimetable.api.AppJson
 import net.mehstudios.etimetable.model.Announcement
 import net.mehstudios.etimetable.model.Dataset
+import net.mehstudios.etimetable.model.Event
 import net.mehstudios.etimetable.model.Profile
 import kotlin.time.Instant
 
@@ -17,6 +18,8 @@ data class CachedDataset(val dataset: Dataset, val etag: String?, val checkedAt:
 data class StoredAnnouncement(val announcement: Announcement, val read: Boolean)
 
 data class StoredProfile(val profile: Profile, val dirty: Boolean)
+
+data class CachedEvents(val events: List<Event>, val etag: String?)
 
 /** The offline copy the app and the widgets read. */
 class LocalStore(driver: SqlDriver) {
@@ -31,6 +34,15 @@ class LocalStore(driver: SqlDriver) {
     }
 
     fun markDatasetChecked(at: Instant) = queries.markDatasetChecked(at.toEpochMilliseconds())
+
+    /** Events, earliest first, as last downloaded; they stay after sign-out, every student sees them. */
+    fun events(): CachedEvents? = queries.selectEvents().executeAsOneOrNull()?.let {
+        CachedEvents(AppJson.decodeFromString(it.json), it.etag)
+    }
+
+    fun saveEvents(events: List<Event>, etag: String?) {
+        queries.saveEvents(etag, AppJson.encodeToString(events))
+    }
 
     /**
      * Adds new announcements and updates known ones. A known one keeps its read

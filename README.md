@@ -10,8 +10,9 @@ Developed and owned by Multimedia Entertainment Hub LLC, on commission from
 FAIMA, UNSTPB.
 
 Status: early development. The Android app shows a student's timetable from a
-running server, with its subjects, professors, a home screen widget and push
-notifications for new announcements; the iOS app is next.
+running server, with its subjects, professors, the faculty's events, a home
+screen widget and push notifications for new announcements and events; the
+iOS app is next.
 
 ## What it does
 
@@ -25,6 +26,8 @@ notifications for new announcements; the iOS app is next.
 - A professor timetable: what each professor teaches, where and when, and
   their office hours.
 - Faculty announcements with push notifications.
+- Faculty events as cards with a picture: what, when and where, a
+  description and a link, published from the dashboard.
 - In-browser schedule search and bulk room, professor and time changes,
   with a preview before saving. Android has a professor directory and
   announcement search.
@@ -63,8 +66,8 @@ and looks like something the faculty would put its name on.
 - The Android app: sign-in, choosing a group or Erasmus slots (clashes are
   refused on the spot), today and week views with the next class and the
   current time, class details, the subjects with every slot (add another
-  group's lab once or for the semester), professors, announcements and the
-  profile, with three timetable layouts and a home screen widget in three
+  group's lab once or for the semester), professors, announcements, events
+  with their pictures, and the profile, with three timetable layouts and a home screen widget in three
   sizes. It keeps working offline and updates itself every few hours. New
   announcements arrive as notifications once the build has a Firebase project
   (see [CONTRIBUTING.md](CONTRIBUTING.md)).
@@ -75,14 +78,12 @@ and looks like something the faculty would put its name on.
   to PostgreSQL.
 - The faculty's dashboard at `/admin`: semesters and their holidays, the
   timetable imported from one spreadsheet (and exported back to it),
-  announcements, timetable problem reports and dashboard accounts.
+  announcements, events with their pictures, timetable problem reports and
+  dashboard accounts.
 - The shared Kotlin code computes timetables, week numbers and clashes, and
   keeps an offline copy on the phone.
 - The iOS app builds on CI and shows the app name from the shared Kotlin
   code. Nobody on the team has a Mac yet, so it has not run on a device.
-
-Known gap: the app follows the phone's language; there is no switch in the
-app yet.
 
 Everything else is still to come. The requirements are in
 [docs/brief.md](docs/brief.md) and the planned design in

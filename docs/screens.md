@@ -6,8 +6,8 @@ differs from it, this list is right.
 
 ## Navigation
 
-A bottom bar with four tabs: Timetable, Subjects, Professors,
-Announcements. The profile opens from the top bar on every tab. Tapping a
+A bottom bar with five tabs: Timetable, Subjects, Professors,
+Announcements, Events. The profile opens from the top bar on every tab. Tapping a
 subject, room or professor anywhere opens its page.
 
 The apps run in portrait only. A timetable reads top to bottom and every
@@ -125,6 +125,21 @@ item unread again; changing its pin alone does not.
   without animation. If the announcement is not on the phone yet, the
   announcements tab shows until the sync brings it.
 
+## Events
+
+- Cards, the coming events first: the picture on top, the title under it,
+  then one line with the day, the time and the place ("Joi, 19 noiembrie,
+  10:00 - 14:00 · Aula BN"). A wide picture is cut to at most 2.4:1, a
+  poster shows whole up to 4:5, so its title is not cut off. Until the
+  picture loads, the card keeps its size on a plain surface.
+- Below them, "Trecute": events that ended in the last 60 days, the latest
+  first, slightly dimmed.
+- Tapping a card opens the event: the whole picture, the title, the day and
+  time, the place, the description with Markdown, and "Deschide linkul"
+  when there is a link.
+- A notification for a new event opens it; it has its own channel,
+  "Evenimentele facultății". Events have no read state and no badge.
+
 ## Profile and settings
 
 The profile is a menu, like the phone's own settings: a header with the
@@ -233,7 +248,12 @@ seminars); single activities (add, edit, delete, with the importer's rules
 for days, times and weeks; a new room adds itself); professors (contact,
 office, office hours one per line, their activities); rooms by building
 (building names and addresses, each room's week); announcements (write,
-preview, publish, edit, pin); student accounts (administrators only: search,
+preview, publish, edit, pin); events (a card grid of the coming and past
+ones, a form with the picture, day, start and optional end, place,
+description and link, a preview of the card and the page, "Trimite
+notificare" ticked for a new event; the picture is kept as soon as it is
+sent, so a preview or a mistake in the form does not ask for it again);
+student accounts (administrators only: search,
 a new password that signs them out, delete); admin accounts.
 
 Timetable reports have a sidebar entry and an open count on the overview.

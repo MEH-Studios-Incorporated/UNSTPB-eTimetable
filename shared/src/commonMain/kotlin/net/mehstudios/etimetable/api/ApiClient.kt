@@ -29,6 +29,7 @@ import io.ktor.http.encodeURLPathPart
 import io.ktor.serialization.kotlinx.json.json
 import net.mehstudios.etimetable.model.Announcement
 import net.mehstudios.etimetable.model.Dataset
+import net.mehstudios.etimetable.model.Event
 import net.mehstudios.etimetable.model.Profile
 
 sealed interface DatasetFetch {
@@ -36,6 +37,12 @@ sealed interface DatasetFetch {
     data object NotModified : DatasetFetch
 
     data class Fresh(val dataset: Dataset, val etag: String?) : DatasetFetch
+}
+
+sealed interface EventsFetch {
+    data object NotModified : EventsFetch
+
+    data class Fresh(val events: List<Event>, val etag: String?) : EventsFetch
 }
 
 /** Talks to the eTimetable server at [baseUrl], for example `http://127.0.0.1:8080`. */
@@ -64,6 +71,19 @@ class ApiClient(engine: HttpClientEngine, private val baseUrl: String) {
         return when {
             response.status == HttpStatusCode.NotModified -> DatasetFetch.NotModified
             response.status.value in 200..299 -> DatasetFetch.Fresh(response.body(), response.headers[HttpHeaders.ETag])
+            else -> throw response.toException()
+        }
+    }
+
+    /** Upcoming and recent events, earliest first; [etag] from the last copy makes an unchanged list a 304. */
+    suspend fun events(etag: String?): EventsFetch {
+        val response = http.get(url("/api/v1/events")) {
+            expectSuccess = false
+            etag?.let { header(HttpHeaders.IfNoneMatch, it) }
+        }
+        return when {
+            response.status == HttpStatusCode.NotModified -> EventsFetch.NotModified
+            response.status.value in 200..299 -> EventsFetch.Fresh(response.body(), response.headers[HttpHeaders.ETag])
             else -> throw response.toException()
         }
     }

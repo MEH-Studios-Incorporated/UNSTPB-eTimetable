@@ -79,6 +79,11 @@ Sentence case everywhere, including buttons and tabs.
 - Separation by hairline borders and spacing. Shadows only on sheets and
   menus that float over content.
 - Touch targets at least 48 x 48 dp (Android) and 44 x 44 pt (iOS).
+- Event cards: the picture full width on top, clipped by the card's 8 px
+  corners, between 4:5 and 2.4:1 (cropped from the centre beyond that), on
+  `surfaceAlt` while it loads; under it the title in Title and one Caption
+  line in `textMuted`. No text or gradient over the picture: the faculty's
+  posters carry their own. Past events at 70 % opacity.
 
 ## Motion
 

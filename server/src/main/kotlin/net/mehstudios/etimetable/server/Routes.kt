@@ -14,6 +14,7 @@ import io.ktor.server.request.header
 import io.ktor.server.request.receive
 import io.ktor.server.response.header
 import io.ktor.server.response.respond
+import io.ktor.server.response.respondBytes
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.RoutingCall
@@ -23,6 +24,7 @@ import io.ktor.server.routing.post
 import io.ktor.server.routing.put
 import io.ktor.server.routing.route
 import net.mehstudios.etimetable.api.ApiError
+import net.mehstudios.etimetable.api.AppJson
 import net.mehstudios.etimetable.api.ErrorCodes
 import net.mehstudios.etimetable.api.Health
 import net.mehstudios.etimetable.api.LoginRequest
@@ -38,6 +40,7 @@ import net.mehstudios.etimetable.server.reports.ReportLimitExceeded
 import java.util.UUID
 
 const val STUDENT_AUTH = "student"
+private val IMAGE_HASH = Regex("[0-9a-f]{64}")
 val AUTH_RATE_LIMIT = RateLimitName("auth")
 val PUSH_TOKEN_RATE_LIMIT = RateLimitName("push-token")
 
@@ -66,6 +69,27 @@ fun Route.apiRoutes(services: Services) {
             } else {
                 call.respondText(snapshot.json, ContentType.Application.Json)
             }
+        }
+
+        get("/events") {
+            val json = AppJson.encodeToString(services.events.forApps())
+            val etag = "\"events-${sha256Hex(json).take(16)}\""
+            call.response.header(HttpHeaders.ETag, etag)
+            call.response.header(HttpHeaders.CacheControl, "no-cache")
+            if (call.request.header(HttpHeaders.IfNoneMatch) == etag) {
+                call.respond(HttpStatusCode.NotModified)
+            } else {
+                call.respondText(json, ContentType.Application.Json)
+            }
+        }
+
+        // a picture's address is its hash, so it can be cached for good
+        get("/images/{file}") {
+            val hash = call.parameters["file"].orEmpty().removeSuffix(".jpg")
+            if (!IMAGE_HASH.matches(hash)) return@get call.respond(HttpStatusCode.NotFound)
+            val data = services.events.image(hash) ?: return@get call.respond(HttpStatusCode.NotFound)
+            call.response.header(HttpHeaders.CacheControl, "public, max-age=31536000, immutable")
+            call.respondBytes(data, ContentType.Image.JPEG)
         }
 
         get("/announcements") {
@@ -141,3 +165,6 @@ private fun RoutingCall.pushToken(): String {
 
 private fun RoutingCall.bearerToken(): String? =
     request.header(HttpHeaders.Authorization)?.removePrefix("Bearer ")?.trim()
+
+private fun sha256Hex(text: String) =
+    java.security.MessageDigest.getInstance("SHA-256").digest(text.toByteArray()).joinToString("") { "%02x".format(it) }

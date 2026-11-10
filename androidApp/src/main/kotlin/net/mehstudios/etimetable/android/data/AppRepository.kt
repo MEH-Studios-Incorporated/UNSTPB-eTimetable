@@ -23,6 +23,7 @@ import net.mehstudios.etimetable.api.SignupRequest
 import net.mehstudios.etimetable.api.TimetableReportRequest
 import net.mehstudios.etimetable.api.decodeApiError
 import net.mehstudios.etimetable.model.Dataset
+import net.mehstudios.etimetable.model.Event
 import net.mehstudios.etimetable.model.Profile
 import net.mehstudios.etimetable.store.LocalStore
 import net.mehstudios.etimetable.store.StoredAnnouncement
@@ -40,6 +41,8 @@ data class AppState(
     val profile: Profile? = null,
     val profileUnsent: Boolean = false,
     val announcements: List<StoredAnnouncement> = emptyList(),
+    /** Earliest first; past ones stay a while, under "Trecute". */
+    val events: List<Event> = emptyList(),
     val syncing: Boolean = false,
     val lastSyncFailed: Boolean = false,
 )
@@ -66,6 +69,8 @@ class AppRepository(
     private val pushToken: suspend () -> String? = { null },
     /** The announcement notifications in the status bar. */
     private val notifications: PostedNotifications = PostedNotifications.None,
+    /** Fetches event pictures into the image cache, so the Events tab works offline. */
+    private val prefetchImages: (List<Event>) -> Unit = {},
     /** Called after every change to what the app shows, so the widgets can follow. */
     private val changed: () -> Unit = {},
 ) {
@@ -102,12 +107,14 @@ class AppRepository(
     }
 
     private suspend fun syncOnce(): Boolean {
+        var newEvents = false
         val ok = withContext(Dispatchers.IO) {
             try {
                 endSessionOnServer()
                 val update = sync.refreshDataset()
                 _state.update { it.copy(noSemester = update == DatasetUpdate.NO_SEMESTER) }
                 sync.refreshAnnouncements()
+                newEvents = refreshEvents()
                 session.token()?.let { token ->
                     try {
                         sync.syncProfile(token)
@@ -128,7 +135,16 @@ class AppRepository(
         }
         readStore(signedIn = session.token() != null, email = session.email())
         _state.update { it.copy(lastSyncFailed = !ok) }
+        if (newEvents) prefetchImages(_state.value.events)
         return ok
+    }
+
+    /** A server from before events answers 404; the rest of the sync goes on without them. */
+    private suspend fun refreshEvents(): Boolean = try {
+        sync.refreshEvents()
+    } catch (e: ResponseException) {
+        Log.w(TAG, "Events not available", e)
+        false
     }
 
     suspend fun signIn(email: String, password: String, remember: Boolean): ActionResult =
@@ -271,6 +287,7 @@ class AppRepository(
         val (cached, profile, announcements) = withContext(Dispatchers.IO) {
             Triple(store.dataset(), store.profile(), store.announcements())
         }
+        val events = withContext(Dispatchers.IO) { store.events()?.events.orEmpty() }
         _state.update {
             it.copy(
                 loaded = true,
@@ -281,6 +298,7 @@ class AppRepository(
                 profile = profile?.profile,
                 profileUnsent = profile?.dirty == true,
                 announcements = announcements,
+                events = events,
             )
         }
         changed()
