@@ -180,6 +180,9 @@
     <string name="subject_added">Adăugat</string>
     <string name="subject_added_once">Adăugat pe %1$s</string>
     <string name="subject_add">Adaugă</string>
+    <string name="subject_dropped">Grupa ta, scoasă</string>
+    <string name="subject_restore">Adaugă înapoi</string>
+    <string name="subject_last_one">Ultima rămasă</string>
     <string name="subject_remove">Scoate</string>
     <string name="subject_clash">Se suprapune cu %1$s (%2$s, %3$s)</string>
     <string name="subject_add_course">Adaugi cursul de %1$s?</string>

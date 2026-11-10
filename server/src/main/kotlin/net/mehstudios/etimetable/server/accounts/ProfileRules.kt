@@ -16,7 +16,8 @@ import net.mehstudios.etimetable.server.ApiProblem
 
 /**
  * The checks a profile must pass: ids that exist in the current semester and
- * no clashes between Erasmus picks or extra slots. Whether the student
+ * no clashes between Erasmus picks or extra slots. A dropped slot frees its time,
+ * so an extra slot may take it. Whether the student
  * really belongs to the group is not checked, on purpose (docs/brief.md).
  */
 fun checkProfile(profile: Profile, dataset: Dataset?) {
@@ -42,6 +43,10 @@ fun checkProfile(profile: Profile, dataset: Dataset?) {
                 calendar.findClash(pick, picks.take(i))?.let { clash(it.id, pick.id) }
             }
         }
+    }
+
+    for (dropped in profile.droppedSlots) {
+        if (dropped !in dataset.activitiesById) unknown(ErrorCodes.UNKNOWN_ACTIVITY, dropped)
     }
 
     var accepted = profile.copy(extraSlots = emptyList())

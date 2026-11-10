@@ -20,7 +20,9 @@ class StudentTimetable(
     val profile: Profile,
     val calendar: TeachingCalendar = TeachingCalendar(dataset.semester),
 ) {
-    private val base: List<Activity> = baseActivities(dataset, profile.enrollment)
+    /** What the student's group has, before the slots they dropped. */
+    private val groupSlots: List<Activity> = baseActivities(dataset, profile.enrollment)
+    private val base: List<Activity> = groupSlots.filter { it.id !in profile.droppedSlots }
 
     /** Activities that repeat every week their rule selects. */
     val recurring: List<Activity> = buildList {
@@ -62,11 +64,26 @@ class StudentTimetable(
     fun standing(activity: Activity): SlotStanding {
         when (val enrollment = profile.enrollment) {
             is Enrollment.Erasmus -> if (activity.id in enrollment.activityIds) return SlotStanding.Picked
-            is Enrollment.National -> if (base.any { it.id == activity.id }) return SlotStanding.Group
+            is Enrollment.National -> if (groupSlots.any { it.id == activity.id }) {
+                return if (activity.id in profile.droppedSlots) {
+                    SlotStanding.Dropped(clashFor(activity))
+                } else {
+                    SlotStanding.Group
+                }
+            }
             null -> Unit
         }
         profile.extraSlots.firstOrNull { it.activityId == activity.id }?.let { return SlotStanding.Extra(it.date) }
         return SlotStanding.Open(clashFor(activity))
+    }
+
+    /**
+     * Whether [activity] can leave the timetable for good: another slot of the same subject
+     * and kind (another group's lab, say) stays every week, so the student never ends up
+     * without one. A single visit can always go.
+     */
+    fun canRemove(activity: Activity): Boolean = recurring.any {
+        it.id != activity.id && it.subjectId == activity.subjectId && it.type == activity.type
     }
 
     /**
@@ -99,6 +116,9 @@ sealed interface SlotStanding {
 
     /** Added on top of the group: every week, or only on [date]. */
     data class Extra(val date: LocalDate?) : SlotStanding
+
+    /** The student's group has it, but they dropped it for another; [clash] as for [Open]. */
+    data class Dropped(val clash: Activity?) : SlotStanding
 
     /** Not in the timetable. [clash] is what it would overlap every week, or null when it fits. */
     data class Open(val clash: Activity?) : SlotStanding

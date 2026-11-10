@@ -141,6 +141,34 @@ class AccountRoutesTest {
     }
 
     @Test
+    fun aDroppedGroupLabFreesItsTime() = withServer { services, client ->
+        val token = client.token()
+        // another group's lab at exactly the time of 1541E/A's
+        val sample = sampleDataset()
+        val sameTime = sample.activities.first { it.id == "calit-l-1541A" }.copy(id = "calit-extra")
+        services.datasets.replace(sample.copy(activities = sample.activities + sameTime), makeCurrent = true)
+        val group = Enrollment.National("1541E", "1541E/A")
+
+        val both = client.putProfile(token, Profile(enrollment = group, extraSlots = listOf(ExtraSlot("calit-extra"))))
+        assertEquals(HttpStatusCode.Conflict, both.status)
+        val swapped = Profile(
+            enrollment = group,
+            extraSlots = listOf(ExtraSlot("calit-extra")),
+            droppedSlots = setOf("calit-l-1541A"),
+        )
+        assertEquals(HttpStatusCode.OK, client.putProfile(token, swapped).status)
+        assertEquals(
+            setOf("calit-l-1541A"),
+            client.get("/api/v1/me") {
+                bearerAuth(token)
+            }.body<Profile>().droppedSlots,
+        )
+
+        val unknown = client.putProfile(token, Profile(enrollment = group, droppedSlots = setOf("nope")))
+        assertEquals(ErrorCodes.UNKNOWN_ACTIVITY, unknown.body<ApiError>().code)
+    }
+
+    @Test
     fun logoutAndDelete() = withServer { _, client ->
         val token = client.token()
         assertEquals(HttpStatusCode.NoContent, client.post("/api/v1/auth/logout") { bearerAuth(token) }.status)

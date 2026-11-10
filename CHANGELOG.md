@@ -106,6 +106,10 @@ Each section is also the text of the matching GitHub release.
 
 ### Fixed
 
+- After adding another group's seminar or lab for the semester, the group's
+  own one could not be removed, so both stayed in the timetable. Either can
+  now be removed, as long as one weekly slot of that kind stays; a removed
+  group slot can be added back.
 - Coming back from a professor, a subject, an announcement or the profile
   reset the timetable to today's day view; it now stays on the day or week
   you were looking at, and the subjects search keeps its text.

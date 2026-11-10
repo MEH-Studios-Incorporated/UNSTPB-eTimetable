@@ -104,7 +104,13 @@ fun SubjectScreen(
                 val standing = timetable.standing(activity)
                 val next = timetable.nextMeeting(activity, now)
                 val onceClash = next?.let { timetable.clashFor(activity, it.date) }
-                SlotView(activity, standing, next?.date, onceFits = next != null && onceClash == null)
+                SlotView(
+                    activity,
+                    standing,
+                    next?.date,
+                    onceFits = next != null && onceClash == null,
+                    canRemove = (standing as? SlotStanding.Extra)?.date != null || timetable.canRemove(activity),
+                )
             }
     }
     val shown = slots.filter { !fitsOnly || (it.standing as? SlotStanding.Open)?.clash == null }
@@ -181,7 +187,19 @@ fun SubjectScreen(
                                             adding = slot.activity
                                         }
                                     },
-                                    onRemove = { apply(profile.without(slot.activity.id)) },
+                                    onRemove = {
+                                        // the group's own slot stays in the group; the student drops it
+                                        apply(
+                                            if (slot.standing == SlotStanding.Group) {
+                                                profile.copy(droppedSlots = profile.droppedSlots + slot.activity.id)
+                                            } else {
+                                                profile.without(slot.activity.id)
+                                            },
+                                        )
+                                    },
+                                    onRestore = {
+                                        apply(profile.copy(droppedSlots = profile.droppedSlots - slot.activity.id))
+                                    },
                                 )
                             }
                         }
@@ -208,8 +226,10 @@ private data class SlotView(
     val standing: SlotStanding,
     val nextDate: LocalDate?,
     val onceFits: Boolean,
+    /** False for the last weekly slot of its kind in the subject: one always stays. */
+    val canRemove: Boolean,
 ) {
-    val clash: Activity? get() = (standing as? SlotStanding.Open)?.clash
+    val clash: Activity? get() = (standing as? SlotStanding.Open)?.clash ?: (standing as? SlotStanding.Dropped)?.clash
 
     /** A national student can still add a clashing slot once when that date is free. */
     fun canAdd(erasmus: Boolean): Boolean = standing is SlotStanding.Open && (clash == null || (!erasmus && onceFits))
@@ -238,6 +258,7 @@ private fun SlotRow(
     busy: Boolean,
     onAdd: () -> Unit,
     onRemove: () -> Unit,
+    onRestore: () -> Unit,
 ) {
     val activity = slot.activity
     Row(
@@ -275,17 +296,33 @@ private fun SlotRow(
             }
         }
         when (val standing = slot.standing) {
-            SlotStanding.Group -> Status(
-                stringResource(
-                    if (activity.type ==
-                        ActivityType.COURSE
-                    ) {
-                        R.string.subject_in_timetable
-                    } else {
-                        R.string.subject_your_group
-                    },
-                ),
-            )
+            SlotStanding.Group -> Column(horizontalAlignment = Alignment.End) {
+                Status(
+                    stringResource(
+                        if (activity.type ==
+                            ActivityType.COURSE
+                        ) {
+                            R.string.subject_in_timetable
+                        } else {
+                            R.string.subject_your_group
+                        },
+                    ),
+                )
+                // only once another slot of this kind is in the timetable
+                if (slot.canRemove) {
+                    TextButton(onClick = onRemove, enabled = !busy) { Text(stringResource(R.string.subject_remove)) }
+                }
+            }
+            is SlotStanding.Dropped -> Column(horizontalAlignment = Alignment.End) {
+                Text(
+                    stringResource(R.string.subject_dropped),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                TextButton(onClick = onRestore, enabled = !busy && standing.clash == null) {
+                    Text(stringResource(R.string.subject_restore))
+                }
+            }
             SlotStanding.Picked -> Column(horizontalAlignment = Alignment.End) {
                 Status(stringResource(R.string.subject_in_timetable))
                 TextButton(onClick = onRemove, enabled = !busy) { Text(stringResource(R.string.subject_remove)) }
@@ -295,7 +332,16 @@ private fun SlotRow(
                     standing.date?.let { stringResource(R.string.subject_added_once, it.shortDate()) }
                         ?: stringResource(R.string.subject_added),
                 )
-                TextButton(onClick = onRemove, enabled = !busy) { Text(stringResource(R.string.subject_remove)) }
+                if (slot.canRemove) {
+                    TextButton(onClick = onRemove, enabled = !busy) { Text(stringResource(R.string.subject_remove)) }
+                } else {
+                    // it replaced the group's own slot, which is out of the timetable
+                    Text(
+                        stringResource(R.string.subject_last_one),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
             is SlotStanding.Open -> OutlinedButton(
                 onClick = onAdd,

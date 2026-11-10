@@ -11,6 +11,7 @@ import net.mehstudios.etimetable.model.ExtraSlot
 import net.mehstudios.etimetable.model.Profile
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -113,5 +114,40 @@ class StudentTimetableTest {
 
         val erasmus = timetable(Enrollment.Erasmus(setOf("calit-l-1541A")))
         assertEquals(SlotStanding.Picked, erasmus.standing(lab("calit-l-1541A")))
+    }
+
+    @Test
+    fun theGroupsLabCanGoOnceAnotherTakesItsPlace() {
+        val lab = { id: String -> SampleData.dataset.activitiesById.getValue(id) }
+        val group = Enrollment.National("1541E", "1541E/A")
+        // only the group's own lab: it stays
+        assertFalse(timetable(group).canRemove(lab("calit-l-1541A")))
+
+        // another group's lab for the semester: either may go
+        val friday = ExtraSlot("calit-l-1542B")
+        val both = timetable(group, listOf(friday))
+        assertTrue(both.canRemove(lab("calit-l-1541A")))
+        assertTrue(both.canRemove(lab("calit-l-1542B")))
+        // a single visit never counts as the one that stays
+        assertFalse(
+            timetable(
+                group,
+                listOf(ExtraSlot("calit-l-1542B", LocalDate(2026, 10, 30))),
+            ).canRemove(lab("calit-l-1541A")),
+        )
+
+        val dropped = StudentTimetable(
+            SampleData.dataset,
+            Profile(enrollment = group, extraSlots = listOf(friday), droppedSlots = setOf("calit-l-1541A")),
+        )
+        assertEquals(SlotStanding.Dropped(null), dropped.standing(lab("calit-l-1541A")))
+        assertFalse("calit-l-1541A" in dropped.recurring.map { it.id })
+        assertFalse(dropped.canRemove(lab("calit-l-1542B")), "the Friday lab is the last one now")
+        assertEquals(
+            listOf("calit-l-1542B"),
+            ids(dropped.on(LocalDate(2026, 10, 30))).filter {
+                it.startsWith("calit")
+            },
+        )
     }
 }
