@@ -24,7 +24,6 @@ import net.mehstudios.etimetable.model.Announcement
 import net.mehstudios.etimetable.model.Dataset
 import net.mehstudios.etimetable.server.admin.AdminRole
 import net.mehstudios.etimetable.server.admin.markdownPreview
-import net.mehstudios.etimetable.server.announcements.ANNOUNCEMENT_PAGE_SIZE
 import net.mehstudios.etimetable.server.push.ClockCheck
 import net.mehstudios.etimetable.server.push.PushResult
 import net.mehstudios.etimetable.server.push.PushSender
@@ -33,7 +32,6 @@ import java.util.Collections
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
-import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.hours
@@ -145,19 +143,22 @@ class AdminRoutesTest {
     }
 
     @Test
-    fun announcementListStripsMarkdownAndHasNoEmptyLastPage() = withDashboard { services, browser ->
+    fun announcementListStripsMarkdownAndPages() = withDashboard { services, browser ->
         browser.login()
         services.announcements.publish("Primul", "**Atenție:** sala [EC105](https://upb.ro) se schimbă.", "Secretariat")
-        repeat(ANNOUNCEMENT_PAGE_SIZE - 1) { services.announcements.publish("Anunț $it", "Text $it", "Secretariat") }
+        repeat(9) { services.announcements.publish("Anunț $it", "Text $it", "Secretariat") }
         val first = browser.get("/admin/announcements").bodyAsText()
-        assertFalse("Anunțuri mai vechi" in first)
+        assertTrue("1-10 din 10" in first, first)
+        assertFalse("page=2" in first)
         services.announcements.publish("Ultimul", "Text", "Secretariat")
         val newest = browser.get("/admin/announcements").bodyAsText()
-        val older = Regex("href=\"(/admin/announcements\\?before=[^\"]+)\"").find(newest)
-        val second = browser.get(assertNotNull(older).groupValues[1].replace("&amp;", "&")).bodyAsText()
+        assertTrue("1-10 din 11" in newest)
+        assertTrue("Ultimul" in newest)
+        assertFalse("Primul" in newest)
+        val second = browser.get("/admin/announcements?page=2").bodyAsText()
+        assertTrue("11-11 din 11" in second)
         assertTrue("Atenție: sala EC105 se schimbă." in second, second)
         assertFalse("**Atenție:**" in second)
-        assertFalse("Anunțuri mai vechi" in second)
     }
 
     @Test

@@ -150,7 +150,7 @@ class EventRoutesTest {
     @Test
     fun previewPublishesNothing() = withDashboard { services, browser ->
         val page = browser.saveEvent(extra = mapOf("preview" to "1")).bodyAsText()
-        assertTrue("Așa apare în aplicație" in page)
+        assertTrue("Pe telefon" in page)
         assertTrue("Joi, 21 noiembrie, 10:00 - 12:00 · Aula BN" in page, page)
         assertEquals(emptyList(), services.events.all())
     }

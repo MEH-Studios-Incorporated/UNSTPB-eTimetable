@@ -6,11 +6,22 @@ aplicație. Panoul de administrare este la adresa serverului urmată de
 
 ## Prezentare
 
-Prima pagină după conectare arată săptămâna de azi (numărul și paritatea),
-câte activități, grupe, materii, profesori și conturi de studenți are
-semestrul curent și ce mai e de făcut: activități fără profesor sau fără
-sală, săli sau profesori cu două activități în același timp, profesori fără
-email. Fiecare rând trimite unde se rezolvă.
+Prima pagină după conectare arată:
+
+- săptămâna de azi (numărul, paritatea, zilele ei, a câta din semestru și
+  când începe următoarea vacanță) și semestrul curent, cu numărul de clase,
+  grupe și conturi de studenți și ultima modificare a orarului;
+- **Acum în facultate**: clasele care se țin acum, cu sala și cadrul
+  didactic (o clasă fără sală apare cu roșu); când nu e nicio clasă, cele
+  care urmează azi;
+- problemele de orar deschise, cele mai noi primele;
+- **De făcut**: clase fără profesor sau fără sală, săli sau profesori cu
+  două clase în același timp, profesori fără email; fiecare rând trimite
+  unde se rezolvă;
+- evenimentele următoare;
+- pentru administratori, ultimele modificări din jurnal și un rezumat de
+  securitate: ultimele autentificări, sesiunile tale, câte conturi au
+  autentificarea în doi pași și câte parole greșite au fost în ultima zi.
 
 Bara de sus arată săptămâna de predare, ca în aplicație, și semestrul
 curent. Butonul **Temă** trece panoul între tema luminoasă și cea
@@ -162,8 +173,8 @@ descarcă orarul actual înainte de a-l modifica în Excel.
   activitate din săptămânile pare sau impare contează pe jumătate). Se
   caută după cod și se filtrează după corp. Fila **Corpuri** listează
   corpurile cu adresa și numărul de săli; numele și adresa unui corp se
-  schimbă pe pagina lui. Pagina unei săli arată săptămâna ei, deci și orele
-  în care e liberă.
+  schimbă pe pagina lui. Pagina unei săli arată săptămâna ei pe ore, deci și
+  orele în care e liberă.
 - **Studenți** (doar administratorii). Conturile, după email sau nume, cu
   grupa aleasă. **Schimbă** pune o parolă nouă pentru cine și-a pierdut-o și
   îl deconectează de pe toate telefoanele; spune-i parola pe altă cale.
@@ -250,23 +261,66 @@ noi. Numai **Confirmă și salvează** le publică. Dacă alt editor a modificat
 orarul între timp, reîncarcă pagina și verifică selecția. Linkul fiecărei
 activități deschide editorul complet.
 
+Fila **Săptămână** arată orarul ca în aplicație: zilele de luni până vineri,
+orele de la 08:00 la 20:00 (mai mult dacă o activitate iese din interval) și
+fiecare activitate ca un bloc în culoarea materiei, cu tipul, sala și ora.
+Sus alegi o grupă sau o semigrupă, o sală sau un profesor. **Toate**,
+**Impare** și **Pare** estompează activitățile care nu au loc în săptămânile
+alese; cele marcate "Impară" sau "Pară" au loc doar o dată la două
+săptămâni. Activitățile care se suprapun stau una lângă alta, ca
+laboratoarele celor două semigrupe. Un clic pe un bloc deschide lângă
+săptămână formularul activității, cu suprapunerile ei cu alte activități
+ale aceleiași săli, ale aceluiași profesor sau ale acelorași grupe. După
+**Salvează** rămâi în aceeași săptămână, cu activitatea selectată. Pe
+telefon săptămâna se derulează în lateral, iar formularul apare deasupra ei.
+
+Pagina unei grupe, a unei săli și a unui profesor arată aceeași săptămână;
+la sală și la profesor apar și consultațiile, ca blocuri gri.
+
+## Probleme de orar
+
+Studenții raportează o problemă din aplicație, de pe pagina unei clase.
+Pagina **Probleme de orar** are filele Deschise și Închise, o căutare după
+materie, student sau text și, când sunt rapoarte din mai multe semestre,
+un filtru de semestru. **Exportă CSV** descarcă lista filtrată.
+
+Un clic pe un rând deschide alături clasa așa cum o vedea studentul când a
+raportat, ce s-a schimbat de atunci la ea (ora, săptămânile, sala,
+profesorul), ce a scris studentul și dacă mai există alte rapoarte deschise
+pentru aceeași clasă. **Corectează clasa** deschide editorul clasei și
+întoarce aici după salvare; apoi **Marchează corectată**. **Respinge**
+închide problema fără schimbări.
+
 ## Publicarea anunțurilor
 
-**Anunțuri** are un formular cu titlu, text și semnătură. Textul acceptă
-Markdown simplu: `**îngroșat**`, `*cursiv*`, `[link](https://...)`, liste cu
-`- ` urmat de text, de exemplu `- Primul element`, fiecare element pe un rând
-nou. **Previzualizează** arată anunțul așa cum apare în aplicație, fără să-l
-publice. Un anunț fixat apare primul în aplicație. Anunțurile ajung la toți
-studenții. Lista are câte 20 de anunțuri pe pagină, cu acces la cele mai
-vechi.
+**Anunțuri** arată anunțurile publicate într-un tabel, cele mai noi primele,
+câte 10, 25 sau 50 pe pagină. De acolo un anunț se editează, se fixează sau
+se șterge. **Anunț nou** deschide pagina de scris: formularul în stânga și, în
+dreapta, un telefon care arată anunțul așa cum apare în aplicație. **Card**
+arată anunțul în lista din fila Anunțuri, **Pagină** îl arată deschis;
+**Luminos** și **Întunecat** schimbă tema telefonului.
 
-Un anunț publicat se poate **edita**: textul nou ajunge în aplicații la
-următoarea sincronizare, iar data publicării rămâne aceeași.
+Formularul are titlu, text și semnătură. Textul acceptă Markdown simplu:
+`**îngroșat**`, `*cursiv*`, `[link](https://...)`, liste cu `- ` urmat de
+text, de exemplu `- Primul element`, fiecare element pe un rând nou. Un rând
+liber începe un paragraf nou. Telefonul se actualizează în timp ce scrii;
+dacă browserul nu rulează JavaScript, **Previzualizează** îl redesenează fără
+să publice nimic. Un anunț fixat apare primul în aplicație. Anunțurile ajung
+la toți studenții, cu o notificare la publicare.
+
+Un anunț publicat se poate **edita** pe aceeași pagină: textul nou ajunge în
+aplicații la următoarea sincronizare, fără notificare, iar data publicării
+rămâne aceeași.
 
 ## Evenimente
 
 **Evenimente** pune în fila cu același nume din aplicație carduri cu o
-imagine și titlul dedesubt. Formularul cere:
+imagine și titlul dedesubt. Pagina din panou are un tabel cu două file,
+**Următoare** (cele mai apropiate primele) și **Trecute** (cele mai recente
+primele), cu o miniatură a imaginii. **Eveniment nou** deschide pagina de
+scris, cu telefonul alături ca la anunțuri: **Card** arată cardul din listă,
+**Pagină** arată pagina evenimentului, cu imaginea care se pierde în fundal
+sub titlu. Formularul cere:
 
 - titlul, care apare sub imagine;
 - imaginea, JPEG sau PNG de cel mult 8 MB. Serverul o micșorează la cel mult
@@ -279,11 +333,12 @@ imagine și titlul dedesubt. Formularul cere:
 - locul, o descriere cu Markdown ca la anunțuri și un link (înscriere,
   program), toate opționale.
 
-**Previzualizează** arată cardul și pagina evenimentului așa cum apar în
-aplicație. Imaginea se păstrează din prima trimitere, așa că o greșeală în
-formular nu cere încărcarea ei din nou. **Trimite notificare pe telefoane**
-este bifat pentru un eveniment nou; debifează-l pentru unul mai puțin
-important. Editarea nu trimite notificări.
+Telefonul se actualizează în timp ce scrii, iar o imagine aleasă apare pe
+loc, înainte de trimitere. Fără JavaScript, **Previzualizează** desenează
+cardul și pagina pe server. Imaginea se păstrează din prima trimitere, așa că
+o greșeală în formular nu cere încărcarea ei din nou. **Trimite notificare pe
+telefoane** este bifat pentru un eveniment nou; debifează-l pentru unul mai
+puțin important. Editarea nu trimite notificări.
 
 Aplicația arată evenimentele care urmează și, la **Trecute**, pe cele
 terminate în ultimele 60 de zile. Un eveniment se poate edita sau șterge;

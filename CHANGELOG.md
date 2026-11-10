@@ -6,6 +6,16 @@ Each section is also the text of the matching GitHub release.
 
 ### Added
 
+- A "Săptămână" view in Gestionare orar: the week of a group, half-group,
+  room or professor on an hour grid, each class a block in its subject's
+  colour with its type, room and time. Classes at the same time sit side by
+  side, and Toate / Impare / Pare fades the classes of the other weeks.
+  Clicking a class opens its form beside the grid with any clash in the
+  same room, with the same professor or the same students; saving returns
+  to the same week with the class still selected.
+- The group, room and professor pages show their week on the same hour
+  grid instead of five lists, with office hours as grey blocks.
+
 - The timetable import in the dashboard goes in four steps: upload the
   CSV, check the columns (found by name, in Romanian too, with a list to
   fix any that were not), see what changes (how many classes are added,
@@ -31,6 +41,11 @@ Each section is also the text of the matching GitHub release.
 - A log ("Jurnal") of every change made in the dashboard: who, when and
   what, filterable by category and person. Entries cannot be edited or
   deleted.
+- Writing an announcement or an event in the dashboard has its own page,
+  with a phone beside the form that shows the post as the app will: the
+  item in the list or the card, and the opened page, in the light or dark
+  theme. It changes as you type, and a chosen picture shows before it is
+  uploaded.
 
 - An Events tab ("Evenimente") with the faculty's events as cards: the
   picture on top, the title under it, then the day, time and place. The
@@ -125,6 +140,9 @@ Each section is also the text of the matching GitHub release.
 
 ### Changed
 
+- The dashboard's announcements and events are paged tables (10, 25 or 50
+  rows), the events split into "Următoare" and "Trecute", with "Anunț nou"
+  and "Eveniment nou" buttons instead of a form above the list.
 - The dashboard has a new frame: the sections are grouped under Orar,
   Comunicare and Conturi with icons, the sidebar counts the open problem
   reports, and a bar on top shows the teaching week and the semester. A
@@ -143,6 +161,15 @@ Each section is also the text of the matching GitHub release.
   per week and office, and filters those without an email or without
   classes. Materii shows the classes of each type, the teachers and the
   hours per week. Pages use the whole width of the screen.
+- The dashboard's start page shows the classes running right now (or the
+  next ones today) with their rooms and teachers, the open timetable
+  problems, a to-do list from the data, the next events and, for
+  administrators, the latest changes and a security summary. The tiles of
+  bare numbers are gone.
+- Problems reported by students open in a panel next to the list: the
+  class as the student saw it, what changed in it since, what they wrote,
+  other open reports about the same class, and the actions. The list can
+  be searched, filtered by semester and exported as CSV.
 - A dashboard error, a missing page or a page for administrators only now
   shows a short page in Romanian instead of JSON or a blank screen.
 - The app stays in portrait when the phone is turned.

@@ -5,7 +5,6 @@ package net.mehstudios.etimetable.server.admin
 
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
-import io.ktor.http.Parameters
 import io.ktor.http.encodeURLParameter
 import io.ktor.server.html.respondHtml
 import io.ktor.server.http.content.staticResources
@@ -40,7 +39,6 @@ import net.mehstudios.etimetable.schedule.TeachingCalendar
 import net.mehstudios.etimetable.schedule.baseActivities
 import net.mehstudios.etimetable.schedule.facultyNow
 import net.mehstudios.etimetable.server.Services
-import net.mehstudios.etimetable.server.announcements.ANNOUNCEMENT_PAGE_SIZE
 import net.mehstudios.etimetable.server.timetable.TimetableSheet
 import kotlin.time.Clock
 
@@ -72,201 +70,13 @@ fun Route.adminRoutes(services: Services) {
         accountRoutes(services)
         semesterRoutes(services)
         announcementRoutes(services)
+        previewRoutes(services)
         eventRoutes(services)
         editRoutes(services)
         reportRoutes(services)
         scheduleRoutes(services)
         importRoutes(services)
         apiTokenRoutes(services)
-    }
-}
-
-/** The start page: today's teaching week, the numbers, and what still needs doing. */
-private suspend fun RoutingContext.overview(services: Services, admin: Admin) {
-    val current = services.datasets.current()
-    val dataset = current?.dataset
-    val students = services.accounts.counts()
-    val announcements = services.announcements.page(before = null, limit = 100)
-    val nextEvents = services.events.forApps().filter { it.over > Clock.System.now() }.take(3)
-    val openReports = services.reports.openCount()
-    val today = Clock.System.facultyNow().date
-    call.respondHtml {
-        adminPage(
-            "Prezentare",
-            admin,
-            Section.OVERVIEW,
-            context = { +"Azi, ${longDate(today)}" },
-            actions = {
-                if (dataset != null) {
-                    a(href = "/admin/semesters/${dataset.semester.id}#import", classes = "btn secondary") {
-                        +"Importă orarul"
-                    }
-                }
-                a(href = "/admin/announcements#new", classes = "btn") { +"Anunț nou" }
-            },
-        ) {
-            if (openReports > 0) {
-                p("notice") {
-                    a(href = "/admin/reports") {
-                        val label = plural(openReports, "sesizare de orar", "sesizări de orar")
-                        +"$openReports $label așteaptă verificarea."
-                    }
-                }
-            }
-            if (dataset == null) {
-                div("card") {
-                    h2 { +"Niciun semestru în aplicație" }
-                    p {
-                        +"Aplicația nu are încă ce arăta. Creează semestrul, importă orarul, apoi fă-l curent. "
-                        a(href = "/admin/semesters") { +"Mergi la semestre" }
-                    }
-                }
-                return@adminPage
-            }
-            todayStrip(dataset, today)
-            div("stats") {
-                stat(dataset.activities.size, "activități")
-                stat(dataset.groups.size, "grupe")
-                stat(dataset.subjects.size, "materii")
-                stat(dataset.professors.size, "profesori")
-                stat(
-                    students.total,
-                    "conturi de studenți",
-                    "${students.national} în grupe, ${students.erasmus} Erasmus",
-                )
-                stat(announcements.size, "anunțuri publicate")
-            }
-            div("cols") {
-                div("card") {
-                    h2 { +"Ce e de făcut" }
-                    todo(dataset)
-                }
-                div("card") {
-                    h2 { +"Ultimele anunțuri" }
-                    if (announcements.isEmpty()) p("hint") { +"Niciun anunț încă." }
-                    ul("todo") {
-                        announcements.take(4).forEach { a ->
-                            li {
-                                span("mark ok") { style = "background: var(--primary)" }
-                                div {
-                                    a(href = "/admin/announcements/${a.id}") { +a.title }
-                                    div("hint") { +"${a.author} · ${dateTime(a)}" }
-                                }
-                            }
-                        }
-                    }
-                }
-                div("card") {
-                    h2 { +"Evenimente următoare" }
-                    if (nextEvents.isEmpty()) {
-                        p("hint") {
-                            +"Niciun eveniment programat. "
-                            a(href = "/admin/events#new") { +"Adaugă unul" }
-                        }
-                    }
-                    ul("todo") {
-                        nextEvents.forEach { e ->
-                            li {
-                                span("mark ok") { style = "background: var(--primary)" }
-                                div {
-                                    a(href = "/admin/events/${e.id}") { +e.title }
-                                    div("hint") { +whenAndWhere(e) }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-private fun FlowContent.todayStrip(dataset: Dataset, today: LocalDate) {
-    val calendar = TeachingCalendar(dataset.semester)
-    val week = calendar.weekOf(today)
-    val pause = calendar.breakOn(today)
-    div("today") {
-        div("num") { +(week?.number?.toString() ?: "-") }
-        div("text") {
-            strong {
-                +when {
-                    week != null -> "Săptămâna ${week.number}, ${if (week.parity == Parity.ODD) "impară" else "pară"}"
-                    pause != null -> pause.name.ro
-                    today < dataset.semester.firstDay -> "Semestrul începe pe ${longDate(dataset.semester.firstDay)}"
-                    else -> "Semestrul s-a încheiat"
-                }
-            }
-            span {
-                +"${dataset.semester.name.ro}, ${longDate(
-                    dataset.semester.firstDay,
-                )} - ${longDate(dataset.semester.lastDay)}"
-            }
-        }
-    }
-}
-
-private fun FlowContent.stat(value: Int, label: String, detail: String? = null) {
-    div("stat") {
-        span("value") { +value.toString() }
-        span("label") { +label }
-        if (detail != null) span("label") { +detail }
-    }
-}
-
-/** What the current semester still lacks, from the data itself. */
-private fun FlowContent.todo(dataset: Dataset) {
-    val noTeacher = dataset.activities.count { it.professorId == null }
-    val noRoom = dataset.activities.count { it.roomId == null }
-    val clashes = TimetableSheet.doubleBookings(dataset).size
-    val noEmail = dataset.professors.count { it.email == null }
-    val semesterLink = "/admin/semesters/${dataset.semester.id}"
-    ul("todo") {
-        if (dataset.activities.isEmpty()) {
-            item("bad", "Semestrul nu are încă orar.", "Importă fișierul CSV", "$semesterLink#import")
-        }
-        if (noTeacher > 0) {
-            item(
-                "warn",
-                "$noTeacher ${plural(noTeacher, "activitate nu are", "activități nu au")} profesor sau asistent.",
-                "Completează coloana professor și importă din nou",
-                "$semesterLink/export.csv",
-            )
-        }
-        if (noRoom > 0) {
-            item("warn", "$noRoom ${plural(noRoom, "activitate nu are", "activități nu au")} sală.", null, null)
-        }
-        if (clashes > 0) {
-            item(
-                "warn",
-                "$clashes ${plural(clashes, "suprapunere", "suprapuneri")} de săli sau profesori.",
-                "Vezi lista",
-                "$semesterLink#problems",
-            )
-        }
-        if (noEmail > 0) {
-            item(
-                "warn",
-                "$noEmail ${plural(noEmail, "profesor nu are", "profesori nu au")} adresă de email.",
-                null,
-                null,
-            )
-        }
-        if (dataset.activities.isNotEmpty() && noTeacher == 0 && noRoom == 0 && clashes == 0) {
-            item("ok", "Orarul nu are probleme cunoscute.", null, null)
-        }
-    }
-}
-
-private fun UL.item(kind: String, text: String, linkText: String?, href: String?) {
-    li {
-        span("mark ${if (kind == "warn") "" else kind}".trim())
-        div {
-            +text
-            if (linkText != null && href != null) {
-                +" "
-                a(href = href) { +linkText }
-            }
-        }
     }
 }
 
@@ -525,37 +335,24 @@ private fun Route.semesterRoutes(services: Services) {
                     ) { +"Adaugă activitate" }
                 },
             ) {
-                div("scroll") {
-                    div("week") {
-                        (1..5).forEach { day ->
-                            div("day") {
-                                h3 { +DAY_NAMES[day - 1] }
-                                activities.filter { it.slot.isoDay == day }.sortedBy { it.slot.start }.forEach { a ->
-                                    val back = "/admin/semesters/${dataset.semester.id}/groups/" +
-                                        group.id.encodeURLParameter()
-                                    a(
-                                        href = "/admin/semesters/${dataset.semester.id}/activities/" +
-                                            "${a.id.encodeURLParameter()}?back=${back.encodeURLParameter()}",
-                                        classes = "slot ${slotKind(a.type)}".trim(),
-                                    ) {
-                                        span("time") {
-                                            +"${a.slot.start} - ${a.slot.end} · ${TYPE_NAMES.getValue(a.type)}"
-                                        }
-                                        strong { +(dataset.subjectsById[a.subjectId]?.name?.ro ?: a.subjectId) }
-                                        +listOfNotNull(
-                                            dataset.roomsById[a.roomId]?.code,
-                                            dataset.professorsById[a.professorId]?.displayName,
-                                            weeksLabel(a.slot.weeks),
-                                            a.audience.halfGroupIds.mapNotNull {
-                                                dataset.halfGroupsById[it]
-                                            }.joinToString { "${group.code}/${it.suffix}" }.ifEmpty { null },
-                                        ).joinToString(" · ")
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+                val colours = subjectColours(dataset)
+                val path = "/admin/semesters/${dataset.semester.id}/groups/${group.id.encodeURLParameter()}"
+                val back = linkTo(path, call.request.queryParameters, emptyMap())
+                weekGrid(
+                    activities.map { a ->
+                        classEntry(
+                            dataset,
+                            colours,
+                            a,
+                            activityHref(dataset, a, back),
+                            halvesOf(dataset, group, a),
+                            who = dataset.professorsById[a.professorId]?.displayName?.trim(),
+                        )
+                    },
+                    TeachingCalendar(dataset.semester),
+                    path,
+                    call.request.queryParameters,
+                )
             }
         }
     }
@@ -578,257 +375,6 @@ private fun FlowContent.groupsBySeries(dataset: Dataset) {
                         +group.code
                     }
                 }
-            }
-        }
-    }
-}
-
-private fun Route.announcementRoutes(services: Services) {
-    page("/announcements", services) { admin ->
-        val before = call.parameters["before"]
-        val announcements = services.announcements.page(before = before, limit = ANNOUNCEMENT_PAGE_SIZE + 1)
-        call.respondHtml {
-            announcementsPage(
-                admin,
-                announcements,
-                draft = null,
-                msg = call.parameters["msg"],
-                err = call.parameters["err"],
-            )
-        }
-    }
-    action("/announcements", services) { admin ->
-        val draft = Draft.from(call.receiveParameters())
-        if (draft.preview || draft.error != null) {
-            val announcements = services.announcements.page(before = null, limit = ANNOUNCEMENT_PAGE_SIZE + 1)
-            return@action call.respondHtml {
-                announcementsPage(
-                    admin,
-                    announcements,
-                    draft,
-                    msg = null,
-                    err = null,
-                )
-            }
-        }
-        val announcement = with(draft) {
-            services.announcements.publish(title, body, author, pinned = pinned)
-        }
-        // every message would fail, so the admin hears why instead of phones staying silent
-        services.audit.record(admin, AuditCategory.ANNOUNCEMENTS, "a publicat anunțul ${announcement.title}")
-        val drift = services.push.clockDrift()
-        if (drift != null) {
-            val notice = clockNotice(drift).encodeURLParameter()
-            return@action call.respondRedirect("/admin/announcements?err=$notice")
-        }
-        services.push.announce(announcement)
-        call.respondRedirect("/admin/announcements?msg=${"Anunțul a fost publicat.".encodeURLParameter()}")
-    }
-    page("/announcements/{id}", services) { admin ->
-        val announcement =
-            services.announcements.byId(call.parameters["id"].orEmpty())
-                ?: return@page call.respond(HttpStatusCode.NotFound)
-        call.respondHtml { editAnnouncementPage(admin, announcement, Draft.of(announcement)) }
-    }
-    action("/announcements/{id}", services) { admin ->
-        val announcement =
-            services.announcements.byId(call.parameters["id"].orEmpty())
-                ?: return@action call.respond(HttpStatusCode.NotFound)
-        val draft = Draft.from(call.receiveParameters())
-        if (draft.preview || draft.error != null) {
-            return@action call.respondHtml { editAnnouncementPage(admin, announcement, draft) }
-        }
-        services.announcements.update(announcement.id, draft.title, draft.body, draft.author, draft.pinned)
-        services.audit.record(admin, AuditCategory.ANNOUNCEMENTS, "a modificat anunțul ${draft.title}")
-        call.respondRedirect("/admin/announcements?msg=${"Anunțul a fost salvat.".encodeURLParameter()}")
-    }
-    action("/announcements/{id}/pin", services) { admin ->
-        val id = call.parameters["id"].orEmpty()
-        val pinned = call.receiveParameters()["pinned"] == "true"
-        services.announcements.setPinned(id, pinned)
-        services.announcements.byId(id)?.let {
-            services.audit.record(
-                admin,
-                AuditCategory.ANNOUNCEMENTS,
-                "${if (pinned) "a fixat" else "nu mai fixează"} anunțul ${it.title}",
-            )
-        }
-        call.respondRedirect("/admin/announcements")
-    }
-    action("/announcements/{id}/delete", services) { admin ->
-        val id = call.parameters["id"].orEmpty()
-        services.announcements.byId(id)?.let {
-            services.audit.record(admin, AuditCategory.ANNOUNCEMENTS, "a șters anunțul ${it.title}")
-        }
-        services.announcements.delete(id)
-        call.respondRedirect("/admin/announcements?msg=${"Anunțul a fost șters.".encodeURLParameter()}")
-    }
-}
-
-/** An announcement being written: what the form sent, and whether to only show the preview. */
-private class Draft(
-    val title: String,
-    val body: String,
-    val author: String,
-    val pinned: Boolean,
-    val preview: Boolean,
-) {
-    val error: String? get() =
-        if (title.length > 200 || body.length > 20_000 || author.length > 100) {
-            "Titlul poate avea 200 de caractere, textul 20.000 și semnătura 100."
-        } else if (title.isBlank() ||
-            body.isBlank() ||
-            author.isBlank()
-        ) {
-            "Titlul, textul și semnătura sunt obligatorii."
-        } else {
-            null
-        }
-
-    companion object {
-        fun from(form: Parameters) = Draft(
-            form["title"].orEmpty().trim(),
-            form["body"].orEmpty().trim(),
-            form["author"].orEmpty().trim(),
-            form["pinned"] == "on",
-            preview = form["preview"] != null,
-        )
-
-        fun of(a: Announcement) = Draft(a.title, a.body, a.author, a.pinned, preview = false)
-    }
-}
-
-/** [fetched] holds one announcement more than a page when an older page exists. */
-private fun HTML.announcementsPage(
-    admin: Admin,
-    fetched: List<Announcement>,
-    draft: Draft?,
-    msg: String?,
-    err: String?,
-) {
-    val announcements = fetched.take(ANNOUNCEMENT_PAGE_SIZE)
-    adminPage(
-        "Anunțuri",
-        admin,
-        Section.ANNOUNCEMENTS,
-        context = { +"Ajung la toți studenții, la următoarea sincronizare a aplicației." },
-    ) {
-        notice(msg)
-        notice(err, error = true)
-        h2 {
-            id = "new"
-            style = "margin-top: 0"
-            +"Anunț nou"
-        }
-        announcementForm("/admin/announcements", draft, submit = "Publică")
-        h2 {
-            +"Publicate"
-            span("count") { +announcements.size.toString() }
-        }
-        if (announcements.isEmpty()) p("hint") { +"Niciun anunț încă." }
-        announcements.forEach { a ->
-            div("card announcement") {
-                h3 {
-                    +a.title
-                    if (a.pinned) {
-                        +" "
-                        span("tag pinned") { +"Fixat" }
-                    }
-                }
-                p("meta") { +"${a.author} · ${dateTime(a)}" }
-                p { +markdownPreview(a.body, 240) }
-                div("form-actions") {
-                    a(href = "/admin/announcements/${a.id}", classes = "btn secondary") { +"Editează" }
-                    form(action = "/admin/announcements/${a.id}/pin", method = FormMethod.post, classes = "inline") {
-                        hiddenInput(name = "pinned") { value = (!a.pinned).toString() }
-                        button(classes = "secondary") { +(if (a.pinned) "Nu mai fixa" else "Fixează") }
-                    }
-                    form(action = "/admin/announcements/${a.id}/delete", method = FormMethod.post, classes = "inline") {
-                        onSubmit = "return confirm('Ștergi anunțul? Dispare și din aplicații.')"
-                        button(classes = "danger") { +"Șterge" }
-                    }
-                }
-            }
-        }
-        if (fetched.size > ANNOUNCEMENT_PAGE_SIZE) {
-            a(
-                href = "/admin/announcements?before=${announcements.last().id.encodeURLParameter()}",
-                classes = "btn secondary",
-            ) {
-                +"Anunțuri mai vechi"
-            }
-        }
-        a(href = "/admin/announcements", classes = "btn secondary") { +"Cele mai noi" }
-    }
-}
-
-private fun HTML.editAnnouncementPage(admin: Admin, announcement: Announcement, draft: Draft) {
-    adminPage(
-        "Editează anunțul",
-        admin,
-        Section.ANNOUNCEMENTS,
-        context = {
-            a(href = "/admin/announcements") { +"Anunțuri" }
-            +" · publicat ${dateTime(announcement)}"
-        },
-    ) {
-        announcementForm("/admin/announcements/${announcement.id}", draft, submit = "Salvează")
-        p("hint") { +"Data publicării rămâne aceeași; aplicațiile primesc textul nou la următoarea sincronizare." }
-    }
-}
-
-private fun FlowContent.announcementForm(action: String, draft: Draft?, submit: String) {
-    if (draft?.error != null && !draft.preview) notice(draft.error, error = true)
-    div("cols") {
-        form(action = action, method = FormMethod.post, classes = "card") {
-            field("title", "Titlu") {
-                textInput(name = "title") {
-                    id = "title"
-                    required = true
-                    maxLength = "200"
-                    value = draft?.title.orEmpty()
-                }
-            }
-            field("body", "Text") {
-                textArea {
-                    id = "body"
-                    name = "body"
-                    required = true
-                    +draft?.body.orEmpty()
-                }
-                p("hint") {
-                    +"**îngroșat**, *cursiv*, [link](https://faima.upb.ro). "
-                    +"Pentru liste, scrie fiecare element pe un rând nou, cu spațiu după cratimă: - primul element."
-                }
-            }
-            field("author", "Semnat de") {
-                textInput(name = "author") {
-                    id = "author"
-                    required = true
-                    placeholder = "Secretariat"
-                    value = draft?.author.orEmpty()
-                }
-            }
-            label("check") {
-                checkBoxInput(name = "pinned") { checked = draft?.pinned == true }
-                +"Fixat sus în listă"
-            }
-            div("form-actions") {
-                button { +submit }
-                button(classes = "secondary") {
-                    name = "preview"
-                    value = "1"
-                    attributes["formnovalidate"] = "formnovalidate"
-                    +"Previzualizează"
-                }
-            }
-        }
-        if (draft?.preview == true) {
-            div("preview announcement") {
-                div("label") { +"Așa apare în aplicație" }
-                h3 { +draft.title.ifBlank { "(fără titlu)" } }
-                p("meta") { +draft.author.ifBlank { "(fără semnătură)" } }
-                div("body") { markdown(draft.body) }
             }
         }
     }

@@ -28,7 +28,10 @@ import net.mehstudios.etimetable.server.events.EventFields
 import net.mehstudios.etimetable.server.events.EventImages
 import net.mehstudios.etimetable.server.events.EventRepository
 import net.mehstudios.etimetable.server.events.ImageRejected
-import kotlin.time.Clock
+
+private const val LIST = "/admin/events"
+private const val MAX_TITLE = 200
+private const val MAX_BODY = 20_000
 
 private val WEEKDAYS = listOf("Luni", "Marți", "Miercuri", "Joi", "Vineri", "Sâmbătă", "Duminică")
 private val MONTHS_RO = listOf(
@@ -36,32 +39,96 @@ private val MONTHS_RO = listOf(
     "iulie", "august", "septembrie", "octombrie", "noiembrie", "decembrie",
 )
 
+/** The app's backdrop on an event's page: square for a photo, up to 3:4 for a poster. */
+private const val HERO_MIN_RATIO = 0.75f
+private const val HERO_MAX_RATIO = 1f
+
+/** "Joi, 20 noiembrie", as the app writes a day. */
+internal fun dayLabel(d: LocalDate) =
+    "${WEEKDAYS[d.dayOfWeek.isoDayNumber - 1]}, ${d.day} ${MONTHS_RO[d.month.ordinal]}"
+
 /** "Joi, 20 noiembrie, 10:00 - 12:00 · Aula BN", as the app's card writes it in Romanian. */
-internal fun whenAndWhere(event: Event): String {
-    val start = event.startsAt.toLocalDateTime(FacultyTimeZone)
-    val end = event.endsAt?.toLocalDateTime(FacultyTimeZone)
-    fun day(d: LocalDate) = "${WEEKDAYS[d.dayOfWeek.isoDayNumber - 1]}, ${d.day} ${MONTHS_RO[d.month.ordinal]}"
+internal fun whenAndWhere(event: Event, withPlace: Boolean = true): String = timeSpan(
+    event.startsAt.toLocalDateTime(FacultyTimeZone),
+    event.endsAt?.toLocalDateTime(FacultyTimeZone),
+    event.place?.takeIf { withPlace },
+)
+
+private fun timeSpan(start: LocalDateTime, end: LocalDateTime?, place: String?): String {
     fun time(t: LocalTime) = t.toString().take(5)
     val span = when {
-        end == null -> "${day(start.date)}, ${time(start.time)}"
-        end.date == start.date -> "${day(start.date)}, ${time(start.time)} - ${time(end.time)}"
-        else -> "${day(start.date)}, ${time(start.time)} - ${day(end.date)}, ${time(end.time)}"
+        end == null -> "${dayLabel(start.date)}, ${time(start.time)}"
+        end.date == start.date -> "${dayLabel(start.date)}, ${time(start.time)} - ${time(end.time)}"
+        else -> "${dayLabel(start.date)}, ${time(start.time)} - ${dayLabel(end.date)}, ${time(end.time)}"
     }
-    return listOfNotNull(span, event.place).joinToString(" · ")
+    return listOfNotNull(span, place).joinToString(" · ")
 }
 
 internal fun Route.eventRoutes(services: Services) {
     page("/events", services) { admin ->
-        val events = services.events.all()
+        val past = call.parameters["when"] == "past"
+        val upcomingCount = services.events.count(past = false)
+        val pastCount = services.events.count(past = true)
+        val paging = call.parameters.paging(if (past) pastCount else upcomingCount)
+        val events = services.events.list(past, paging.offset, paging.size)
         call.respondHtml {
-            eventsPage(admin, events, draft = null, msg = call.parameters["msg"], err = call.parameters["err"])
+            adminPage(
+                "Evenimente",
+                admin,
+                Section.EVENTS,
+                context = { +"Cardurile cu imagine din fila Evenimente a aplicației; le văd toți studenții." },
+                actions = { a(href = "$LIST/new", classes = "btn") { +"Eveniment nou" } },
+            ) {
+                notice(call.parameters["msg"])
+                notice(call.parameters["err"], error = true)
+                tableCard(
+                    filters = {
+                        nav("tabs") {
+                            attributes["aria-label"] = "Când"
+                            a(href = LIST, classes = if (past) null else "active") {
+                                +"Următoare"
+                                span("n") { +upcomingCount.toString() }
+                            }
+                            a(href = "$LIST?when=past", classes = if (past) "active" else null) {
+                                +"Trecute"
+                                span("n") { +pastCount.toString() }
+                            }
+                        }
+                    },
+                    footer = { pager(paging, LIST, call.request.queryParameters) },
+                ) {
+                    if (events.isEmpty()) {
+                        if (past) {
+                            emptyState(
+                                "Niciun eveniment trecut",
+                                "Evenimentele ajung aici după ce se termină. Aplicația le mai arată " +
+                                    "${EventRepository.KEPT_DAYS} de zile, la Trecute.",
+                            )
+                        } else {
+                            emptyState(
+                                "Niciun eveniment programat",
+                                "Un eveniment are o imagine, o dată și, dacă vrei, un loc, o descriere și un link.",
+                            ) { a(href = "$LIST/new", classes = "btn") { +"Adaugă un eveniment" } }
+                        }
+                    } else {
+                        eventTable(events, past)
+                    }
+                }
+                if (past && events.isNotEmpty()) {
+                    p("hint") {
+                        +"Aplicația le arată încă ${EventRepository.KEPT_DAYS} de zile după ce se termină, la Trecute."
+                    }
+                }
+            }
         }
+    }
+    page("/events/new", services) { admin ->
+        call.respondHtml { composeEvent(admin, null, EventDraft.empty()) }
     }
     action("/events", services) { admin ->
         val draft = receiveDraft(services, existing = null)
         if (draft.preview || draft.error != null) {
-            val events = services.events.all()
-            return@action call.respondHtml { eventsPage(admin, events, draft, msg = null, err = null) }
+            return@action call.respondHtml { composeEvent(admin, null, draft) }
         }
         val event = services.events.publish(draft.fields!!, draft.imageHash!!)
         services.audit.record(admin, AuditCategory.EVENTS, "a publicat evenimentul ${event.title}")
@@ -69,27 +136,27 @@ internal fun Route.eventRoutes(services: Services) {
             // every message would fail, so the admin hears why instead of phones staying silent
             val drift = services.push.clockDrift()
             if (drift != null) {
-                return@action call.respondRedirect("/admin/events?err=${clockNotice(drift).encodeURLParameter()}")
+                return@action call.respondRedirect("$LIST?err=${clockNotice(drift).encodeURLParameter()}")
             }
             services.push.announce(event, whenAndWhere(event))
         }
-        call.respondRedirect("/admin/events?msg=${"Evenimentul a fost publicat.".encodeURLParameter()}")
+        call.respondRedirect("$LIST?msg=${"Evenimentul a fost publicat.".encodeURLParameter()}")
     }
     page("/events/{id}", services) { admin ->
         val event = services.events.byId(call.parameters["id"].orEmpty())
             ?: return@page call.respond(HttpStatusCode.NotFound)
-        call.respondHtml { editEventPage(admin, event, EventDraft.of(event)) }
+        call.respondHtml { composeEvent(admin, event, EventDraft.of(event)) }
     }
     action("/events/{id}", services) { admin ->
         val event = services.events.byId(call.parameters["id"].orEmpty())
             ?: return@action call.respond(HttpStatusCode.NotFound)
         val draft = receiveDraft(services, existing = event)
         if (draft.preview || draft.error != null) {
-            return@action call.respondHtml { editEventPage(admin, event, draft) }
+            return@action call.respondHtml { composeEvent(admin, event, draft) }
         }
         services.events.update(event.id, draft.fields!!, draft.imageHash!!)
         services.audit.record(admin, AuditCategory.EVENTS, "a modificat evenimentul ${draft.fields!!.title}")
-        call.respondRedirect("/admin/events?msg=${"Evenimentul a fost salvat.".encodeURLParameter()}")
+        call.respondRedirect("$LIST?msg=${"Evenimentul a fost salvat.".encodeURLParameter()}")
     }
     action("/events/{id}/delete", services) { admin ->
         val id = call.parameters["id"].orEmpty()
@@ -97,7 +164,45 @@ internal fun Route.eventRoutes(services: Services) {
             services.audit.record(admin, AuditCategory.EVENTS, "a șters evenimentul ${it.title}")
         }
         services.events.delete(id)
-        call.respondRedirect("/admin/events?msg=${"Evenimentul a fost șters.".encodeURLParameter()}")
+        call.respondRedirect("$LIST?msg=${"Evenimentul a fost șters.".encodeURLParameter()}")
+    }
+}
+
+private fun FlowContent.eventTable(events: List<Event>, past: Boolean) {
+    table {
+        thead {
+            tr {
+                th { +"Eveniment" }
+                th { +"Când" }
+                th { +"Publicat" }
+                th { }
+            }
+        }
+        tbody {
+            events.forEach { e ->
+                tr {
+                    td {
+                        div(if (past) "list-thumb past" else "list-thumb") {
+                            img(src = e.image, alt = "") { attributes["loading"] = "lazy" }
+                            div {
+                                a(href = "$LIST/${e.id}") { +e.title }
+                                e.place?.let { div("hint") { +it } }
+                            }
+                        }
+                    }
+                    td("tnum") { +whenAndWhere(e, withPlace = false) }
+                    td("tnum") { +shortTime(e.publishedAt) }
+                    td("actions") {
+                        a(href = "$LIST/${e.id}", classes = "btn secondary") { +"Editează" }
+                        +" "
+                        form(action = "$LIST/${e.id}/delete", method = FormMethod.post) {
+                            onSubmit = "return confirm('Ștergi evenimentul? Dispare și din aplicații.')"
+                            button(classes = "danger") { +"Șterge" }
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -117,7 +222,20 @@ private class EventDraft(
 
     fun value(name: String) = form[name].orEmpty()
 
+    /** The date line from whatever the form holds so far, or null until it has a day and a start. */
+    fun timeLine(withPlace: Boolean): String? {
+        val date = runCatching { LocalDate.parse(value("start_date").trim()) }.getOrNull() ?: return null
+        val time = runCatching { LocalTime.parse(value("start_time").trim()) }.getOrNull() ?: return null
+        val endDate = runCatching { LocalDate.parse(value("end_date").trim()) }.getOrNull() ?: date
+        val end = runCatching {
+            LocalTime.parse(value("end_time").trim())
+        }.getOrNull()?.let { LocalDateTime(endDate, it) }
+        return timeSpan(LocalDateTime(date, time), end, value("place").trim().ifEmpty { null }?.takeIf { withPlace })
+    }
+
     companion object {
+        fun empty() = EventDraft(emptyMap(), null, null, notify = true, preview = false, error = null)
+
         fun of(e: Event): EventDraft {
             val start = e.startsAt.toLocalDateTime(FacultyTimeZone)
             val end = e.endsAt?.toLocalDateTime(FacultyTimeZone)
@@ -148,9 +266,9 @@ private class EventDraft(
             val link = text("link").ifEmpty { null }
             when {
                 title.isEmpty() -> fail("Titlul este obligatoriu.")
-                title.length > 200 -> fail("Titlul are peste 200 de caractere.")
+                title.length > MAX_TITLE -> fail("Titlul are peste 200 de caractere.")
                 text("place").length > 200 -> fail("Locul are peste 200 de caractere.")
-                text("body").length > 20_000 -> fail("Descrierea are peste 20000 de caractere.")
+                text("body").length > MAX_BODY -> fail("Descrierea are peste 20000 de caractere.")
                 link != null && (link.length > 500 || !Regex("^https?://\\S+$").matches(link)) ->
                     fail("Linkul trebuie să înceapă cu https:// și să nu aibă spații.")
             }
@@ -221,214 +339,249 @@ private suspend fun RoutingContext.receiveDraft(services: Services, existing: Ev
     )
 }
 
-private fun HTML.eventsPage(admin: Admin, events: List<Event>, draft: EventDraft?, msg: String?, err: String?) {
-    val now = Clock.System.now()
+/** The compose page for a new event, or for [existing] when editing one. */
+private fun HTML.composeEvent(admin: Admin, existing: Event?, draft: EventDraft) {
+    val isNew = existing == null
     adminPage(
-        "Evenimente",
-        admin,
-        Section.EVENTS,
-        context = { +"Cardurile cu imagine din fila Evenimente a aplicației; le văd toți studenții." },
-    ) {
-        notice(msg)
-        notice(err, error = true)
-        h2 {
-            id = "new"
-            style = "margin-top: 0"
-            +"Eveniment nou"
-        }
-        eventForm("/admin/events", draft, submit = "Publică", isNew = true)
-        val (past, upcoming) = events.partition { it.over < now }
-        h2 {
-            +"Următoare"
-            span("count") { +upcoming.size.toString() }
-        }
-        if (upcoming.isEmpty()) p("hint") { +"Niciun eveniment programat." }
-        eventGrid(upcoming.sortedBy { it.startsAt }, past = false)
-        if (past.isNotEmpty()) {
-            h2 {
-                +"Trecute"
-                span("count") { +past.size.toString() }
-            }
-            p("hint") {
-                +"Aplicația le arată încă ${EventRepository.KEPT_DAYS} de zile după ce se termină, la Trecute."
-            }
-            eventGrid(past, past = true)
-        }
-    }
-}
-
-private fun FlowContent.eventGrid(events: List<Event>, past: Boolean) {
-    div("event-grid") {
-        events.forEach { e ->
-            div(if (past) "event-card past" else "event-card") {
-                img(src = e.image, alt = "") { attributes["loading"] = "lazy" }
-                div("text") {
-                    strong { +e.title }
-                    span("meta") { +whenAndWhere(e) }
-                    div("form-actions") {
-                        a(href = "/admin/events/${e.id}", classes = "btn secondary") { +"Editează" }
-                        form(action = "/admin/events/${e.id}/delete", method = FormMethod.post, classes = "inline") {
-                            onSubmit = "return confirm('Ștergi evenimentul? Dispare și din aplicații.')"
-                            button(classes = "danger") { +"Șterge" }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-private fun HTML.editEventPage(admin: Admin, event: Event, draft: EventDraft) {
-    adminPage(
-        "Editează evenimentul",
+        if (isNew) "Eveniment nou" else "Editează evenimentul",
         admin,
         Section.EVENTS,
         context = {
-            a(href = "/admin/events") { +"Evenimente" }
-            +" · ${whenAndWhere(event)}"
+            a(href = LIST) { +"Evenimente" }
+            if (existing != null) +" · ${whenAndWhere(existing)}"
+        },
+        actions = existing?.let {
+            {
+                form(action = "$LIST/${it.id}/delete", method = FormMethod.post, classes = "inline") {
+                    onSubmit = "return confirm('Ștergi evenimentul? Dispare și din aplicații.')"
+                    button(classes = "danger") { +"Șterge" }
+                }
+            }
         },
     ) {
-        eventForm("/admin/events/${event.id}", draft, submit = "Salvează", isNew = false)
-        p("hint") { +"Aplicațiile primesc schimbările la următoarea sincronizare, fără notificare." }
+        if (draft.error != null && !draft.preview) notice(draft.error, error = true)
+        composeLayout(
+            form = {
+                form(
+                    action = existing?.let { "$LIST/${it.id}" } ?: LIST,
+                    method = FormMethod.post,
+                    encType = FormEncType.multipartFormData,
+                    classes = "card",
+                ) {
+                    attributes["data-compose"] = ""
+                    div("fields") { eventFields(draft, isNew) }
+                    composeActions(if (isNew) "Publică" else "Salvează", LIST)
+                }
+            },
+            phone = {
+                phonePreview(
+                    dark = admin.shell?.theme == "dark",
+                    card = { eventCard(draft) },
+                    page = { eventOpened(draft) },
+                    below = {
+                        if (draft.preview && draft.error != null) p { +"Înainte de publicare: ${draft.error}" }
+                        if (isNew) {
+                            p {
+                                attributes["data-preview-show"] = "notify"
+                                if (!draft.notify) attributes["hidden"] = "hidden"
+                                +"La publicare, studenții primesc o notificare cu titlul și data evenimentului."
+                            }
+                            p {
+                                attributes["data-preview-hide"] = "notify"
+                                if (draft.notify) attributes["hidden"] = "hidden"
+                                +"Fără notificare. Evenimentul apare în aplicație la următoarea sincronizare."
+                            }
+                        } else {
+                            p { +"Aplicațiile primesc schimbările la următoarea sincronizare, fără notificare." }
+                        }
+                    },
+                )
+            },
+        )
     }
 }
 
-private fun FlowContent.eventForm(action: String, draft: EventDraft?, submit: String, isNew: Boolean) {
-    if (draft?.error != null && !draft.preview) notice(draft.error, error = true)
-    div("cols") {
-        form(action = action, method = FormMethod.post, encType = FormEncType.multipartFormData, classes = "card") {
-            field("title", "Titlu") {
-                textInput(name = "title") {
-                    id = "title"
-                    required = true
-                    maxLength = "200"
-                    placeholder = "Ziua Carierei FAIMA"
-                    value = draft?.value("title").orEmpty()
-                }
-                p("hint") { +"Apare sub imagine, pe card." }
+private fun FlowContent.eventFields(draft: EventDraft, isNew: Boolean) {
+    countedField("title", "Titlu", draft.value("title").length, MAX_TITLE) {
+        textInput(name = "title") {
+            id = "title"
+            required = true
+            maxLength = MAX_TITLE.toString()
+            placeholder = "Ziua Carierei FAIMA"
+            value = draft.value("title")
+        }
+        p("hint") { +"Apare sub imagine, pe card, pe un singur rând." }
+    }
+    div("row3") {
+        field("start_date", "Data") {
+            dateInput(name = "start_date") {
+                id = "start_date"
+                required = true
+                value = draft.value("start_date")
             }
-            field("image", if (draft?.imageHash == null) "Imagine" else "Imagine nouă") {
-                if (draft?.imageHash != null) {
-                    hiddenInput(name = "image_hash") { value = draft.imageHash }
-                    img(src = EventRepository.imagePath(draft.imageHash), alt = "", classes = "current-image")
-                }
+        }
+        field("start_time", "Începe la") {
+            timeInput(name = "start_time") {
+                id = "start_time"
+                required = true
+                value = draft.value("start_time")
+            }
+        }
+        field("end_time", "Se termină la (opțional)") {
+            timeInput(name = "end_time") {
+                id = "end_time"
+                value = draft.value("end_time")
+            }
+        }
+    }
+    field("end_date", "Se termină în altă zi (opțional)") {
+        dateInput(name = "end_date") {
+            id = "end_date"
+            style = "max-width: 220px"
+            value = draft.value("end_date")
+        }
+    }
+    field("place", "Locul (opțional)") {
+        textInput(name = "place") {
+            id = "place"
+            maxLength = "200"
+            placeholder = "Aula BN"
+            value = draft.value("place")
+        }
+    }
+    div("field") {
+        label {
+            htmlFor = "image"
+            +(if (draft.imageHash == null) "Imagine" else "Imagine nouă (opțional)")
+        }
+        div("image-pick") {
+            div("thumb") {
+                eventPicture(draft, empty = { unsafe { +svgIcon(ICON_PICTURE, 22) } })
+            }
+            div("pick") {
+                if (draft.imageHash != null) hiddenInput(name = "image_hash") { value = draft.imageHash }
                 fileInput(name = "image") {
                     id = "image"
                     accept = "image/jpeg,image/png"
-                    if (draft?.imageHash == null) required = true
+                    if (draft.imageHash == null) required = true
                 }
                 p("hint") {
                     +"JPEG sau PNG, cel mult 8 MB. Se micșorează la 1600 px. Cardul o taie la 16:9, "
                     +"pagina evenimentului o arată mai mare; ține textul unui afiș spre mijloc."
                 }
             }
-            div("cols") {
-                style = "gap: 0 16px"
-                field("start_date", "Data") {
-                    dateInput(name = "start_date") {
-                        id = "start_date"
-                        required = true
-                        value = draft?.value("start_date").orEmpty()
-                    }
-                }
-                field("start_time", "Ora de început") {
-                    timeInput(name = "start_time") {
-                        id = "start_time"
-                        required = true
-                        value = draft?.value("start_time").orEmpty()
-                    }
-                }
-                field("end_time", "Ora de sfârșit (opțional)") {
-                    timeInput(name = "end_time") {
-                        id = "end_time"
-                        value = draft?.value("end_time").orEmpty()
-                    }
-                }
-                field("end_date", "Se termină în altă zi (opțional)") {
-                    dateInput(name = "end_date") {
-                        id = "end_date"
-                        value = draft?.value("end_date").orEmpty()
-                    }
-                }
-            }
-            field("place", "Locul (opțional)") {
-                textInput(name = "place") {
-                    id = "place"
-                    maxLength = "200"
-                    placeholder = "Aula BN"
-                    value = draft?.value("place").orEmpty()
-                }
-            }
-            field("body", "Descriere (opțional)") {
-                textArea {
-                    id = "body"
-                    name = "body"
-                    +draft?.value("body").orEmpty()
-                }
-                p("hint") { +"**îngroșat**, *cursiv*, [link](https://faima.upb.ro), liste cu - la început de rând." }
-            }
-            field("link", "Link (opțional)") {
-                urlInput(name = "link") {
-                    id = "link"
-                    placeholder = "https://faima.upb.ro/..."
-                    value = draft?.value("link").orEmpty()
-                }
-                p("hint") { +"Înscriere, program sau pagina evenimentului; aplicația îl arată ca buton." }
-            }
-            if (isNew) {
-                label("check") {
-                    checkBoxInput(name = "notify") { checked = draft?.notify ?: true }
-                    +"Trimite notificare pe telefoane"
-                }
-            }
-            div("form-actions") {
-                button { +submit }
-                button(classes = "secondary") {
-                    name = "preview"
-                    value = "1"
-                    attributes["formnovalidate"] = "formnovalidate"
-                    +"Previzualizează"
+        }
+    }
+    countedField("body", "Descriere (opțional)", draft.value("body").length, MAX_BODY) {
+        textArea {
+            id = "body"
+            name = "body"
+            rows = "8"
+            +draft.value("body")
+        }
+        p("hint") {
+            +"Un rând liber începe un paragraf nou. **îngroșat**, *cursiv*, [link](https://faima.upb.ro), "
+            +"liste cu - la început de rând."
+        }
+    }
+    field("link", "Link (opțional)") {
+        urlInput(name = "link") {
+            id = "link"
+            placeholder = "https://faima.upb.ro/..."
+            value = draft.value("link")
+        }
+        p("hint") { +"Înscriere, program sau pagina evenimentului; aplicația îl arată ca buton." }
+    }
+    if (isNew) {
+        label("check notify") {
+            checkBoxInput(name = "notify") { checked = draft.notify }
+            span {
+                +"Trimite notificare pe telefoane"
+                span("hint") {
+                    +"Ajunge la toți studenții care au notificările pornite. Evenimentele nu se filtrează pe grupe."
                 }
             }
         }
-        if (draft?.preview == true) preview(draft)
     }
 }
 
-/** The card and the page as the app draws them, from what the form holds now. */
-private fun FlowContent.preview(draft: EventDraft) {
-    div("preview") {
-        div("label") { +"Așa apare în aplicație" }
-        val fields = EventDraft.parse(draft.form).getOrNull()
-        val sample = draft.imageHash?.let { hash ->
-            fields?.let {
-                Event(
-                    id = "preview",
-                    title = it.title,
-                    startsAt = it.startsAt,
-                    endsAt = it.endsAt,
-                    place = it.place,
-                    body = it.body,
-                    link = it.link,
-                    image = EventRepository.imagePath(hash),
-                    imageRatio = draft.imageRatio ?: 1.6f,
-                    publishedAt = Clock.System.now(),
-                )
+/** The kept picture, or [empty] until there is one; admin.js swaps in a newly chosen file. */
+private fun FlowContent.eventPicture(draft: EventDraft, empty: DIV.() -> Unit) {
+    img(src = draft.imageHash?.let(EventRepository::imagePath), alt = "") {
+        attributes["data-preview-image"] = ""
+        if (draft.imageHash == null) attributes["hidden"] = "hidden"
+    }
+    div("e-none") {
+        attributes["data-preview-image-empty"] = ""
+        if (draft.imageHash != null) attributes["hidden"] = "hidden"
+        empty()
+    }
+}
+
+private fun DIV.pictureHint() {
+    unsafe { +svgIcon(ICON_PICTURE, 24) }
+    span { +"Imaginea evenimentului" }
+}
+
+/** The card in the Evenimente tab: the picture cut to 16:9, the title, the day and place. */
+private fun FlowContent.eventCard(draft: EventDraft) {
+    appBrandBar()
+    div("app-heading") { +"Evenimente" }
+    div("scroller") {
+        div("e-list") {
+            div("e-card") {
+                div("e-pic") { eventPicture(draft) { pictureHint() } }
+                div("text") {
+                    div("title") { previewText("title", draft.value("title"), "Titlul evenimentului") }
+                    div("when") { previewWhen(draft, withPlace = true) }
+                }
             }
         }
-        if (sample == null) {
-            p("hint") { +(draft.error ?: "Completează titlul, data și imaginea ca să vezi cardul.") }
-            return@div
+    }
+    appTabBar(Section.EVENTS)
+}
+
+/** The event's page: the picture fading into the page, then the title rising into it. */
+private fun FlowContent.eventOpened(draft: EventDraft) {
+    div("scroller") {
+        val ratio = (draft.imageRatio ?: 1f).coerceIn(HERO_MIN_RATIO, HERO_MAX_RATIO)
+        div("e-hero") {
+            style = "aspect-ratio: $ratio"
+            attributes["data-preview-hero"] = ""
+            eventPicture(draft) { pictureHint() }
+            div("fade")
+            span("app-back") { unsafe { +svgIcon(ICON_PREV, 18) } }
         }
-        div("event-card") {
-            img(src = sample.image, alt = "")
-            div("text") {
-                strong { +sample.title }
-                span("meta") { +whenAndWhere(sample) }
+        div("e-page") {
+            div("title") { previewText("title", draft.value("title"), "Titlul evenimentului") }
+            div("when") { previewWhen(draft, withPlace = false) }
+            div("place") {
+                attributes["data-preview-show"] = "place"
+                if (draft.value("place").isBlank()) attributes["hidden"] = "hidden"
+                previewText("place", draft.value("place").trim(), null)
+            }
+            div("app-md") {
+                attributes["data-preview-markdown"] = "body"
+                if (draft.value("body").isBlank()) attributes["hidden"] = "hidden"
+                markdown(draft.value("body"))
+            }
+            span("e-link") {
+                attributes["data-preview-show"] = "link"
+                if (draft.value("link").isBlank()) attributes["hidden"] = "hidden"
+                +"Deschide linkul"
             }
         }
-        if (sample.body.isNotBlank()) div("announcement") { div("body") { markdown(sample.body) } }
-        if (sample.link != null) p { a(href = sample.link) { +"Deschide linkul" } }
-        if (draft.error != null) notice(draft.error, error = true)
+    }
+}
+
+private fun HtmlBlockTag.previewWhen(draft: EventDraft, withPlace: Boolean) {
+    attributes["data-preview-when"] = if (withPlace) "full" else "time"
+    attributes["data-empty"] = "Alege data și ora"
+    val line = draft.timeLine(withPlace)
+    if (line == null) {
+        classes = classes + "is-empty"
+        +"Alege data și ora"
+    } else {
+        +line
     }
 }

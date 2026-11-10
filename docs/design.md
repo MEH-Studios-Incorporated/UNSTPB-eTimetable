@@ -142,6 +142,16 @@ brand colours):
   a handful of rows uses it; the paging happens in the database where the
   list comes from there.
 - Empty tables say what is missing and what to do, never just "nimic".
+- One week grid (`weekGrid` in `admin/WeekGrid.kt`) wherever the dashboard
+  shows a week: Gestionare orar's "Săptămână" view and the group, room and
+  professor pages. An hour axis from 08:00 to 20:00 (stretched when a class
+  falls outside), a column per weekday, each class a block placed by its
+  times with the 4 px subject bar and tint, its type as text, room, time
+  and an "Impară" or "Pară" mark. Overlapping classes share the day in
+  sub-columns. Subject colours go by the subjects' ids in sorted order, so
+  a subject keeps its colour between pages. Office hours are neutral
+  blocks. Toate / Impare / Pare are links that fade the other weeks'
+  classes. On a phone the grid scrolls sideways inside its card.
 - A flow of several steps (the timetable import) shows a stepper on top:
   numbered steps, the done ones with a green check and a link back, the
   current one underlined in the primary colour. Changes are tagged
@@ -153,9 +163,17 @@ brand colours):
   so the server renders the right theme and nothing flashes.
 - Motion: 150 ms for hover and focus, 180 ms for a page's content rising
   into place. `prefers-reduced-motion` turns all of it off.
-- JavaScript is optional: `admin/static/admin.js` adds the theme switch and
-  applies the rows-per-page choice as soon as it changes. Without it every
-  page still works through plain links and forms.
+- JavaScript is optional: `admin/static/admin.js` adds the theme switch,
+  applies the rows-per-page choice as soon as it changes and keeps the
+  phone preview on the compose pages in step with the form (the Markdown
+  body through `POST /admin/preview/markdown`, about 300 ms after the last
+  key; a chosen picture at once, from the file on the computer). Without it
+  every page still works through plain links and forms.
+- The compose pages for announcements and events put the form on the left
+  and a 320 px phone on the right (under the form on narrow screens). The
+  phone uses the app's own tokens in either theme, whatever the
+  dashboard's theme, and its Card / Pagină and Luminos / Întunecat
+  switches are radio buttons read by CSS.
 
 ## Platform behaviour
 
