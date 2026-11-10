@@ -66,8 +66,8 @@ internal suspend fun RoutingContext.overview(services: Services, admin: Admin) {
                         +"Importă orarul"
                     }
                 }
-                a(href = "/admin/events#new", classes = "btn secondary") { +"Eveniment nou" }
-                a(href = "/admin/announcements#new", classes = "btn") { +"Anunț nou" }
+                a(href = "/admin/events/new", classes = "btn secondary") { +"Eveniment nou" }
+                a(href = "/admin/announcements/new", classes = "btn") { +"Anunț nou" }
             },
         ) {
             if (dataset == null) {
@@ -297,7 +297,7 @@ private fun FlowContent.eventsCard(events: List<Event>) {
         }
         if (events.isEmpty()) {
             emptyState("Niciun eveniment programat") {
-                a(href = "/admin/events#new", classes = "btn secondary small") { +"Adaugă unul" }
+                a(href = "/admin/events/new", classes = "btn secondary small") { +"Adaugă unul" }
             }
             return@section
         }

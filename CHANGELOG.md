@@ -29,6 +29,11 @@ Each section is also the text of the matching GitHub release.
 - A log ("Jurnal") of every change made in the dashboard: who, when and
   what, filterable by category and person. Entries cannot be edited or
   deleted.
+- Writing an announcement or an event in the dashboard has its own page,
+  with a phone beside the form that shows the post as the app will: the
+  item in the list or the card, and the opened page, in the light or dark
+  theme. It changes as you type, and a chosen picture shows before it is
+  uploaded.
 
 - An Events tab ("Evenimente") with the faculty's events as cards: the
   picture on top, the title under it, then the day, time and place. The
@@ -123,6 +128,9 @@ Each section is also the text of the matching GitHub release.
 
 ### Changed
 
+- The dashboard's announcements and events are paged tables (10, 25 or 50
+  rows), the events split into "Următoare" and "Trecute", with "Anunț nou"
+  and "Eveniment nou" buttons instead of a form above the list.
 - The dashboard has a new frame: the sections are grouped under Orar,
   Comunicare and Conturi with icons, the sidebar counts the open problem
   reports, and a bar on top shows the teaching week and the semester. A

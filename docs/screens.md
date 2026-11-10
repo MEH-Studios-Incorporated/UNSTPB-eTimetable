@@ -247,7 +247,6 @@ Its "Săptămână" tab shows the week of one group, half-group, room or
 professor on an hour grid. Clicking a class opens a panel beside the grid
 (`?activity=<id>`, rendered by the server) with its clashes and the
 activity form; a save returns to the same view with the class selected.
-The announcement list has 20 posts per page, with links to older posts.
 
 A dark sidebar with the sections, each page with a title, a context line and
 its main actions on the right: an overview (today's week, counts, a list of
@@ -257,12 +256,17 @@ rename, every activity, one professor for all of a subject's labs or
 seminars); single activities (add, edit, delete, with the importer's rules
 for days, times and weeks; a new room adds itself); professors (contact,
 office, office hours one per line, their week); rooms by building
-(building names and addresses, each room's week); announcements (write,
-preview, publish, edit, pin); events (a card grid of the coming and past
-ones, a form with the picture, day, start and optional end, place,
-description and link, a preview of the card and the page, "Trimite
-notificare" ticked for a new event; the picture is kept as soon as it is
-sent, so a preview or a mistake in the form does not ask for it again);
+(building names and addresses, each room's week); announcements (a paged table
+to edit, pin and delete, and a page to write one); events (a paged table
+of the coming and past ones with a small picture, and a page to write one
+with the picture, day, start and optional end, place, description and
+link, "Trimite notificare" ticked for a new event; the picture is kept as
+soon as it is sent, so a preview or a mistake in the form does not ask for
+it again). Writing an announcement or an event shows a phone beside the
+form, drawn as the app draws it: the list item or card, and the opened
+page (for an event, the picture fading into the page under the title), in
+the light or dark theme. It follows the form as the person types; without
+JavaScript, "Previzualizează" draws it on the server;
 student accounts (administrators only: search,
 a new password that signs them out, delete); admin accounts.
 

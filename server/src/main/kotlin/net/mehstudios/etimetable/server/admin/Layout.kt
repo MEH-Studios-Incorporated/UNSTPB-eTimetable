@@ -206,6 +206,7 @@ private val FEATURE_STYLES: List<String> = listOf(
     REPORT_STYLES,
     OVERVIEW_STYLES,
     WEEK_GRID_STYLES,
+    COMPOSE_STYLES,
 )
 
 private val ADMIN_STYLES = """

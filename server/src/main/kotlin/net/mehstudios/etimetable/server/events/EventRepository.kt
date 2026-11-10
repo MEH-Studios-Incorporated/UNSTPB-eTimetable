@@ -45,6 +45,30 @@ class EventRepository(private val db: DataSource, private val clock: Clock = Clo
         c.query("$SELECT ORDER BY e.starts_at DESC, e.id", row = ::toEvent)
     }
 
+    /**
+     * One page of the dashboard's table: the coming events soonest first, or the past ones
+     * latest first. An event is past once it is over, as the apps count it.
+     */
+    suspend fun list(past: Boolean, offset: Int, limit: Int): List<Event> = db.transaction { c ->
+        val order = if (past) "e.starts_at DESC, e.id" else "e.starts_at, e.id"
+        c.query(
+            "$SELECT WHERE (coalesce(e.ends_at, e.starts_at) < ?) = ? ORDER BY $order OFFSET ? LIMIT ?",
+            timestamp(clock.now()),
+            past,
+            offset,
+            limit,
+            row = ::toEvent,
+        )
+    }
+
+    suspend fun count(past: Boolean): Int = db.transaction { c ->
+        c.query(
+            "SELECT count(*) FROM event e WHERE (coalesce(e.ends_at, e.starts_at) < ?) = ?",
+            timestamp(clock.now()),
+            past,
+        ) { it.getInt(1) }.single()
+    }
+
     suspend fun byId(id: String): Event? = db.transaction { c ->
         c.query("$SELECT WHERE e.id = ?", id, row = ::toEvent).singleOrNull()
     }

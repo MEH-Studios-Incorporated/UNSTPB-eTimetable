@@ -47,6 +47,21 @@ class AnnouncementRepository(private val db: DataSource, private val clock: Cloc
         rows
     }
 
+    /** One page of the dashboard's table, newest first. */
+    suspend fun list(offset: Int, limit: Int): List<Announcement> = db.transaction { c ->
+        c.query(
+            "SELECT id, title, body, author, pinned, published_at FROM announcement " +
+                "ORDER BY published_at DESC, id DESC OFFSET ? LIMIT ?",
+            offset,
+            limit,
+            row = ::toAnnouncement,
+        )
+    }
+
+    suspend fun count(): Int = db.transaction { c ->
+        c.query("SELECT count(*) FROM announcement") { it.getInt(1) }.single()
+    }
+
     suspend fun publish(title: String, body: String, author: String, pinned: Boolean = false): Announcement {
         val announcement = Announcement(UUID.randomUUID().toString(), title, body, clock.now(), author, pinned)
         db.transaction { c ->

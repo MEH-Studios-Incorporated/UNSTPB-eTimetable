@@ -234,21 +234,34 @@ pentru aceeași clasă. **Corectează clasa** deschide editorul clasei și
 
 ## Publicarea anunțurilor
 
-**Anunțuri** are un formular cu titlu, text și semnătură. Textul acceptă
-Markdown simplu: `**îngroșat**`, `*cursiv*`, `[link](https://...)`, liste cu
-`- ` urmat de text, de exemplu `- Primul element`, fiecare element pe un rând
-nou. **Previzualizează** arată anunțul așa cum apare în aplicație, fără să-l
-publice. Un anunț fixat apare primul în aplicație. Anunțurile ajung la toți
-studenții. Lista are câte 20 de anunțuri pe pagină, cu acces la cele mai
-vechi.
+**Anunțuri** arată anunțurile publicate într-un tabel, cele mai noi primele,
+câte 10, 25 sau 50 pe pagină. De acolo un anunț se editează, se fixează sau
+se șterge. **Anunț nou** deschide pagina de scris: formularul în stânga și, în
+dreapta, un telefon care arată anunțul așa cum apare în aplicație. **Card**
+arată anunțul în lista din fila Anunțuri, **Pagină** îl arată deschis;
+**Luminos** și **Întunecat** schimbă tema telefonului.
 
-Un anunț publicat se poate **edita**: textul nou ajunge în aplicații la
-următoarea sincronizare, iar data publicării rămâne aceeași.
+Formularul are titlu, text și semnătură. Textul acceptă Markdown simplu:
+`**îngroșat**`, `*cursiv*`, `[link](https://...)`, liste cu `- ` urmat de
+text, de exemplu `- Primul element`, fiecare element pe un rând nou. Un rând
+liber începe un paragraf nou. Telefonul se actualizează în timp ce scrii;
+dacă browserul nu rulează JavaScript, **Previzualizează** îl redesenează fără
+să publice nimic. Un anunț fixat apare primul în aplicație. Anunțurile ajung
+la toți studenții, cu o notificare la publicare.
+
+Un anunț publicat se poate **edita** pe aceeași pagină: textul nou ajunge în
+aplicații la următoarea sincronizare, fără notificare, iar data publicării
+rămâne aceeași.
 
 ## Evenimente
 
 **Evenimente** pune în fila cu același nume din aplicație carduri cu o
-imagine și titlul dedesubt. Formularul cere:
+imagine și titlul dedesubt. Pagina din panou are un tabel cu două file,
+**Următoare** (cele mai apropiate primele) și **Trecute** (cele mai recente
+primele), cu o miniatură a imaginii. **Eveniment nou** deschide pagina de
+scris, cu telefonul alături ca la anunțuri: **Card** arată cardul din listă,
+**Pagină** arată pagina evenimentului, cu imaginea care se pierde în fundal
+sub titlu. Formularul cere:
 
 - titlul, care apare sub imagine;
 - imaginea, JPEG sau PNG de cel mult 8 MB. Serverul o micșorează la cel mult
@@ -261,11 +274,12 @@ imagine și titlul dedesubt. Formularul cere:
 - locul, o descriere cu Markdown ca la anunțuri și un link (înscriere,
   program), toate opționale.
 
-**Previzualizează** arată cardul și pagina evenimentului așa cum apar în
-aplicație. Imaginea se păstrează din prima trimitere, așa că o greșeală în
-formular nu cere încărcarea ei din nou. **Trimite notificare pe telefoane**
-este bifat pentru un eveniment nou; debifează-l pentru unul mai puțin
-important. Editarea nu trimite notificări.
+Telefonul se actualizează în timp ce scrii, iar o imagine aleasă apare pe
+loc, înainte de trimitere. Fără JavaScript, **Previzualizează** desenează
+cardul și pagina pe server. Imaginea se păstrează din prima trimitere, așa că
+o greșeală în formular nu cere încărcarea ei din nou. **Trimite notificare pe
+telefoane** este bifat pentru un eveniment nou; debifează-l pentru unul mai
+puțin important. Editarea nu trimite notificări.
 
 Aplicația arată evenimentele care urmează și, la **Trecute**, pe cele
 terminate în ultimele 60 de zile. Un eveniment se poate edita sau șterge;
