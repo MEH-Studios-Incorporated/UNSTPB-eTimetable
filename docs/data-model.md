@@ -79,7 +79,17 @@ Student
   registered it, at most 10 per student, removed when the session ends).
 
 Admin
-: id, email, password hash, role (admin or editor).
+: id, email, password hash, role (admin or editor), whether it is disabled,
+  whether the password is a temporary one to change at the next sign-in, and
+  the TOTP secret with the last code step used when two-step sign-in is on.
+  Sessions keep their browser, address, start and last activity; every
+  sign-in attempt is kept 180 days for the lock and the account page; ten
+  recovery codes are stored hashed.
+
+Audit log
+: time, admin (the email is copied, so entries outlive the account),
+  category (accounts, timetable, announcements, events, reports, students)
+  and a sentence in Romanian. Entries are only ever added.
 
 Announcement
 : id, title, body (Markdown), published at, author (an admin), optional

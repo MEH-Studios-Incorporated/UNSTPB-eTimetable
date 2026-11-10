@@ -79,8 +79,8 @@ and looks like something the faculty would put its name on.
   to PostgreSQL.
 - The faculty's dashboard at `/admin`: semesters and their holidays, the
   timetable imported from one spreadsheet (and exported back to it),
-  announcements, events with their pictures, timetable problem reports and
-  dashboard accounts.
+  announcements, events with their pictures, timetable problem reports, and
+  dashboard accounts with two-step sign-in and a log of every change.
 - The shared Kotlin code computes timetables, week numbers and clashes, and
   keeps an offline copy on the phone.
 - The iOS app builds on CI and shows the app name from the shared Kotlin

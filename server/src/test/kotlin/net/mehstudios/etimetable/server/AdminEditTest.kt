@@ -44,6 +44,7 @@ class AdminEditTest {
         application { module(services) }
         val browser = createClient {
             install(HttpCookies)
+            sameSite()
             install(ContentNegotiation) { json(AppJson) }
             followRedirects = false
         }
@@ -257,13 +258,13 @@ class AdminEditTest {
 
     @Test
     fun editorsDoNotSeeStudents() = withSemester { services, browser ->
-        services.admins.create("editor@faima.test", "parola-editor", AdminRole.EDITOR)
+        services.admins.create("editor@faima.test", "parola-de-test", AdminRole.EDITOR)
         browser.submitForm("/admin/logout", parameters { })
         browser.submitForm(
             "/admin/login",
             parameters {
                 append("email", "editor@faima.test")
-                append("password", "parola-editor")
+                append("password", "parola-de-test")
             },
         )
         assertEquals(HttpStatusCode.Forbidden, browser.get("/admin/students").status)

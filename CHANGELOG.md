@@ -6,6 +6,20 @@ Each section is also the text of the matching GitHub release.
 
 ### Added
 
+- Two-step sign-in for the dashboard with an authenticator app (a QR code
+  to scan, a six-digit code after the password) and ten one-time recovery
+  codes for a lost phone.
+- "Contul meu" in the dashboard: change the password (the current one is
+  asked for), see and close open sessions, and see recent sign-ins,
+  including failed ones.
+- Administrators can change another account's role, give it a new
+  temporary password, close its sessions, reset its two-step sign-in, and
+  disable or delete it. New accounts get a temporary password shown once,
+  and the person picks their own at the first sign-in.
+- A log ("Jurnal") of every change made in the dashboard: who, when and
+  what, filterable by category and person. Entries cannot be edited or
+  deleted.
+
 - An Events tab ("Evenimente") with the faculty's events as cards: the
   picture on top, the title under it, then the day, time and place. The
   coming ones come first, then those of the last 60 days under "Trecute".
@@ -124,6 +138,13 @@ Each section is also the text of the matching GitHub release.
   redrawing it at once.
 
 ### Fixed
+
+- The dashboard accepted any number of wrong passwords. Five wrong
+  passwords or codes for one account within 15 minutes now lock it for 15
+  minutes.
+- A dashboard form post with neither an `Origin` nor a `Referer` header was
+  accepted. It is now refused, as are posts the browser marks as coming
+  from another site.
 
 - After adding another group's seminar or lab for the semester, the group's
   own one could not be removed, so both stayed in the timetable. Either can

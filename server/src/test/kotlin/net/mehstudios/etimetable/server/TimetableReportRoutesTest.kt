@@ -69,6 +69,7 @@ class TimetableReportRoutesTest {
 
     private fun ApplicationTestBuilder.browser(): HttpClient = createClient {
         install(HttpCookies)
+        sameSite()
         install(ContentNegotiation) { json(AppJson) }
         followRedirects = false
     }

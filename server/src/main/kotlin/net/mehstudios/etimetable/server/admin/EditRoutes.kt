@@ -208,7 +208,7 @@ private fun Route.subjectRoutes(services: Services) {
         }
     }
 
-    action("/semesters/{id}/subjects/{subject}", services) { _ ->
+    action("/semesters/{id}/subjects/{subject}", services) { admin ->
         val dataset = semesterOrNull(services) ?: return@action call.respond(HttpStatusCode.NotFound)
         val subject = dataset.subjectsById[call.parameters["subject"].orEmpty()]
             ?: return@action call.respond(HttpStatusCode.NotFound)
@@ -235,10 +235,11 @@ private fun Route.subjectRoutes(services: Services) {
                 },
             ),
         )
+        services.audit.record(admin, AuditCategory.TIMETABLE, "a modificat materia $code, $ro")
         call.respondRedirect("$back?${msg("Materia a fost salvată.")}")
     }
 
-    action("/semesters/{id}/subjects/{subject}/assign", services) { _ ->
+    action("/semesters/{id}/subjects/{subject}/assign", services) { admin ->
         val dataset = semesterOrNull(services) ?: return@action call.respond(HttpStatusCode.NotFound)
         val subject = dataset.subjectsById[call.parameters["subject"].orEmpty()]
             ?: return@action call.respond(HttpStatusCode.NotFound)
@@ -258,6 +259,11 @@ private fun Route.subjectRoutes(services: Services) {
             }
         }
         services.save(dataset.copy(activities = activities))
+        services.audit.record(
+            admin,
+            AuditCategory.TIMETABLE,
+            "a schimbat profesorul la $changed activități de ${TYPE_NAMES[type]?.lowercase()}, ${subject.name.ro}",
+        )
         call.respondRedirect(
             "$back?${msg("Am schimbat profesorul la $changed ${if (changed == 1) "activitate" else "activități"}.")}",
         )
@@ -334,7 +340,7 @@ private fun Route.professorRoutes(services: Services) {
         }
     }
 
-    action("/semesters/{id}/professors", services) { _ ->
+    action("/semesters/{id}/professors", services) { admin ->
         val dataset = semesterOrNull(services) ?: return@action call.respond(HttpStatusCode.NotFound)
         val form = call.receiveParameters()
         val name = form["name"].orEmpty().trim()
@@ -353,6 +359,7 @@ private fun Route.professorRoutes(services: Services) {
         val professor =
             Professor(id, form["title"].orEmpty().trim(), name, form["email"].orEmpty().trim().ifEmpty { null })
         services.save(dataset.copy(professors = dataset.professors + professor))
+        services.audit.record(admin, AuditCategory.TIMETABLE, "a adăugat profesorul $name")
         call.respondRedirect("$list/${id.encodeURLParameter()}?${msg("Profesorul a fost adăugat.")}")
     }
 
@@ -392,6 +399,7 @@ private fun Route.professorRoutes(services: Services) {
                 officeHours = hours,
             )
             services.save(next.copy(professors = next.professors.map { if (it.id == professor.id) changed else it }))
+            services.audit.record(admin, AuditCategory.TIMETABLE, "a modificat profesorul ${changed.name}")
             call.respondRedirect(
                 "${dataset.base()}/professors/${professor.id.encodeURLParameter()}?${msg("Profesorul a fost salvat.")}",
             )
@@ -402,7 +410,7 @@ private fun Route.professorRoutes(services: Services) {
         }
     }
 
-    action("/semesters/{id}/professors/{professor}/delete", services) { _ ->
+    action("/semesters/{id}/professors/{professor}/delete", services) { admin ->
         val dataset = semesterOrNull(services) ?: return@action call.respond(HttpStatusCode.NotFound)
         val id = call.parameters["professor"].orEmpty()
         val list = "${dataset.base()}/professors"
@@ -412,6 +420,11 @@ private fun Route.professorRoutes(services: Services) {
             )
         }
         services.save(dataset.copy(professors = dataset.professors.filterNot { it.id == id }))
+        services.audit.record(
+            admin,
+            AuditCategory.TIMETABLE,
+            "a șters profesorul ${dataset.professorsById[id]?.name ?: id}",
+        )
         call.respondRedirect("$list?${msg("Profesorul a fost șters.")}")
     }
 }
@@ -528,6 +541,11 @@ private fun Route.activityRoutes(services: Services) {
         try {
             val (activity, next) = activityFrom(dataset, "a-" + UUID.randomUUID().toString().take(8), form)
             services.save(next.copy(activities = next.activities + activity))
+            services.audit.record(
+                admin,
+                AuditCategory.TIMETABLE,
+                "a adăugat activitatea ${activityLabel(next, activity)}",
+            )
             call.respondRedirect("${backFor(dataset, form, activity)}?${msg("Activitatea a fost adăugată.")}")
         } catch (e: AdminFormError) {
             call.respondHtml(HttpStatusCode.UnprocessableEntity) { activityPage(admin, dataset, null, form, e.message) }
@@ -547,17 +565,23 @@ private fun Route.activityRoutes(services: Services) {
         try {
             val (activity, next) = activityFrom(dataset, old.id, form)
             services.save(next.copy(activities = next.activities.map { if (it.id == old.id) activity else it }))
+            services.audit.record(
+                admin,
+                AuditCategory.TIMETABLE,
+                "a modificat activitatea ${activityLabel(next, activity)}",
+            )
             call.respondRedirect("${backFor(dataset, form, activity)}?${msg("Activitatea a fost salvată.")}")
         } catch (e: AdminFormError) {
             call.respondHtml(HttpStatusCode.UnprocessableEntity) { activityPage(admin, dataset, old, form, e.message) }
         }
     }
-    action("/semesters/{id}/activities/{activity}/delete", services) { _ ->
+    action("/semesters/{id}/activities/{activity}/delete", services) { admin ->
         val dataset = semesterOrNull(services) ?: return@action call.respond(HttpStatusCode.NotFound)
         val old = dataset.activitiesById[call.parameters["activity"].orEmpty()]
             ?: return@action call.respond(HttpStatusCode.NotFound)
         val form = call.receiveParameters()
         services.save(dataset.copy(activities = dataset.activities.filterNot { it.id == old.id }))
+        services.audit.record(admin, AuditCategory.TIMETABLE, "a șters activitatea ${activityLabel(dataset, old)}")
         call.respondRedirect("${backFor(dataset, form, old)}?${msg("Activitatea a fost ștearsă.")}")
     }
 }
@@ -942,7 +966,7 @@ private fun Route.roomRoutes(services: Services) {
         }
     }
 
-    action("/semesters/{id}/buildings/{building}", services) { _ ->
+    action("/semesters/{id}/buildings/{building}", services) { admin ->
         val dataset = semesterOrNull(services) ?: return@action call.respond(HttpStatusCode.NotFound)
         val id = call.parameters["building"].orEmpty()
         val form = call.receiveParameters()
@@ -966,6 +990,7 @@ private fun Route.roomRoutes(services: Services) {
                 },
             ),
         )
+        services.audit.record(admin, AuditCategory.TIMETABLE, "a modificat corpul $id")
         call.respondRedirect("$list?${msg("Corpul a fost salvat.")}")
     }
 
@@ -1136,11 +1161,16 @@ private fun Route.studentRoutes(services: Services) {
         }
     }
 
-    action("/students/{student}/password", services, AdminRole.ADMIN) { _ ->
+    action("/students/{student}/password", services, AdminRole.ADMIN) { admin ->
         val id = runCatching { UUID.fromString(call.parameters["student"]) }.getOrNull()
             ?: return@action call.respond(HttpStatusCode.NotFound)
         val result = try {
             services.accounts.setPassword(id, call.receiveParameters()["password"].orEmpty())
+            services.audit.record(
+                admin,
+                AuditCategory.STUDENTS,
+                "a dat o parolă nouă contului ${services.accounts.email(id) ?: id}",
+            )
             msg("Parola a fost schimbată; studentul se conectează din nou cu ea.")
         } catch (e: ApiProblem) {
             err("Parola trebuie să aibă cel puțin 8 caractere.")
@@ -1148,9 +1178,14 @@ private fun Route.studentRoutes(services: Services) {
         call.respondRedirect("/admin/students?$result")
     }
 
-    action("/students/{student}/delete", services, AdminRole.ADMIN) { _ ->
+    action("/students/{student}/delete", services, AdminRole.ADMIN) { admin ->
         val id = runCatching { UUID.fromString(call.parameters["student"]) }.getOrNull()
             ?: return@action call.respond(HttpStatusCode.NotFound)
+        services.audit.record(
+            admin,
+            AuditCategory.STUDENTS,
+            "a șters contul de student ${services.accounts.email(id) ?: id}",
+        )
         services.accounts.delete(id)
         call.respondRedirect("/admin/students?${msg("Contul a fost șters.")}")
     }
@@ -1259,4 +1294,12 @@ private fun FlowContent.professorTable(dataset: Dataset, rows: List<Professor>) 
             }
         }
     }
+}
+
+/** "Microeconomie, seminar, Luni 10:00", for the log. */
+internal fun activityLabel(dataset: Dataset, activity: Activity): String {
+    val subject = dataset.subjectsById[activity.subjectId]?.name?.ro ?: activity.subjectId
+    val type = TYPE_NAMES[activity.type]?.lowercase()
+    val day = DAY_NAMES.getOrNull(activity.slot.isoDay - 1)
+    return listOfNotNull(subject, type, day?.let { "$it ${activity.slot.start}" }).joinToString(", ")
 }

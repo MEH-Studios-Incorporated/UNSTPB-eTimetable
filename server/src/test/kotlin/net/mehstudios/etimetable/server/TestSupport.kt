@@ -37,3 +37,10 @@ fun withServer(block: suspend ApplicationTestBuilder.(services: Services, client
         val client = createClient { install(ContentNegotiation) { json(AppJson) } }
         block(services, client)
     }
+
+/** Dashboard posts must name their origin, as browsers do. */
+fun io.ktor.client.HttpClientConfig<*>.sameSite() {
+    install(io.ktor.client.plugins.DefaultRequest) {
+        headers.append(io.ktor.http.HttpHeaders.Origin, "http://localhost")
+    }
+}

@@ -62,6 +62,7 @@ class EventRoutesTest {
         application { module(services) }
         val browser = createClient {
             install(HttpCookies)
+            sameSite()
             install(ContentNegotiation) { json(AppJson) }
             followRedirects = false
         }

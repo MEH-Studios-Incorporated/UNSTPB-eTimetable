@@ -262,6 +262,11 @@ internal fun Route.scheduleRoutes(services: Services) {
             val next = applyScheduleChange(dataset, form)
             if (form["confirm"] == "yes") {
                 services.datasets.replace(next, makeCurrent = false, expectedVersion = version)
+                services.audit.record(
+                    admin,
+                    AuditCategory.TIMETABLE,
+                    "a modificat ${form.getAll("activity").orEmpty().size} activități din Gestionare orar",
+                )
                 return@action call.respondRedirect(
                     "/admin/semesters/${id.encodeURLParameter()}/schedule?msg=Modificările+au+fost+salvate.",
                 )

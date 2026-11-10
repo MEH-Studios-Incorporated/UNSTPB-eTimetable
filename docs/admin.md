@@ -30,11 +30,41 @@ studenți: de unde se descarcă și ce face. Are un link spre panou.
 Primul cont se creează la instalarea serverului (vezi `docs/deploy.md`).
 Din pagina **Administratori** acesta adaugă celelalte conturi:
 
-- Administrator: tot, inclusiv conturile.
-- Editor: semestre, orar și anunțuri.
+- Administrator: tot, inclusiv conturile și jurnalul.
+- Editor: semestre, orar, anunțuri, evenimente și problemele de orar.
 
-Fiecare își schimbă parola din pagina **Schimbă parola**. O sesiune durează
-12 ore.
+Un cont nou primește o parolă temporară, afișată o singură dată celui care
+îl creează. Dă-o persoanei în persoană sau la telefon. La prima conectare,
+panoul îi cere o parolă a ei, de cel puțin 12 caractere și fără adresa de
+email în ea.
+
+Pe pagina unui cont, un administrator îi poate schimba rolul, îi poate da o
+parolă temporară nouă, îi poate închide sesiunile, îi poate opri
+autentificarea în doi pași (dacă și-a pierdut telefonul), îl poate
+dezactiva sau șterge. Ultimul administrator activ nu poate fi retrogradat,
+dezactivat sau șters, iar nimeni nu își face asta singur.
+
+### Contul meu
+
+Din linkul **Contul meu** de jos din meniu fiecare:
+
+- își schimbă parola (cu parola actuală); celelalte sesiuni se închid;
+- vede sesiunile deschise (browser, adresă, de când) și le poate închide;
+- vede ultimele autentificări, inclusiv cele greșite;
+- pornește autentificarea în doi pași: scanează codul QR cu o aplicație
+  de autentificare (Google Authenticator, Microsoft Authenticator, Aegis),
+  scrie codul de 6 cifre și păstrează cele 10 coduri de rezervă. De atunci,
+  după parolă, panoul cere codul din aplicație.
+
+O sesiune durează 12 ore. Cinci parole sau coduri greșite în 15 minute
+blochează contul 15 minute.
+
+### Jurnal
+
+Pagina **Jurnal** (doar pentru administratori) arată cine a schimbat ce și
+când: conturi, orar, anunțuri, evenimente, probleme de orar și conturi de
+studenți. Se poate filtra după categorie și persoană și se poate căuta în
+text. Intrările nu se pot modifica sau șterge din panou.
 
 ## Un semestru nou
 
