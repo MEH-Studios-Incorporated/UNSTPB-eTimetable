@@ -88,6 +88,11 @@ Every choice can be changed later from the profile. Nothing is checked.
 - A national student can add a slot to their own timetable, once (a single
   date) or for the rest of the semester. An Erasmus student adds and
   removes their picks here. Overlaps are refused in both cases.
+- Once another weekly slot of the same kind is in the timetable, the
+  group's own slot can be removed too ("Scoate"); it then reads "Grupa ta,
+  scoasă" with "Adaugă înapoi". One weekly slot of each kind always stays:
+  the last one has no "Scoate" and says "Ultima rămasă". A single visit can
+  always be removed.
 
 ## Professors
 

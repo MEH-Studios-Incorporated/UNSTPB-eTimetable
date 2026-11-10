@@ -102,7 +102,10 @@ fun OnboardingScreen(
     fun submit(enrollment: Enrollment) {
         busy = true
         scope.launch {
-            lastResult = save((profile ?: Profile(language = appLanguage())).copy(enrollment = enrollment))
+            // slots dropped from the old group mean nothing in a new one
+            val base = profile ?: Profile(language = appLanguage())
+            val dropped = if (base.enrollment == enrollment) base.droppedSlots else emptySet()
+            lastResult = save(base.copy(enrollment = enrollment, droppedSlots = dropped))
             busy = false
         }
     }

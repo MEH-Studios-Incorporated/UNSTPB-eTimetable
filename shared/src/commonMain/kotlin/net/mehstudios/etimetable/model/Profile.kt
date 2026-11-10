@@ -16,6 +16,11 @@ data class Profile(
     val language: String = "ro",
     val enrollment: Enrollment? = null,
     val extraSlots: List<ExtraSlot> = emptyList(),
+    /**
+     * Activities of the student's own group they no longer attend, because they go to
+     * another group's instead. The app keeps at least one slot of each kind per subject.
+     */
+    val droppedSlots: Set<String> = emptySet(),
 ) {
     val fullName: String get() = "$firstName $lastName".trim()
 }

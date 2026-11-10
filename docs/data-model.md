@@ -60,9 +60,9 @@ Activity
 
 A student's timetable is never stored as such. It is computed from the
 activities whose audience contains their group (national) or from the
-activities they picked (Erasmus), plus their extra slots. A national student
-who has not chosen a half-group sees the labs of both halves of their group
-and picks.
+activities they picked (Erasmus), plus their extra slots, minus the slots of
+their group they dropped. A national student who has not chosen a half-group
+sees the labs of both halves of their group and picks.
 
 ## People and announcements
 
@@ -71,7 +71,10 @@ Student
   required, the phone checked only for its shape), enrollment (national or Erasmus),
   group or half-group (national), picked activity ids (Erasmus), extra
   slots (an activity id, with a date when it is a one-time visit, used by
-  national students to attend or recover another group's lab), preferred
+  national students to attend or recover another group's lab), dropped slots
+  (activity ids of their own group they no longer attend because they go to
+  another group's instead; the app keeps at least one weekly slot of each
+  kind per subject, and changing the group clears the list), preferred
   language, push tokens with their platform (each tied to the session that
   registered it, at most 10 per student, removed when the session ends).
 

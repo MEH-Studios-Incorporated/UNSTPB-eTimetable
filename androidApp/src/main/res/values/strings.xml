@@ -185,6 +185,9 @@
     <string name="subject_added">Added</string>
     <string name="subject_added_once">Added for %1$s</string>
     <string name="subject_add">Add</string>
+    <string name="subject_dropped">Your group, removed</string>
+    <string name="subject_restore">Add back</string>
+    <string name="subject_last_one">The last one</string>
     <string name="subject_remove">Remove</string>
     <string name="subject_clash">Overlaps with %1$s (%2$s, %3$s)</string>
     <string name="subject_add_course">Add the course on %1$s?</string>
