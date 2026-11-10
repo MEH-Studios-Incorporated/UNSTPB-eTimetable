@@ -19,6 +19,9 @@ Each section is also the text of the matching GitHub release.
   and the Announcements tab shows how many are unread.
 - The Events tab says how many events are coming and when the app last
   synced ("2 urmează · actualizat azi la 10:20").
+- The timetable import reads Excel files (.xlsx) as well as CSV: the
+  first sheet, with times and dates as they show in Excel. Programs that
+  send the timetable with a token can send either too.
 
 - A "Săptămână" view in Gestionare orar: the week of a group, half-group,
   room or professor on an hour grid, each class a block in its subject's
@@ -157,6 +160,13 @@ Each section is also the text of the matching GitHub release.
 - Past events are folded under "Trecute" until you tap it, and event
   pictures fade in once loaded. List animations follow the phone's
   setting: with animations turned off nothing moves.
+- The public page at the server's address is laid out again: a top bar
+  with links to its sections, the teaching week as the app shows it ("7 ·
+  Săptămâna impară · 9 - 13 noiembrie"), one screenshot that follows the
+  browser's light or dark theme, how to start in four steps, what the app
+  does, a panel for the secretariat with the way to the dashboard, the
+  privacy note and a footer with the faculty, the university and support.
+  The whole page now has a dark theme and fits a 390 px phone screen.
 - The dashboard's announcements and events are paged tables (10, 25 or 50
   rows), the events split into "Următoare" and "Trecute", with "Anunț nou"
   and "Eveniment nou" buttons instead of a form above the list.

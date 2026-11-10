@@ -261,13 +261,18 @@ hourly. Tapping it opens the app.
 
 ## Public page (web, part of the server)
 
-At `/`, in Romanian or English (`?lang=en`, or the browser's language): what
-the app does, download buttons from `ETT_ANDROID_URL` and `ETT_IOS_URL`
-("în curând" while one is not set), two screenshots of the app (one light,
-one dark, different screens), today's teaching week from the current
-semester, three steps to get started, and a dark ending with the way to the
-dashboard for the secretariat, a line drawing of the Rectorat behind it, the
-UNSTPB and FAIMA logos and the Multimedia Entertainment Hub credit.
+At `/`, in Romanian or English (`?lang=en`, or the browser's language): a
+top bar with links to the sections, the language switch and "Descarcă";
+today's teaching week from the current semester as the app's ticket ("7 ·
+Săptămâna impară · 9 - 13 noiembrie", the break and its days during one,
+the coming week on Saturday and Sunday, nothing without a current
+semester); the download buttons from `ETT_ANDROID_URL` and `ETT_IOS_URL`
+("în curând" while one is not set); a screenshot of the app, light or dark
+as the browser is; "Cum funcționează" in four steps; "Ce face aplicația";
+"Pentru secretariat" with the way to the dashboard; the privacy note from
+the app; and a footer with the faculty and the university, "Dezvoltată de
+Multimedia Entertainment Hub LLC", the copyright, privacy, support and the
+other language.
 
 ## Admin dashboard (web, part of the server)
 
