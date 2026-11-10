@@ -47,7 +47,7 @@ jobs:
           java-version: 21
       - uses: gradle/actions/setup-gradle@v6
       - name: Lint and test
-        run: ./gradlew ktlintCheck :shared:allTests :server:test :androidApp:lintDebug :androidApp:assembleDebug
+        run: ./gradlew ktlintCheck :shared:verifySqlDelightMigration :shared:allTests :server:test :androidApp:lintDebug :androidApp:assembleDebug
       # the release workflow's steps, signed with a throwaway key
       - name: Release dry run
         run: |

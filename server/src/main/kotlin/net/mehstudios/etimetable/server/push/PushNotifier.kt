@@ -19,6 +19,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 import net.mehstudios.etimetable.api.PushFields
 import net.mehstudios.etimetable.api.PushPlatform
 import net.mehstudios.etimetable.model.Announcement
+import net.mehstudios.etimetable.model.Event
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.time.Duration
@@ -37,7 +38,7 @@ private const val PREVIEW_LENGTH = 180
 private val RUN_DEADLINE = 10.minutes
 
 /**
- * Sends every new announcement to every registered phone. [senders] has one entry per
+ * Sends new announcements and events to every registered phone. [senders] has one entry per
  * platform the deployment has credentials for; phones of the other platforms are skipped.
  * [clockCheck] compares this server's clock with Google's; null skips the comparison.
  */
@@ -59,10 +60,14 @@ class PushNotifier(
     suspend fun clockDrift(): Duration? = if (enabled) clockCheck?.drift() else null
 
     /** Starts sending in the background, so publishing does not wait for the gateways. */
-    fun announce(announcement: Announcement): Job = scope.launch {
+    fun announce(announcement: Announcement): Job = broadcast("Announcement", announcement.id, messageOf(announcement))
+
+    /** As [announce], for an event the admin chose to send. */
+    fun announce(event: Event, text: String): Job = broadcast("Event", event.id, messageOf(event, text))
+
+    private fun broadcast(what: String, id: String, data: Map<String, String>): Job = scope.launch {
         if (!enabled) return@launch
         val devices = tokens.all().filter { it.platform in senders }
-        val data = messageOf(announcement)
         val permits = Semaphore(PARALLEL_SENDS)
         val results = ConcurrentHashMap<String, PushResult>()
         val finished = try {
@@ -75,13 +80,14 @@ class PushNotifier(
             }
         } catch (e: NoAccessToken) {
             // every other phone would get the same answer, so the run stops here
-            log.error("Announcement {} was not sent: {}", announcement.id, e.message)
+            log.error("{} {} was not sent: {}", what, id, e.message)
             return@launch
         }
         if (finished == null) {
             log.warn(
-                "Announcement {} stopped after {}, {} phones not reached",
-                announcement.id,
+                "{} {} stopped after {}, {} phones not reached",
+                what,
+                id,
                 deadline,
                 devices.size - results.size,
             )
@@ -90,8 +96,9 @@ class PushNotifier(
         tokens.forget(gone)
         val failed = results.count { it.value == PushResult.FAILED }
         log.info(
-            "Announcement {} sent to {} phones, {} gone, {} failed",
-            announcement.id,
+            "{} {} sent to {} phones, {} gone, {} failed",
+            what,
+            id,
             results.size - gone.size - failed,
             gone.size,
             failed,
@@ -123,6 +130,14 @@ class PushNotifier(
             PushFields.ID to announcement.id,
             PushFields.TITLE to announcement.title,
             PushFields.TEXT to preview(announcement.body),
+        )
+
+        /** [text] is the date and place line the dashboard writes, as the card shows it. */
+        fun messageOf(event: Event, text: String): Map<String, String> = mapOf(
+            PushFields.KIND to PushFields.KIND_EVENT,
+            PushFields.ID to event.id,
+            PushFields.TITLE to event.title,
+            PushFields.TEXT to text,
         )
 
         /** The body as plain text: Markdown marks dropped, lines joined, cut at a word. */

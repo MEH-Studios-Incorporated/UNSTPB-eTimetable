@@ -13,6 +13,7 @@ kotlin {
 
 application {
     mainClass = "net.mehstudios.etimetable.server.ApplicationKt"
+    applicationDefaultJvmArgs = listOf("-Djava.awt.headless=true")
 }
 
 dependencies {
@@ -56,4 +57,5 @@ tasks.register<JavaExec>("runDev") {
     classpath = sourceSets.test.get().runtimeClasspath
     mainClass = "net.mehstudios.etimetable.server.DevServerKt"
     workingDir = projectDir
+    jvmArgs("-Djava.awt.headless=true")
 }

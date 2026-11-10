@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: LicenseRef-Proprietary
 
 [versions]
+coil = "3.6.3"
 kotlin = "2.4.21"
 agp = "9.5.0"
 ktlint-plugin = "14.2.0"
@@ -27,6 +28,8 @@ sqldelight = "2.4.1"
 firebase-bom = "35.1.0"
 
 [libraries]
+coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
+coil-network-okhttp = { module = "io.coil-kt.coil3:coil-network-okhttp", version.ref = "coil" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "datetime" }

@@ -122,6 +122,7 @@ fun Route.adminRoutes(services: Services) {
 
         semesterRoutes(services)
         announcementRoutes(services)
+        eventRoutes(services)
         adminListRoutes(services)
         editRoutes(services)
         reportRoutes(services)
@@ -135,6 +136,7 @@ private suspend fun RoutingContext.overview(services: Services, admin: Admin) {
     val dataset = current?.dataset
     val students = services.accounts.counts()
     val announcements = services.announcements.page(before = null, limit = 100)
+    val nextEvents = services.events.forApps().filter { it.over > Clock.System.now() }.take(3)
     val openReports = services.reports.openCount()
     val today = Clock.System.facultyNow().date
     call.respondHtml {
@@ -198,6 +200,26 @@ private suspend fun RoutingContext.overview(services: Services, admin: Admin) {
                                 div {
                                     a(href = "/admin/announcements/${a.id}") { +a.title }
                                     div("hint") { +"${a.author} · ${dateTime(a)}" }
+                                }
+                            }
+                        }
+                    }
+                }
+                div("card") {
+                    h2 { +"Evenimente următoare" }
+                    if (nextEvents.isEmpty()) {
+                        p("hint") {
+                            +"Niciun eveniment programat. "
+                            a(href = "/admin/events#new") { +"Adaugă unul" }
+                        }
+                    }
+                    ul("todo") {
+                        nextEvents.forEach { e ->
+                            li {
+                                span("mark ok") { style = "background: var(--primary)" }
+                                div {
+                                    a(href = "/admin/events/${e.id}") { +e.title }
+                                    div("hint") { +whenAndWhere(e) }
                                 }
                             }
                         }

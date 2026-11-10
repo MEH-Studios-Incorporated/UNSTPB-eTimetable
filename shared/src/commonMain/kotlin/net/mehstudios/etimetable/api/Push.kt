@@ -20,10 +20,11 @@ enum class PushPlatform {
 @Serializable
 data class PushTokenRequest(val platform: PushPlatform)
 
-/** The data fields of an announcement's push message; every value is a string. */
+/** The data fields of a push message (an announcement or an event); every value is a string. */
 object PushFields {
     const val KIND = "kind"
     const val KIND_ANNOUNCEMENT = "announcement"
+    const val KIND_EVENT = "event"
     const val ID = "id"
     const val TITLE = "title"
     const val TEXT = "text"

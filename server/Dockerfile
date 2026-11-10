@@ -8,4 +8,5 @@ FROM gcr.io/distroless/java21-debian12:nonroot
 COPY build/install/server/lib /opt/etimetable/lib
 ENV ETT_PORT=8080
 EXPOSE 8080
-ENTRYPOINT ["java", "-cp", "/opt/etimetable/lib/*", "net.mehstudios.etimetable.server.ApplicationKt"]
+# headless: event pictures are re-encoded with ImageIO, and there is no display
+ENTRYPOINT ["java", "-Djava.awt.headless=true", "-cp", "/opt/etimetable/lib/*", "net.mehstudios.etimetable.server.ApplicationKt"]

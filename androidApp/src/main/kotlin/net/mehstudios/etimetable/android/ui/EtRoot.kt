@@ -70,6 +70,8 @@ import net.mehstudios.etimetable.android.ui.components.EtIcons
 import net.mehstudios.etimetable.android.ui.components.OfflineBar
 import net.mehstudios.etimetable.android.ui.components.WeekBadge
 import net.mehstudios.etimetable.android.ui.components.appLanguage
+import net.mehstudios.etimetable.android.ui.events.EventScreen
+import net.mehstudios.etimetable.android.ui.events.EventsScreen
 import net.mehstudios.etimetable.android.ui.onboarding.NotificationsStep
 import net.mehstudios.etimetable.android.ui.onboarding.OnboardingScreen
 import net.mehstudios.etimetable.android.ui.professors.ProfessorScreen
@@ -88,15 +90,20 @@ import kotlin.time.Clock
 
 private enum class Phase { LOADING, SIGN_IN, WAITING, ONBOARDING, NOTIFICATIONS, MAIN }
 
-private enum class Tab { TIMETABLE, SUBJECTS, PROFESSORS, ANNOUNCEMENTS }
+private enum class Tab { TIMETABLE, SUBJECTS, PROFESSORS, ANNOUNCEMENTS, EVENTS }
 
 /**
  * Picks the screen from the app state: sign-in, waiting for data, onboarding or the app
- * itself. [openAnnouncement] comes from a tapped notification; [onOpened] says the main
- * screen has taken it.
+ * itself. [openAnnouncement] and [openEvent] come from a tapped notification; [onOpened] says
+ * the main screen has taken it.
  */
 @Composable
-fun EtRoot(container: AppContainer, openAnnouncement: String? = null, onOpened: () -> Unit = {}) {
+fun EtRoot(
+    container: AppContainer,
+    openAnnouncement: String? = null,
+    openEvent: String? = null,
+    onOpened: () -> Unit = {},
+) {
     val repository = container.repository
     val context = LocalContext.current
     // null until read from the preferences, off the main thread; saved, so a rotation or a
@@ -177,6 +184,7 @@ fun EtRoot(container: AppContainer, openAnnouncement: String? = null, onOpened: 
                     MainScreen(
                         state = state,
                         openAnnouncement = openAnnouncement,
+                        openEvent = openEvent,
                         onAnnouncementOpened = onOpened,
                         alert = alert,
                         onAlertDone = container.alerts::dismiss,
@@ -214,21 +222,23 @@ private fun WaitingForData(state: AppState, online: Boolean, retry: () -> Unit, 
     }
 }
 
-/** Where the main screen is: a tab, or the profile, an announcement, a subject or a professor over it. */
+/** Where the main screen is: a tab, or the profile, an announcement, an event, a subject or a professor over it. */
 private data class Place(
     val tab: Tab,
     val profile: Boolean = false,
     val announcementId: String? = null,
     val professorId: String? = null,
     val subjectId: String? = null,
+    val eventId: String? = null,
 ) {
-    val overlay get() = profile || announcementId != null || professorId != null || subjectId != null
+    val overlay get() = profile || announcementId != null || professorId != null || subjectId != null || eventId != null
 }
 
 @Composable
 private fun MainScreen(
     state: AppState,
     openAnnouncement: String?,
+    openEvent: String?,
     onAnnouncementOpened: () -> Unit,
     alert: AnnouncementAlert?,
     onAlertDone: (AnnouncementAlert) -> Unit,
@@ -250,10 +260,14 @@ private fun MainScreen(
     var pendingAnnouncement by rememberSaveable { mutableStateOf<String?>(null) }
     var professorId by rememberSaveable { mutableStateOf<String?>(null) }
     var subjectId by rememberSaveable { mutableStateOf<String?>(null) }
+    var eventId by rememberSaveable { mutableStateOf<String?>(null) }
+    // asked for by a notification before the sync has brought it
+    var pendingEvent by rememberSaveable { mutableStateOf<String?>(null) }
     // only an announcement that is on the phone counts as open, so the tabs and the tab bar
     // never wait under an announcement page that has nothing to show
     val shownAnnouncement = announcementId?.takeIf { id -> state.announcements.any { it.announcement.id == id } }
-    val place = Place(tab, showProfile, shownAnnouncement, professorId, subjectId)
+    val shownEvent = eventId?.let { id -> state.events.firstOrNull { it.id == id } }
+    val place = Place(tab, showProfile, shownAnnouncement, professorId, subjectId, shownEvent?.id)
     val now by produceState(Clock.System.facultyNow()) {
         while (true) {
             delay(30_000)
@@ -288,8 +302,24 @@ private fun MainScreen(
     fun selectTab(selected: Tab) {
         tab = selected
         pendingAnnouncement = null
+        pendingEvent = null
     }
 
+    // a tapped event notification: the Events tab, then the event once the sync has it
+    LaunchedEffect(openEvent) {
+        val id = openEvent ?: return@LaunchedEffect
+        showAnnouncements()
+        tab = Tab.EVENTS
+        pendingEvent = id
+        onAnnouncementOpened()
+    }
+    LaunchedEffect(pendingEvent, state.events) {
+        val id = pendingEvent ?: return@LaunchedEffect
+        if (state.events.any { it.id == id }) {
+            eventId = id
+            pendingEvent = null
+        }
+    }
     // a tapped notification
     LaunchedEffect(openAnnouncement) {
         val id = openAnnouncement ?: return@LaunchedEffect
@@ -301,7 +331,8 @@ private fun MainScreen(
         showProfile ||
         professorId != null ||
         subjectId != null ||
-        announcementId != null
+        announcementId != null ||
+        eventId != null
     LaunchedEffect(otherPageOpen) { if (otherPageOpen) pendingAnnouncement = null }
     // opens the announcement once it is on the phone; until then its tab shows
     LaunchedEffect(pendingAnnouncement, state.announcements) {
@@ -316,6 +347,7 @@ private fun MainScreen(
         when {
             professorId != null -> professorId = null
             subjectId != null -> subjectId = null
+            shownEvent != null -> eventId = null
             shownAnnouncement != null -> announcementId = null
             else -> showProfile = false
         }
@@ -384,6 +416,12 @@ private fun MainScreen(
                         },
                         label = { TabLabel(stringResource(R.string.tab_announcements)) },
                     )
+                    NavigationBarItem(
+                        selected = tab == Tab.EVENTS,
+                        onClick = { selectTab(Tab.EVENTS) },
+                        icon = { Icon(EtIcons.Ticket, contentDescription = null) },
+                        label = { TabLabel(stringResource(R.string.tab_events)) },
+                    )
                 }
             }
         },
@@ -428,6 +466,10 @@ private fun MainScreen(
                         saveProfile,
                         onBack = { subjectId = null },
                     )
+                    // like an announcement below, a vanished event draws nothing
+                    target.eventId != null -> state.events.firstOrNull { it.id == target.eventId }?.let {
+                        EventScreen(it) { eventId = null }
+                    }
                     // an announcement gone from the phone while its page leaves draws nothing:
                     // falling through to the tabs would use their state key twice
                     target.announcementId != null -> if (opened != null) {
@@ -457,6 +499,7 @@ private fun MainScreen(
                             Tab.ANNOUNCEMENTS -> AnnouncementsScreen(state.announcements, actions, markAllRead) {
                                 announcementId = it
                             }
+                            Tab.EVENTS -> EventsScreen(state.events, Clock.System.now(), actions) { eventId = it }
                         }
                     }
                 }
@@ -489,7 +532,7 @@ private fun initials(state: AppState): String {
 
 /**
  * A tab label on one line. It keeps the label size and only shrinks when a long label
- * ("Announcements") does not fit a quarter of a narrow phone.
+ * ("Announcements") does not fit a fifth of a narrow phone.
  */
 @Composable
 private fun TabLabel(text: String) {

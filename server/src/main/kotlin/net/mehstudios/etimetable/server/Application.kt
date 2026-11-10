@@ -40,6 +40,7 @@ import net.mehstudios.etimetable.server.announcements.AnnouncementRepository
 import net.mehstudios.etimetable.server.dataset.DatasetRepository
 import net.mehstudios.etimetable.server.db.createDataSource
 import net.mehstudios.etimetable.server.db.migrate
+import net.mehstudios.etimetable.server.events.EventRepository
 import net.mehstudios.etimetable.server.push.ClockCheck
 import net.mehstudios.etimetable.server.push.FcmSender
 import net.mehstudios.etimetable.server.push.GOOGLE_TOKEN_URL
@@ -109,6 +110,7 @@ class Services(
 ) {
     val datasets = DatasetRepository(db)
     val announcements = AnnouncementRepository(db)
+    val events = EventRepository(db)
     val accounts = Accounts(db)
     val admins = AdminAccounts(db)
     val reports = TimetableReports(db)

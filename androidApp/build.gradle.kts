@@ -87,6 +87,9 @@ dependencies {
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.activity.compose)
+    // event pictures, with a disk cache so the Events tab works offline; talks only to our server
+    implementation(libs.coil.compose)
+    implementation(libs.coil.network.okhttp)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.work.runtime)

@@ -71,3 +71,17 @@ INSERT OR REPLACE INTO profile (id, json, dirty) VALUES (1, ?, ?);
 
 deleteProfile:
 DELETE FROM profile;
+
+-- Events, as the server sends them: one JSON list with its ETag, read whole.
+-- Pictures are not here; the app's image cache keeps them.
+CREATE TABLE events_cache (
+    id INTEGER NOT NULL PRIMARY KEY CHECK (id = 1),
+    etag TEXT,
+    json TEXT NOT NULL
+);
+
+selectEvents:
+SELECT etag, json FROM events_cache WHERE id = 1;
+
+saveEvents:
+INSERT OR REPLACE INTO events_cache (id, etag, json) VALUES (1, ?, ?);

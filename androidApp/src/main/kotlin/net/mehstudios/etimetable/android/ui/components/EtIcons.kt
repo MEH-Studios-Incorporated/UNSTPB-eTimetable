@@ -16,6 +16,10 @@ object EtIcons {
     val Calendar =
         icon("Calendar", "M8 3v4M16 3v4M3 10h18M5 5h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z")
     val Bell = icon("Bell", "M6 16v-5a6 6 0 0 1 12 0v5l2 2H4zM10 21h4")
+    val Ticket = icon(
+        "Ticket",
+        "M4 6h16a1 1 0 0 1 1 1v3a2 2 0 0 0 0 4v3a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-3a2 2 0 0 0 0-4V7a1 1 0 0 1 1-1zM15 6v12",
+    )
     val Book = icon("Book", "M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3zM5 17a3 3 0 0 1 3-3h11")
     val Person = icon("Person", "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21c0-4 4-6 8-6s8 2 8 6")
     val ChevronLeft = icon("ChevronLeft", "M15 6l-6 6 6 6", width = 2f)
