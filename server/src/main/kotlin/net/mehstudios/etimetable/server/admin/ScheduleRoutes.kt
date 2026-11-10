@@ -21,7 +21,9 @@ import net.mehstudios.etimetable.server.timetable.TimetableSheet
 internal fun Route.scheduleRoutes(services: Services) {
     page("/schedule", services) { _ ->
         val id = services.datasets.current()?.semesterId ?: return@page call.respondRedirect("/admin/semesters")
-        call.respondRedirect("/admin/semesters/${id.encodeURLParameter()}/schedule")
+        call.respondRedirect(
+            linkTo("/admin/semesters/${id.encodeURLParameter()}/schedule", call.request.queryParameters, emptyMap()),
+        )
     }
     page("/semesters/{id}/schedule", services) { admin ->
         val id = call.parameters["id"].orEmpty()

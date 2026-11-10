@@ -392,6 +392,17 @@ class AdminAccounts(
         ) { LoginAttempt(it.instant(1)!!, it.getBoolean(2), it.getString(3), it.getString(4)) }
     }
 
+    /** The latest successful sign-ins of every account, with the account's email. */
+    suspend fun latestSignIns(limit: Int): List<Pair<String, LoginAttempt>> = db.transaction { c ->
+        c.query(
+            """
+            SELECT a.email, l.at, l.ok, l.ip, l.user_agent FROM admin_login_attempt l JOIN admin a ON a.id = l.admin_id
+            WHERE l.ok ORDER BY l.at DESC LIMIT ?
+            """.trimIndent(),
+            limit,
+        ) { it.getString(1) to LoginAttempt(it.instant(2)!!, it.getBoolean(3), it.getString(4), it.getString(5)) }
+    }
+
     /** Wrong passwords and codes in the last 24 hours, for every account. */
     suspend fun failedLoginsToday(): Int = db.transaction { c ->
         c.query("SELECT count(*) FROM admin_login_attempt WHERE NOT ok AND at > now() - interval '24 hours'") {
