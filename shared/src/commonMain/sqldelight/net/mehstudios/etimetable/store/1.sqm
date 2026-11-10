@@ -1,0 +1,10 @@
+-- Copyright (c) 2026 Multimedia Entertainment Hub LLC
+-- SPDX-License-Identifier: LicenseRef-Proprietary
+--
+-- Version 2: events.
+
+CREATE TABLE events_cache (
+    id INTEGER NOT NULL PRIMARY KEY CHECK (id = 1),
+    etag TEXT,
+    json TEXT NOT NULL
+);

@@ -128,6 +128,12 @@
     <string name="theme_light">Light</string>
     <string name="theme_dark">Dark</string>
     <string name="page_professor">Professor</string>
+    <string name="tab_events">Events</string>
+    <string name="events_none">No events coming up.</string>
+    <string name="events_past">Past</string>
+    <string name="event_open_link">Open the link</string>
+    <string name="push_channel_events">Faculty events</string>
+    <string name="push_channel_events_hint">New events from FAIMA, when the faculty sends them.</string>
     <string name="page_announcement">Announcement</string>
     <string name="page_subject">Subject</string>
     <string name="timetable_section">Timetable</string>
@@ -157,7 +163,7 @@
     <string name="about">About the app</string>
     <string name="version">Version %1$s</string>
     <string name="privacy_title">Privacy</string>
-    <string name="privacy_text">The server keeps your email, a hash of your password, your name, your phone number, your group or picked subjects, your language and, while you are signed in, this phone\'s notification token. New announcements reach your phone through Google\'s Firebase Cloud Messaging, which carries their title and first lines. If you report a timetable problem, authorized timetable staff can see your name, email, description and the class details. It keeps no location, contacts or usage tracking. Deleting your account also removes your reports.</string>
+    <string name="privacy_text">The server keeps your email, a hash of your password, your name, your phone number, your group or picked subjects, your language and, while you are signed in, this phone\'s notification token. New announcements and events reach your phone through Google\'s Firebase Cloud Messaging, which carries their title and first lines. If you report a timetable problem, authorized timetable staff can see your name, email, description and the class details. It keeps no location, contacts or usage tracking. Deleting your account also removes your reports.</string>
     <string name="faima_site">FAIMA website</string>
     <string name="meh_site">mehstudios.net</string>
     <string name="copyright_owner" translatable="false">Multimedia Entertainment Hub LLC</string>
@@ -212,8 +218,8 @@
     </string>
     <string name="push_ask_title">Get the faculty\'s announcements</string>
     <string name="push_ask_text">
-        When FAIMA publishes an announcement, such as a room change or a new exam date, it
-        reaches your phone as a notification. Tapping it opens the announcement.
+        When FAIMA publishes an announcement, such as a room change or a new exam date, or an
+        event, it reaches your phone as a notification. Tapping it opens it.
     </string>
     <string name="push_ask_later">
         You can change this later in the phone\'s settings for eTimetable.

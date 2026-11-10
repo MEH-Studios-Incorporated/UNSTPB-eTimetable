@@ -10,8 +10,9 @@ Developed and owned by Multimedia Entertainment Hub LLC, on commission from
 FAIMA, UNSTPB.
 
 Status: early development. The Android app shows a student's timetable from a
-running server, with its subjects, professors, a home screen widget and push
-notifications for new announcements; the iOS app is next.
+running server, with its subjects, professors, the faculty's events, a home
+screen widget and push notifications for new announcements and events; the
+iOS app is next.
 
 ## What it does
 
@@ -25,6 +26,8 @@ notifications for new announcements; the iOS app is next.
 - A professor timetable: what each professor teaches, where and when, and
   their office hours.
 - Faculty announcements with push notifications.
+- Faculty events as cards with a picture: what, when and where, a
+  description and a link, published from the dashboard.
 - In-browser schedule search and bulk room, professor and time changes,
   with a preview before saving. Android has a professor directory and
   announcement search.
@@ -36,18 +39,19 @@ notifications for new announcements; the iOS app is next.
 
 ## Screens
 
-These are the approved designs, not screenshots of a finished app yet.
+The Android app on FAIMA's timetable, in the light and the dark theme. The
+events are samples.
 
 <p>
-<img src="design/mockups/Main.png" width="190" alt="Today: the day's timeline with the next class and a room change">
-<img src="design/mockups/Week.png" width="190" alt="The week view">
-<img src="design/mockups/Subject.png" width="190" alt="A subject's labs, with a clash and an add sheet">
-<img src="design/mockups/Erasmus.png" width="190" alt="Erasmus students picking their lab slots">
+<img src="design/screenshots/today-light.webp" width="190" alt="A day of group 1521A on the timeline: German, statistics and communication seminars with their rooms">
+<img src="design/screenshots/week-dark.webp" width="190" alt="The week as a table of times and days, in the dark theme">
+<img src="design/screenshots/events-light.webp" width="190" alt="The Events tab: cards with a picture, the title and the day, time and place">
+<img src="design/screenshots/event-dark.webp" width="190" alt="An event's page in the dark theme: the picture fades into the page under the title">
 </p>
 
-All ten screens, including dark mode, the widgets and the sign-in and About
-pages, are in [design/mockups](design/mockups). The colours, type and logo
-rules are in [docs/design.md](docs/design.md).
+The approved designs we started from, ten screens including the widgets and
+the sign-in and About pages, are in [design/mockups](design/mockups). The
+colours, type and logo rules are in [docs/design.md](docs/design.md).
 
 ## Why we are making it
 
@@ -63,8 +67,8 @@ and looks like something the faculty would put its name on.
 - The Android app: sign-in, choosing a group or Erasmus slots (clashes are
   refused on the spot), today and week views with the next class and the
   current time, class details, the subjects with every slot (add another
-  group's lab once or for the semester), professors, announcements and the
-  profile, with three timetable layouts and a home screen widget in three
+  group's lab once or for the semester), professors, announcements, events
+  with their pictures, and the profile, with three timetable layouts and a home screen widget in three
   sizes. It keeps working offline and updates itself every few hours. New
   announcements arrive as notifications once the build has a Firebase project
   (see [CONTRIBUTING.md](CONTRIBUTING.md)).
@@ -75,14 +79,12 @@ and looks like something the faculty would put its name on.
   to PostgreSQL.
 - The faculty's dashboard at `/admin`: semesters and their holidays, the
   timetable imported from one spreadsheet (and exported back to it),
-  announcements, timetable problem reports and dashboard accounts.
+  announcements, events with their pictures, timetable problem reports and
+  dashboard accounts.
 - The shared Kotlin code computes timetables, week numbers and clashes, and
   keeps an offline copy on the phone.
 - The iOS app builds on CI and shows the app name from the shared Kotlin
   code. Nobody on the team has a Mac yet, so it has not run on a device.
-
-Known gap: the app follows the phone's language; there is no switch in the
-app yet.
 
 Everything else is still to come. The requirements are in
 [docs/brief.md](docs/brief.md) and the planned design in

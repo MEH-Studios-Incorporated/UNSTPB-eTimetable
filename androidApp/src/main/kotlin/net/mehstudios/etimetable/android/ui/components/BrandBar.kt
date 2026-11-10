@@ -55,7 +55,7 @@ fun BrandBar(modifier: Modifier = Modifier, trailing: @Composable RowScope.() ->
             painter = painterResource(R.drawable.faima_seal),
             contentDescription = null,
             colorFilter = if (dark) invertInDark else null,
-            modifier = Modifier.size(30.dp),
+            modifier = Modifier.size(36.dp),
         )
         Column(Modifier.weight(1f)) {
             Text(

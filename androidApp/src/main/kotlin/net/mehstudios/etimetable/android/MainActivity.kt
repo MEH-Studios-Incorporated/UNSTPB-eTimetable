@@ -42,6 +42,7 @@ import net.mehstudios.etimetable.android.ui.theme.TimetableChoice
 class MainActivity : ComponentActivity() {
     /** An announcement a tapped notification asked for, until the main screen has opened it. */
     private var openAnnouncement by mutableStateOf<String?>(null)
+    private var openEvent by mutableStateOf<String?>(null)
 
     override fun attachBaseContext(newBase: Context) {
         super.attachBaseContext(AppLocale.wrap(newBase))
@@ -50,7 +51,10 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // after a rotation the intent is the same, but the announcement was already opened
-        if (savedInstanceState == null) openAnnouncement = intent.announcement()
+        if (savedInstanceState == null) {
+            openAnnouncement = intent.announcement()
+            openEvent = intent.event()
+        }
         enableEdgeToEdge()
         val container = (application as EtimetableApp).container
         setContent {
@@ -86,7 +90,10 @@ class MainActivity : ComponentActivity() {
                     }
                     CompositionLocalProvider(LocalScreenFade provides fade) {
                         Box(Modifier.fillMaxSize().graphicsLayer { alpha = fade.value }) {
-                            EtRoot(container, openAnnouncement) { openAnnouncement = null }
+                            EtRoot(container, openAnnouncement, openEvent) {
+                                openAnnouncement = null
+                                openEvent = null
+                            }
                         }
                     }
                 }
@@ -98,7 +105,10 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         intent.announcement()?.let { openAnnouncement = it }
+        intent.event()?.let { openEvent = it }
     }
 
     private fun Intent?.announcement() = this?.getStringExtra(AnnouncementNotifications.EXTRA_ID)
+
+    private fun Intent?.event() = this?.getStringExtra(AnnouncementNotifications.EXTRA_EVENT_ID)
 }

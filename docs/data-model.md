@@ -82,6 +82,17 @@ Announcement
 : id, title, body (Markdown), published at, author (an admin), optional
   pinned flag. Every student sees every announcement.
 
+Event
+: id, title, start, optional end, optional place, body (Markdown, may be
+  empty), optional link, picture, the picture's width divided by its height,
+  published at. Every student sees every event; the apps get those that end
+  less than 60 days ago. The picture is a path,
+  `/api/v1/images/<sha-256>.jpg`: the server re-encodes every upload as JPEG
+  at most 1600 px on its long side (which drops the camera's metadata,
+  location included) and stores it in PostgreSQL by its hash, so a new
+  picture is a new address and an old one can be cached for good. A picture
+  no event uses is deleted.
+
 Timetable report
 : id, student id, semester id, activity id, description, class snapshot,
   creation time, status (open, fixed or dismissed), and closure time and
@@ -113,9 +124,18 @@ the existing activity editor and dataset sync.
 
 `shared/` keeps an offline copy in SQLite (`Etimetable.sq`): the dataset as
 one JSON document with its `ETag` and the time it was last checked,
-announcements with a read flag, and the profile with a flag for changes
-not yet sent to the server. The statements stay within SQLite 3.18, the
-version on Android 8.
+announcements with a read flag, the events as one JSON list with its
+`ETag`, and the profile with a flag for changes not yet sent to the
+server. The statements stay within SQLite 3.18, the version on Android 8.
+Event pictures are not in SQLite; the app's image cache keeps them.
+
+A change to `Etimetable.sq` reaches installed apps only through a migration:
+add `N.sqm` next to it with the statements that turn version N into the new
+schema, and run `./gradlew :shared:generateCommonMainEtimetableDatabaseSchema`
+before the change to keep `databases/N.db`, the old schema.
+`:shared:verifySqlDelightMigration`, which CI runs, checks that every `.db`
+plus its migrations gives the current schema. Version 1 is the first
+release; version 2 added the events.
 
 The sample semester used by the tests is in
 `shared/src/commonTest/.../SampleData.kt`: invented names on FAIMA's code
@@ -127,6 +147,8 @@ formats, with Wednesday 28 October 2026 in week 5, as on the mockups.
 | --- | --- |
 | `GET /api/v1/dataset` | The current semester with structure, subjects, professors, rooms and activities. `ETag` for caching. |
 | `GET /api/v1/announcements?before=<id>` | Announcements, newest first, 20 per page; `pinned=true` pages only pinned posts. |
+| `GET /api/v1/events` | Events that end less than 60 days ago, earliest first. `ETag` for caching. |
+| `GET /api/v1/images/<hash>.jpg` | An event's picture, `Cache-Control: public, max-age=31536000, immutable`. |
 | `POST /api/v1/auth/signup`, `/login`, `/logout` | Session token. |
 | `GET`, `PUT /api/v1/me` | The student's profile. Erasmus picks are checked for overlaps. |
 | `DELETE /api/v1/me` | Deletes the account and everything stored for it. |

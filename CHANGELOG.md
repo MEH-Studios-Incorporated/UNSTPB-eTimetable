@@ -6,6 +6,16 @@ Each section is also the text of the matching GitHub release.
 
 ### Added
 
+- An Events tab ("Evenimente") with the faculty's events as cards: the
+  picture on top, the title under it, then the day, time and place. The
+  coming ones come first, then those of the last 60 days under "Trecute".
+  An event opens in full with its description and a button for its link.
+  The pictures stay on the phone, so the tab works offline after one sync.
+  A new event can come as a notification, on its own channel.
+- Events in the dashboard: a form with the picture (JPEG or PNG, re-encoded
+  without the camera's location), day and time, place, description and
+  link, a preview of the card and the page, and "Trimite notificare". The
+  overview lists the next three events.
 - New announcements arrive on Android phones as notifications, with the
   title and the start of the text. Tapping one opens the announcement. The
   first start asks for permission once, saying what notifications are for.

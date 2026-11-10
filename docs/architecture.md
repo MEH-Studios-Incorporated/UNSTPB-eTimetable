@@ -108,6 +108,14 @@ The app keeps everything it shows in SQLite:
 - Announcements are paged, newest first, and kept after download.
   The cache keeps 100 recent posts and up to 100 pinned posts fetched
   separately, so older pinned notices are not lost at the recent-post limit.
+- Events come as one list, versioned with an `ETag` like the dataset: the
+  ones that end less than 60 days ago, a few kilobytes. Their pictures are
+  separate addresses (`/api/v1/images/<hash>.jpg`) that never change, so
+  the app's image cache (Coil, up to 100 MB on disk) keeps them for good.
+  After a sync that brings a new list, the app fetches every picture in the
+  background, so the Events tab works offline too. The pictures live in
+  PostgreSQL (`event_image`), re-encoded as JPEG of at most 1600 px; the
+  database backup covers them and the deployment needs no storage setting.
 - The student's profile is stored on the server and cached on the phone, so
   edits made offline are sent on the next sync.
 
@@ -120,14 +128,15 @@ Students sign up with an email address and a password. Nothing is verified
 beyond that: enrollment, group and Erasmus picks are whatever the student
 chooses. Passwords are hashed with Argon2id, and the app keeps a session
 token. Admin accounts are separate, with two roles: admin (everything) and
-editor (timetables and announcements). If the deployment sets SMTP
+editor (timetables, announcements and events). If the deployment sets SMTP
 variables, students can reset a forgotten password by email; otherwise an
 admin resets it from the dashboard.
 
 ## Push notifications
 
-When an admin publishes an announcement, the server sends it to every
-registered device:
+When an admin publishes an announcement, or an event with "Trimite
+notificare" ticked (the default), the server sends it to every registered
+device:
 
 - Android: Firebase Cloud Messaging, HTTP v1 API. The app includes only the
   `firebase-messaging` library. In practice FCM is the only reliable way to
@@ -150,8 +159,10 @@ What is built so far:
   added together with the iOS app.
 - Messages carry only data (`kind`, `id`, `title` and the first 180
   characters of the text without Markdown, `PushFields` in `shared/`). The
-  app builds the notification itself, so tapping it opens the announcement,
-  and starts a sync so the announcement is on the phone. While the main
+  `kind` is `announcement` or `event`; an event's text is its date and
+  place. The app builds the notification itself, so tapping it opens the
+  announcement or event, and starts a sync so it is on the phone. Events
+  have their own notification channel, so a student can mute them alone. While the main
   screen is visible the app shows its own bar instead (`InAppAlerts`, which
   knows the screen is visible because only it collects the alerts).
 - Sending runs in the background after the dashboard publishes, 8 messages
@@ -196,8 +207,8 @@ What is built so far:
 - A malformed `ETT_FCM_SERVICE_ACCOUNT` stops the server at startup with a
   message that names the problem (not JSON, a missing field, a private
   key that is not RSA) and quotes nothing of the value.
-- Announcement titles and the first 180 characters pass through Google's
-  servers. The privacy text in the app says so.
+- Announcement and event titles and the first 180 characters pass through
+  Google's servers. The privacy text in the app says so.
 
 ## Admin dashboard
 

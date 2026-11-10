@@ -69,6 +69,7 @@ forwarded address, raise the limit or rate-limit at the proxy instead.
 
 ## Backups
 
-All data is in the `db-data` volume. A nightly
+All data is in the `db-data` volume, event pictures included (they are
+stored in PostgreSQL, a few hundred kilobytes each). A nightly
 `docker compose exec db pg_dump -U etimetable etimetable > backup.sql` is
 enough; a semester can also be published again from its CSV.

@@ -14,16 +14,19 @@ class PushService : FirebaseMessagingService() {
     // Firebase calls this on a background thread, so the short read of the session can block
     override fun onMessageReceived(message: RemoteMessage) {
         val data = message.data
-        if (data[PushFields.KIND] != PushFields.KIND_ANNOUNCEMENT) return
+        val kind = data[PushFields.KIND]
+        if (kind != PushFields.KIND_ANNOUNCEMENT && kind != PushFields.KIND_EVENT) return
         // a phone signed out while offline stays registered until its next sync ends the session
         if (!runBlocking { repository().signedIn() }) return
         val id = data[PushFields.ID] ?: return
         val title = data[PushFields.TITLE].orEmpty()
-        // with the app on screen its own pop-up is enough; a system notification would repeat it
-        if (!container().alerts.offer(id, title)) {
-            AnnouncementNotifications.show(this, id, title, data[PushFields.TEXT].orEmpty())
+        val text = data[PushFields.TEXT].orEmpty()
+        when {
+            kind == PushFields.KIND_EVENT -> AnnouncementNotifications.showEvent(this, id, title, text)
+            // with the app on screen its own pop-up is enough; a system notification would repeat it
+            !container().alerts.offer(id, title) -> AnnouncementNotifications.show(this, id, title, text)
         }
-        // the announcement is then on the phone when the notification is tapped, even offline
+        // the announcement or event is then on the phone when the notification is tapped, even offline
         SyncWorker.syncNow(this)
     }
 
