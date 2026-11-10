@@ -3,17 +3,20 @@
 
 package net.mehstudios.etimetable.android.ui.announcements
 
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -38,24 +41,32 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.minus
 import kotlinx.datetime.toLocalDateTime
 import net.mehstudios.etimetable.android.R
 import net.mehstudios.etimetable.android.ui.components.BrandBar
 import net.mehstudios.etimetable.android.ui.components.EtIcons
 import net.mehstudios.etimetable.android.ui.components.MarkdownText
 import net.mehstudios.etimetable.android.ui.components.PageBar
+import net.mehstudios.etimetable.android.ui.components.RefreshBox
+import net.mehstudios.etimetable.android.ui.components.SectionHeading
 import net.mehstudios.etimetable.android.ui.components.longLabel
 import net.mehstudios.etimetable.android.ui.components.markdownPreview
+import net.mehstudios.etimetable.android.ui.components.reducedMotion
 import net.mehstudios.etimetable.model.Announcement
 import net.mehstudios.etimetable.schedule.FacultyTimeZone
 import net.mehstudios.etimetable.store.StoredAnnouncement
 
-/** Previews, newest first and pinned on top; tapping one opens it in full. */
+/** Previews, pinned on top, then newest first under a heading per day; tapping one opens it in full. */
 @Composable
 fun AnnouncementsScreen(
     announcements: List<StoredAnnouncement>,
+    today: LocalDate,
     actions: @Composable () -> Unit,
     markAllRead: () -> Unit,
+    refresh: suspend () -> Unit,
     open: (String) -> Unit,
 ) {
     var query by rememberSaveable { mutableStateOf("") }
@@ -65,6 +76,10 @@ fun AnnouncementsScreen(
             (it.announcement.title + " " + markdownPreview(it.announcement.body) + " " + it.announcement.author)
                 .contains(query.trim(), ignoreCase = true)
     }
+    val (pinned, rest) = visible.partition { it.announcement.pinned }
+    // the store keeps them newest first, so the days come out in order
+    val days = rest.groupBy { it.announcement.publishedAt.toLocalDateTime(FacultyTimeZone).date }
+    val still = reducedMotion()
     Column(Modifier.fillMaxSize()) {
         BrandBar { actions() }
         Text(
@@ -90,57 +105,98 @@ fun AnnouncementsScreen(
                 },
             ) { Text(stringResource(R.string.announcements_mark_all)) }
         }
-        if (visible.isEmpty()) {
-            Text(
-                stringResource(
-                    if (announcements.isEmpty()) R.string.announcements_empty else R.string.announcements_no_matches,
-                ),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(16.dp),
-            )
-        }
-        LazyColumn(Modifier.fillMaxSize()) {
-            items(visible, key = { it.announcement.id }) { stored ->
-                val a = stored.announcement
-                Row(
-                    Modifier.fillMaxWidth().clickable { open(a.id) }.padding(horizontal = 16.dp, vertical = 14.dp),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                ) {
-                    Box(
-                        Modifier.padding(
-                            top = 7.dp,
-                        ).size(
-                            8.dp,
-                        ).background(
-                            if (stored.read) Color.Transparent else MaterialTheme.colorScheme.error,
-                            CircleShape,
-                        ),
-                    )
-                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        if (a.pinned) PinnedLabel()
+        RefreshBox(refresh, Modifier.fillMaxSize()) {
+            LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 24.dp)) {
+                if (visible.isEmpty()) {
+                    item(key = "empty") {
                         Text(
-                            a.title,
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                fontWeight = if (stored.read) FontWeight.Medium else FontWeight.SemiBold,
+                            stringResource(
+                                if (announcements.isEmpty()) {
+                                    R.string.announcements_empty
+                                } else {
+                                    R.string.announcements_no_matches
+                                },
                             ),
-                        )
-                        Text(
-                            markdownPreview(a.body),
-                            style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                        Text(
-                            meta(a),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(16.dp),
                         )
                     }
                 }
-                HorizontalDivider(Modifier.padding(horizontal = 16.dp))
+                if (pinned.isNotEmpty()) {
+                    item(key = "pinned") {
+                        DayHeading(stringResource(R.string.announcements_pinned), Modifier.moving(this, still))
+                    }
+                    items(pinned, key = { it.announcement.id }) {
+                        AnnouncementRow(it, Modifier.moving(this, still)) { open(it.announcement.id) }
+                    }
+                }
+                days.forEach { (day, list) ->
+                    item(key = "day-$day") { DayHeading(dayHeading(day, today), Modifier.moving(this, still)) }
+                    items(list, key = { it.announcement.id }) {
+                        AnnouncementRow(it, Modifier.moving(this, still)) { open(it.announcement.id) }
+                    }
+                }
             }
         }
+    }
+}
+
+/** List items fade and slide into place in 150 ms, or jump when the phone has animations off. */
+private fun Modifier.moving(scope: LazyItemScope, still: Boolean): Modifier = if (still) {
+    this
+} else {
+    with(scope) { animateItem(fadeInSpec = tween(150), placementSpec = tween(150), fadeOutSpec = tween(150)) }
+}
+
+/** "Azi", "Ieri", then "Luni, 9 noiembrie". */
+@Composable
+private fun dayHeading(day: LocalDate, today: LocalDate): String = when (day) {
+    today -> stringResource(R.string.today)
+    today.minus(1, DateTimeUnit.DAY) -> stringResource(R.string.yesterday)
+    else -> day.longLabel()
+}
+
+@Composable
+private fun DayHeading(text: String, modifier: Modifier) {
+    SectionHeading(text, modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 2.dp))
+}
+
+@Composable
+private fun AnnouncementRow(stored: StoredAnnouncement, modifier: Modifier, onClick: () -> Unit) {
+    val a = stored.announcement
+    Column(modifier) {
+        Row(
+            Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 14.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Box(
+                Modifier.padding(top = 7.dp).size(8.dp).background(
+                    if (stored.read) Color.Transparent else MaterialTheme.colorScheme.error,
+                    CircleShape,
+                ),
+            )
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    a.title,
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = if (stored.read) FontWeight.Medium else FontWeight.SemiBold,
+                    ),
+                )
+                Text(
+                    markdownPreview(a.body),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    meta(a),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+        HorizontalDivider(Modifier.padding(horizontal = 16.dp))
     }
 }
 

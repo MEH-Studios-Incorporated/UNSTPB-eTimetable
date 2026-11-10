@@ -151,9 +151,33 @@ the existing activity editor and dataset sync.
 `shared/` keeps an offline copy in SQLite (`Etimetable.sq`): the dataset as
 one JSON document with its `ETag` and the time it was last checked,
 announcements with a read flag, the events as one JSON list with its
-`ETag`, and the profile with a flag for changes not yet sent to the
-server. The statements stay within SQLite 3.18, the version on Android 8.
-Event pictures are not in SQLite; the app's image cache keeps them.
+`ETag`, the profile with a flag for changes not yet sent to the
+server, and the change notes. The statements stay within SQLite 3.18, the
+version on Android 8. Event pictures are not in SQLite; the app's image
+cache keeps them.
+
+`change_note` holds what a new dataset changed in the student's own
+classes (`ChangeNote` in `schedule/ChangeNotes.kt`), one row per class and
+kind, the note itself as JSON:
+
+| Column | Holds |
+| --- | --- |
+| `activity_id` | The class, by its id in the new dataset (the old id for a removed one) |
+| `kind` | `ROOM`, `TIME`, `TEACHER`, `ADDED` or `REMOVED` |
+| `seen_at` | When the sync found the change, in epoch milliseconds |
+| `json` | The note: old and new room codes or professor names, old and new slot for `TIME`, the whole old activity for `REMOVED` |
+
+When a sync downloads a new dataset of the same semester, `Sync` compares
+the student's classes (`ownActivities`: the group's minus the dropped ones,
+the Erasmus picks and the extra slots) before and after, with the profile
+on the phone. Classes are matched by id; a class that left under one id and
+came back under another with the same subject, type and audience is the
+same class, since an import without ids makes the id from the day and the
+hour. A value changed twice keeps the first old value, one changed back
+loses its note, a class added and removed again leaves nothing. The first
+download, a new semester and signing out leave no notes; notes older than 7
+days are deleted at every sync. The screens show a note until 7 days have
+passed or the class has met once after the change.
 
 A change to `Etimetable.sq` reaches installed apps only through a migration:
 add `N.sqm` next to it with the statements that turn version N into the new
@@ -161,7 +185,9 @@ schema, and run `./gradlew :shared:generateCommonMainEtimetableDatabaseSchema`
 before the change to keep `databases/N.db`, the old schema.
 `:shared:verifySqlDelightMigration`, which CI runs, checks that every `.db`
 plus its migrations gives the current schema. Version 1 is the first
-release; version 2 added the events.
+release; version 2 added the events, version 3 the change notes. Neither
+2 nor 3 has been released, so there is no `databases/2.db`; `1.db` with
+`1.sqm` and `2.sqm` is what `verifySqlDelightMigration` checks.
 
 The sample semester used by the tests is in
 `shared/src/commonTest/.../SampleData.kt`: invented names on FAIMA's code

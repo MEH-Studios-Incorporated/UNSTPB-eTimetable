@@ -7,6 +7,8 @@ import net.mehstudios.etimetable.SampleData
 import net.mehstudios.etimetable.model.Announcement
 import net.mehstudios.etimetable.model.Enrollment
 import net.mehstudios.etimetable.model.Profile
+import net.mehstudios.etimetable.schedule.ChangeKind
+import net.mehstudios.etimetable.schedule.ChangeNote
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -61,5 +63,25 @@ class LocalStoreTest {
             Profile(firstName = "Test", lastName = "Student", enrollment = Enrollment.Erasmus(setOf("micro-c")))
         store.saveProfile(profile, dirty = true)
         assertEquals(StoredProfile(profile, dirty = true), store.profile())
+    }
+
+    @Test
+    fun changeNotesAreKeptPrunedAndForgottenAtSignOut() {
+        val note = ChangeNote("contab-s", ChangeKind.ROOM, Instant.fromEpochSeconds(100), old = "EC004", new = "BN212a")
+        val removed = ChangeNote(
+            "mkt-p-1541",
+            ChangeKind.REMOVED,
+            Instant.fromEpochSeconds(300),
+            removed = SampleData.activity("mkt-p-1541"),
+        )
+        store.saveDataset(SampleData.dataset, "\"v1\"", Instant.fromEpochSeconds(100), listOf(note, removed))
+        assertEquals(listOf(note, removed), store.changeNotes())
+
+        store.pruneChangeNotes(Instant.fromEpochSeconds(200))
+        assertEquals(listOf(removed), store.changeNotes())
+
+        store.clearAccount()
+        assertEquals(emptyList(), store.changeNotes())
+        assertEquals(SampleData.dataset, store.dataset()?.dataset)
     }
 }

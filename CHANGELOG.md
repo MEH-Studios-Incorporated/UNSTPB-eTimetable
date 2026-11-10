@@ -6,6 +6,20 @@ Each section is also the text of the matching GitHub release.
 
 ### Added
 
+- The Android app tells you when the faculty changes one of your classes:
+  a yellow tag on the class ("Sală schimbată, era BN 024", "Oră schimbată,
+  era 10:00 - 12:00", "Profesor schimbat", "Nou în orarul tău") in the day
+  and week views and on the class's page, and a yellow line on the days a
+  removed class would have met. A tag stays for 7 days or until the class
+  has met once since the change.
+- On today's timetable the class on now shows how long it has left ("1 h
+  36 rămase"), with the next class on a line under it.
+- Pull down on the timetable, the announcements or the events to sync.
+- Announcements are grouped by day ("Azi", "Ieri", "Luni, 9 noiembrie"),
+  and the Announcements tab shows how many are unread.
+- The Events tab says how many events are coming and when the app last
+  synced ("2 urmează · actualizat azi la 10:20").
+
 - A "Săptămână" view in Gestionare orar: the week of a group, half-group,
   room or professor on an hour grid, each class a block in its subject's
   colour with its type, room and time. Classes at the same time sit side by
@@ -140,6 +154,9 @@ Each section is also the text of the matching GitHub release.
 
 ### Changed
 
+- Past events are folded under "Trecute" until you tap it, and event
+  pictures fade in once loaded. List animations follow the phone's
+  setting: with animations turned off nothing moves.
 - The dashboard's announcements and events are paged tables (10, 25 or 50
   rows), the events split into "Următoare" and "Trecute", with "Anunț nou"
   and "Eveniment nou" buttons instead of a form above the list.

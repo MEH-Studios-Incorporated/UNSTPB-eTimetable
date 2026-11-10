@@ -88,7 +88,8 @@ private fun Empty(text: String, modifier: Modifier = Modifier) {
         text,
         style = MaterialTheme.typography.bodyLarge,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = modifier.fillMaxWidth().padding(16.dp),
+        // scrollable, so pull-to-refresh works on an empty page too
+        modifier = modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
     )
 }
 
@@ -182,6 +183,7 @@ private fun ClassCard(dataset: Dataset, occurrence: Occurrence, now: LocalDateTi
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
+            ChangeTagFor(activity.id, Modifier.padding(top = 4.dp))
         }
     }
 }
@@ -249,6 +251,7 @@ private fun CompactRow(dataset: Dataset, occurrence: Occurrence, now: LocalDateT
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f),
         )
+        ChangeDot(activity.id)
         dataset.roomsById[activity.roomId]?.code?.let {
             Text(it, style = TimeStyle.copy(fontWeight = FontWeight.Normal), color = colors.muted)
         }
@@ -302,6 +305,7 @@ fun WeekAgenda(
                     )
                 }
             }
+            RemovedClasses(dataset, timetable.calendar, day)
             val occurrences = timetable.on(day)
             if (occurrences.isEmpty()) {
                 Text(
@@ -344,6 +348,7 @@ fun WeekAgenda(
                             style = MaterialTheme.typography.bodySmall,
                             color = colors.muted,
                         )
+                        ChangeTagFor(occurrence.activity.id, Modifier.padding(top = 4.dp))
                     }
                 }
             }
@@ -432,12 +437,16 @@ private fun TableCell(
         modifier.fillMaxWidth().background(colors.tint, RoundedCornerShape(4.dp)).clickable(onClick = onClick)
             .padding(horizontal = 4.dp, vertical = 4.dp),
     ) {
-        Text(
-            dataset.subjectShortName(activity.subjectId),
-            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
-            color = colors.text,
-            maxLines = 1,
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                dataset.subjectShortName(activity.subjectId),
+                style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
+                color = colors.text,
+                maxLines = 1,
+                modifier = Modifier.weight(1f, fill = false),
+            )
+            ChangeDot(activity.id, Modifier.padding(start = 2.dp))
+        }
         Text(
             listOfNotNull(activity.type.label().take(1), dataset.roomsById[activity.roomId]?.code).joinToString(" · "),
             style = MaterialTheme.typography.labelSmall,

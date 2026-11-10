@@ -36,6 +36,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -48,7 +49,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -81,11 +85,13 @@ import net.mehstudios.etimetable.android.ui.signin.SignInScreen
 import net.mehstudios.etimetable.android.ui.subjects.SubjectScreen
 import net.mehstudios.etimetable.android.ui.subjects.SubjectsScreen
 import net.mehstudios.etimetable.android.ui.theme.ButtonShape
+import net.mehstudios.etimetable.android.ui.timetable.LocalChangeNotes
 import net.mehstudios.etimetable.android.ui.timetable.TimetableScreen
 import net.mehstudios.etimetable.api.TimetableReportRequest
 import net.mehstudios.etimetable.model.Profile
 import net.mehstudios.etimetable.schedule.StudentTimetable
 import net.mehstudios.etimetable.schedule.facultyNow
+import net.mehstudios.etimetable.schedule.shownAt
 import kotlin.time.Clock
 
 private enum class Phase { LOADING, SIGN_IN, WAITING, ONBOARDING, NOTIFICATIONS, MAIN }
@@ -191,6 +197,7 @@ fun EtRoot(
                         online = online,
                         onChangeEnrollment = { editingEnrollment = true },
                         onSyncNow = { scope.launch { repository.refresh() } },
+                        refresh = { repository.refresh() },
                         onSignOut = { scope.launch { repository.signOut() } },
                         markRead = { id -> scope.launch { repository.markRead(id) } },
                         markAllRead = { scope.launch { repository.markAllRead() } },
@@ -245,6 +252,8 @@ private fun MainScreen(
     online: Boolean,
     onChangeEnrollment: () -> Unit,
     onSyncNow: () -> Unit,
+    /** A sync the screen waits for, from pull-to-refresh. */
+    refresh: suspend () -> Unit,
     onSignOut: () -> Unit,
     markRead: (String) -> Unit,
     markAllRead: () -> Unit,
@@ -268,13 +277,18 @@ private fun MainScreen(
     val shownAnnouncement = announcementId?.takeIf { id -> state.announcements.any { it.announcement.id == id } }
     val shownEvent = eventId?.let { id -> state.events.firstOrNull { it.id == id } }
     val place = Place(tab, showProfile, shownAnnouncement, professorId, subjectId, shownEvent?.id)
+    // changes once a minute, on the minute, so "1 h 36 rămase" and the time line keep up
     val now by produceState(Clock.System.facultyNow()) {
         while (true) {
-            delay(30_000)
+            val at = Clock.System.facultyNow()
+            delay(60_000L - (at.second * 1000L + at.nanosecond / 1_000_000))
             value = Clock.System.facultyNow()
         }
     }
     val timetable = remember(dataset, profile) { StudentTimetable(dataset, profile) }
+    val shownChanges = remember(state.changes, dataset, timetable, now) {
+        state.changes.shownAt(now, dataset, timetable.calendar)
+    }
     // each tab keeps its state (the day shown, day or week, a search) while a page sits over it;
     // the pages over a tab start fresh every time they open
     val tabs = rememberSaveableStateHolder()
@@ -404,11 +418,17 @@ private fun MainScreen(
                         selected = tab == Tab.ANNOUNCEMENTS,
                         onClick = { selectTab(Tab.ANNOUNCEMENTS) },
                         icon = {
+                            val unreadText = pluralStringResource(R.plurals.announcements_unread_count, unread, unread)
                             BadgedBox(badge = {
-                                if (unread >
-                                    0
-                                ) {
-                                    Badge(containerColor = MaterialTheme.colorScheme.error)
+                                if (unread > 0) {
+                                    Badge(
+                                        containerColor = MaterialTheme.colorScheme.error,
+                                        // white on the light red, near black on the dark theme's lighter red
+                                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                                        modifier = Modifier.semantics { contentDescription = unreadText },
+                                    ) {
+                                        Text(if (unread > 99) "99+" else unread.toString())
+                                    }
                                 }
                             }) {
                                 Icon(EtIcons.Bell, contentDescription = null)
@@ -444,62 +464,77 @@ private fun MainScreen(
             modifier = Modifier.fillMaxSize().padding(padding),
         ) { target ->
             Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-                val opened = target.announcementId?.let { id ->
-                    state.announcements.firstOrNull {
-                        it.announcement.id ==
-                            id
+                CompositionLocalProvider(LocalChangeNotes provides shownChanges) {
+                    val opened = target.announcementId?.let { id ->
+                        state.announcements.firstOrNull {
+                            it.announcement.id ==
+                                id
+                        }
                     }
-                }
-                when {
-                    target.professorId != null -> ProfessorScreen(
-                        dataset,
-                        timetable.calendar,
-                        target.professorId,
-                        now,
-                        onBack = { professorId = null },
-                    )
-                    target.subjectId != null -> SubjectScreen(
-                        dataset,
-                        timetable,
-                        target.subjectId,
-                        now,
-                        saveProfile,
-                        onBack = { subjectId = null },
-                    )
-                    // like an announcement below, a vanished event draws nothing
-                    target.eventId != null -> state.events.firstOrNull { it.id == target.eventId }?.let {
-                        EventScreen(it) { eventId = null }
-                    }
-                    // an announcement gone from the phone while its page leaves draws nothing:
-                    // falling through to the tabs would use their state key twice
-                    target.announcementId != null -> if (opened != null) {
-                        AnnouncementScreen(opened.announcement, markRead = {
-                            markRead(opened.announcement.id)
-                        }, onBack = { announcementId = null })
-                    }
-                    target.profile -> ProfileScreen(state, onBack = {
-                        showProfile = false
-                    }, onChangeEnrollment, onSyncNow, onSignOut)
-                    else -> tabs.SaveableStateProvider(target.tab.name) {
-                        when (target.tab) {
-                            Tab.TIMETABLE -> TimetableScreen(
-                                dataset,
-                                timetable,
-                                now,
-                                actions,
-                                openProfessor = { professorId = it },
-                                openSubject = { subjectId = it },
-                                reportProblem = reportProblem,
-                            )
-                            Tab.SUBJECTS -> SubjectsScreen(dataset, timetable, actions) { subjectId = it }
-                            Tab.PROFESSORS -> ProfessorsScreen(dataset, timetable.calendar, now, actions) {
-                                professorId =
-                                    it
+                    when {
+                        target.professorId != null -> ProfessorScreen(
+                            dataset,
+                            timetable.calendar,
+                            target.professorId,
+                            now,
+                            onBack = { professorId = null },
+                        )
+                        target.subjectId != null -> SubjectScreen(
+                            dataset,
+                            timetable,
+                            target.subjectId,
+                            now,
+                            saveProfile,
+                            onBack = { subjectId = null },
+                        )
+                        // like an announcement below, a vanished event draws nothing
+                        target.eventId != null -> state.events.firstOrNull { it.id == target.eventId }?.let {
+                            EventScreen(it) { eventId = null }
+                        }
+                        // an announcement gone from the phone while its page leaves draws nothing:
+                        // falling through to the tabs would use their state key twice
+                        target.announcementId != null -> if (opened != null) {
+                            AnnouncementScreen(opened.announcement, markRead = {
+                                markRead(opened.announcement.id)
+                            }, onBack = { announcementId = null })
+                        }
+                        target.profile -> ProfileScreen(state, onBack = {
+                            showProfile = false
+                        }, onChangeEnrollment, onSyncNow, onSignOut)
+                        else -> tabs.SaveableStateProvider(target.tab.name) {
+                            when (target.tab) {
+                                Tab.TIMETABLE -> TimetableScreen(
+                                    dataset,
+                                    timetable,
+                                    now,
+                                    actions,
+                                    openProfessor = { professorId = it },
+                                    openSubject = { subjectId = it },
+                                    reportProblem = reportProblem,
+                                    refresh = refresh,
+                                )
+                                Tab.SUBJECTS -> SubjectsScreen(dataset, timetable, actions) { subjectId = it }
+                                Tab.PROFESSORS -> ProfessorsScreen(dataset, timetable.calendar, now, actions) {
+                                    professorId =
+                                        it
+                                }
+                                Tab.ANNOUNCEMENTS -> AnnouncementsScreen(
+                                    state.announcements,
+                                    now.date,
+                                    actions,
+                                    markAllRead,
+                                    refresh,
+                                ) {
+                                    announcementId = it
+                                }
+                                Tab.EVENTS -> EventsScreen(
+                                    state.events,
+                                    Clock.System.now(),
+                                    state.checkedAt,
+                                    actions,
+                                    refresh,
+                                ) { eventId = it }
                             }
-                            Tab.ANNOUNCEMENTS -> AnnouncementsScreen(state.announcements, actions, markAllRead) {
-                                announcementId = it
-                            }
-                            Tab.EVENTS -> EventsScreen(state.events, Clock.System.now(), actions) { eventId = it }
                         }
                     }
                 }

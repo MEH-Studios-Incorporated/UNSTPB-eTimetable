@@ -9,6 +9,9 @@ import net.mehstudios.etimetable.api.ApiClient
 import net.mehstudios.etimetable.api.DatasetFetch
 import net.mehstudios.etimetable.api.EventsFetch
 import net.mehstudios.etimetable.model.Announcement
+import net.mehstudios.etimetable.schedule.CHANGE_NOTE_LIFETIME
+import net.mehstudios.etimetable.schedule.mergeChangeNotes
+import net.mehstudios.etimetable.schedule.timetableChanges
 import net.mehstudios.etimetable.store.LocalStore
 import kotlin.time.Clock
 
@@ -30,17 +33,23 @@ class Sync(private val api: ApiClient, private val store: LocalStore, private va
         }
         return when (fetch) {
             DatasetFetch.NotModified -> {
-                store.markDatasetChecked(clock.now())
+                val now = clock.now()
+                store.markDatasetChecked(now)
+                store.pruneChangeNotes(now - CHANGE_NOTE_LIFETIME)
                 DatasetUpdate.UNCHANGED
             }
             is DatasetFetch.Fresh -> {
-                store.saveDataset(fetch.dataset, fetch.etag, clock.now())
+                // the student's classes before and after, compared with the profile on the phone
+                val now = clock.now()
+                val changes = timetableChanges(cached?.dataset, fetch.dataset, store.profile()?.profile, now)
+                val sameSemester = cached?.dataset?.semester?.id == fetch.dataset.semester.id
+                val notes = if (sameSemester) mergeChangeNotes(store.changeNotes(), changes, now) else emptyList()
+                store.saveDataset(fetch.dataset, fetch.etag, now, notes)
                 DatasetUpdate.DOWNLOADED
             }
         }
     }
 
-    /** Downloads the newest announcements and drops the ones deleted on the server. */
     /** Downloads the events when they changed; true when the list is new, so its pictures can be fetched. */
     suspend fun refreshEvents(): Boolean = when (val fetch = api.events(store.events()?.etag)) {
         EventsFetch.NotModified -> false
@@ -50,6 +59,7 @@ class Sync(private val api: ApiClient, private val store: LocalStore, private va
         }
     }
 
+    /** Downloads the newest announcements and drops the ones deleted on the server. */
     suspend fun refreshAnnouncements() {
         val all = mutableListOf<Announcement>()
         var before: String? = null

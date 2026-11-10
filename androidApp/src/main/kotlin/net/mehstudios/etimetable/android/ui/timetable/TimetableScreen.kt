@@ -16,6 +16,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -33,6 +34,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
@@ -56,9 +58,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
@@ -76,6 +81,7 @@ import net.mehstudios.etimetable.android.data.StartView
 import net.mehstudios.etimetable.android.data.TimetableLayout
 import net.mehstudios.etimetable.android.ui.components.BrandBar
 import net.mehstudios.etimetable.android.ui.components.EtIcons
+import net.mehstudios.etimetable.android.ui.components.RefreshBox
 import net.mehstudios.etimetable.android.ui.components.appLanguage
 import net.mehstudios.etimetable.android.ui.components.dayInitials
 import net.mehstudios.etimetable.android.ui.components.dayName
@@ -124,6 +130,7 @@ fun TimetableScreen(
     openProfessor: (String) -> Unit,
     openSubject: (String) -> Unit,
     reportProblem: suspend (TimetableReportRequest) -> ActionResult,
+    refresh: suspend () -> Unit = {},
 ) {
     val prefs = LocalTimetableChoice.current.prefs
     var mode by rememberSaveable { mutableStateOf(if (prefs.start == StartView.WEEK) Mode.WEEK else Mode.DAY) }
@@ -225,57 +232,90 @@ fun TimetableScreen(
             }
         }
 
-        AnimatedContent(
-            targetState = mode,
-            transitionSpec = { fadeIn(tween(250)) togetherWith fadeOut(tween(150)) },
-            label = "mode",
-            modifier = Modifier.weight(1f),
-        ) { current ->
-            when (current) {
-                Mode.DAY -> Column(Modifier.fillMaxSize()) {
-                    DayStrip(weekDays, selected, timetable, ::select)
-                    HorizontalPager(
-                        state = pagerState,
-                        modifier = Modifier.weight(1f),
-                        beyondViewportPageCount = 1,
-                    ) { page ->
-                        val day = pagerDays[page]
-                        Column(Modifier.fillMaxSize()) {
-                            if (day == now.date) NextCard(dataset, timetable, now, ::open)
-                            val occurrences = timetable.on(day)
-                            when (prefs.layout) {
-                                TimetableLayout.TIMELINE ->
-                                    DayTimeline(dataset, occurrences, now, Modifier.weight(1f), ::open)
-                                TimetableLayout.LIST -> DayList(dataset, occurrences, now, Modifier.weight(1f), ::open)
-                                TimetableLayout.TABLE -> DayRows(dataset, occurrences, now, Modifier.weight(1f), ::open)
+        RefreshBox(refresh, Modifier.weight(1f)) {
+            AnimatedContent(
+                targetState = mode,
+                transitionSpec = { fadeIn(tween(250)) togetherWith fadeOut(tween(150)) },
+                label = "mode",
+                modifier = Modifier.fillMaxSize(),
+            ) { current ->
+                when (current) {
+                    Mode.DAY -> Column(Modifier.fillMaxSize()) {
+                        DayStrip(weekDays, selected, timetable, ::select)
+                        HorizontalPager(
+                            state = pagerState,
+                            modifier = Modifier.weight(1f),
+                            beyondViewportPageCount = 1,
+                        ) { page ->
+                            val day = pagerDays[page]
+                            Column(Modifier.fillMaxSize()) {
+                                if (day == now.date) NowNextCard(dataset, timetable, now, ::open)
+                                RemovedClasses(
+                                    dataset,
+                                    calendar,
+                                    day,
+                                    Modifier.padding(start = 16.dp, end = 16.dp, bottom = 12.dp),
+                                )
+                                val occurrences = timetable.on(day)
+                                when (prefs.layout) {
+                                    TimetableLayout.TIMELINE ->
+                                        DayTimeline(dataset, occurrences, now, Modifier.weight(1f), ::open)
+                                    TimetableLayout.LIST -> DayList(
+                                        dataset,
+                                        occurrences,
+                                        now,
+                                        Modifier.weight(1f),
+                                        ::open,
+                                    )
+                                    TimetableLayout.TABLE -> DayRows(
+                                        dataset,
+                                        occurrences,
+                                        now,
+                                        Modifier.weight(1f),
+                                        ::open,
+                                    )
+                                }
                             }
                         }
                     }
-                }
-                Mode.WEEK -> AnimatedContent(
-                    targetState = monday,
-                    transitionSpec = {
-                        val forward = targetState > initialState
-                        (
-                            slideInHorizontally(tween(250)) {
-                                if (forward) it / 4 else -it / 4
-                            } + fadeIn(tween(250))
-                            ) togetherWith
+                    Mode.WEEK -> AnimatedContent(
+                        targetState = monday,
+                        transitionSpec = {
+                            val forward = targetState > initialState
                             (
-                                slideOutHorizontally(tween(200)) {
-                                    if (forward) -it / 4 else it / 4
-                                } + fadeOut(tween(200))
-                                )
-                    },
-                    label = "week",
-                ) { weekMonday ->
-                    val days = pagerDays.filter {
-                        it.mondayOfWeek() == weekMonday
-                    }.ifEmpty { (0 until 5).map { weekMonday.plus(it, DateTimeUnit.DAY) } }
-                    when (prefs.layout) {
-                        TimetableLayout.TIMELINE -> WeekGrid(dataset, days, timetable, now, ::open)
-                        TimetableLayout.LIST -> WeekAgenda(dataset, days, timetable, now, ::open)
-                        TimetableLayout.TABLE -> WeekTable(dataset, days, timetable, now, ::open)
+                                slideInHorizontally(tween(250)) {
+                                    if (forward) it / 4 else -it / 4
+                                } + fadeIn(tween(250))
+                                ) togetherWith
+                                (
+                                    slideOutHorizontally(tween(200)) {
+                                        if (forward) -it / 4 else it / 4
+                                    } + fadeOut(tween(200))
+                                    )
+                        },
+                        label = "week",
+                    ) { weekMonday ->
+                        val days = pagerDays.filter {
+                            it.mondayOfWeek() == weekMonday
+                        }.ifEmpty { (0 until 5).map { weekMonday.plus(it, DateTimeUnit.DAY) } }
+                        Column(Modifier.fillMaxSize()) {
+                            // the agenda says it under each day
+                            if (prefs.layout != TimetableLayout.LIST) {
+                                days.forEach {
+                                    RemovedClasses(
+                                        dataset,
+                                        calendar,
+                                        it,
+                                        Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp),
+                                    )
+                                }
+                            }
+                            when (prefs.layout) {
+                                TimetableLayout.TIMELINE -> WeekGrid(dataset, days, timetable, now, ::open)
+                                TimetableLayout.LIST -> WeekAgenda(dataset, days, timetable, now, ::open)
+                                TimetableLayout.TABLE -> WeekTable(dataset, days, timetable, now, ::open)
+                            }
+                        }
                     }
                 }
             }
@@ -355,53 +395,187 @@ private fun DayStrip(
     }
 }
 
+/**
+ * Above today: the class on now with the time left, and the next one under it. Without a
+ * class on now, the next one alone with how long until it starts.
+ */
 @Composable
-private fun NextCard(dataset: Dataset, timetable: StudentTimetable, now: LocalDateTime, open: (Occurrence) -> Unit) {
-    val next = timetable.nowAndNext(now).next ?: return
-    val heading = if (next.date == now.date) {
-        stringResource(R.string.next_in_minutes, minutesBetween(now.time, next.start.time))
-    } else {
-        stringResource(R.string.next_on, "${next.date.dayName()}, ${next.activity.slot.start}")
-    }
+private fun NowNextCard(dataset: Dataset, timetable: StudentTimetable, now: LocalDateTime, open: (Occurrence) -> Unit) {
+    val (current, next) = timetable.nowAndNext(now)
+    if (current == null && next == null) return
     Surface(
-        onClick = { open(next) },
         shape = RoundedCornerShape(8.dp),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
         color = MaterialTheme.colorScheme.surface,
         modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 12.dp),
     ) {
-        Row(Modifier.padding(horizontal = 14.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                Modifier.width(
-                    4.dp,
-                ).height(48.dp).background(dataset.subjectColor(next.activity.subjectId), RoundedCornerShape(2.dp)),
-            )
-            Column(Modifier.weight(1f).padding(start = 12.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Column {
+            if (current != null) {
+                CurrentClass(dataset, current, now) { open(current) }
+                next?.let {
+                    HorizontalDivider()
+                    NextLine(dataset, it, now) { open(it) }
+                }
+            } else if (next != null) {
+                NextClass(dataset, next, now) { open(next) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CurrentClass(dataset: Dataset, current: Occurrence, now: LocalDateTime, onClick: () -> Unit) {
+    val activity = current.activity
+    Row(
+        Modifier.fillMaxWidth().height(IntrinsicSize.Min).clickable(onClick = onClick)
+            .padding(start = 12.dp, end = 14.dp, top = 12.dp, bottom = 12.dp),
+    ) {
+        Box(
+            Modifier.width(4.dp).fillMaxHeight()
+                .background(dataset.subjectColor(activity.subjectId), RoundedCornerShape(2.dp)),
+        )
+        Column(Modifier.weight(1f).padding(start = 12.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Box(Modifier.size(8.dp).background(MaterialTheme.colorScheme.error, CircleShape))
                 Text(
-                    heading,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Text(
-                    dataset.subjectName(next.activity.subjectId),
-                    style = MaterialTheme.typography.titleMedium,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    listOfNotNull(
-                        next.activity.type.label(),
-                        dataset.roomsById[next.activity.roomId]?.code,
-                    ).joinToString(" · "),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    stringResource(R.string.now_until, activity.slot.end.toString()),
+                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold),
+                    color = MaterialTheme.colorScheme.error,
                 )
             }
             Text(
-                next.activity.slot.start.toString(),
+                dataset.subjectName(activity.subjectId),
+                style = MaterialTheme.typography.titleMedium,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                listOfNotNull(
+                    activity.type.label(),
+                    dataset.roomsById[activity.roomId]?.code,
+                    dataset.professorsById[activity.professorId]?.displayName,
+                ).joinToString(" · "),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            ChangeTagFor(activity.id, Modifier.padding(top = 4.dp))
+        }
+        Column(Modifier.padding(start = 12.dp), horizontalAlignment = Alignment.End) {
+            Text(
+                timeLeft(now.time, activity.slot.end),
                 style = TimeStyle.copy(fontSize = MaterialTheme.typography.titleMedium.fontSize),
             )
+            Text(
+                stringResource(R.string.time_left),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
+    }
+}
+
+/** "1 h 36" or "36 min", rounded up so the last minute does not read 0. */
+@Composable
+private fun timeLeft(now: LocalTime, end: LocalTime): String {
+    val minutes = ((end.toSecondOfDay() - now.toSecondOfDay()) + 59) / 60
+    return if (minutes >= 60) {
+        stringResource(R.string.time_left_hours, minutes / 60, minutes % 60)
+    } else {
+        stringResource(R.string.time_left_minutes, minutes)
+    }
+}
+
+/** The next class as one line under the current one. */
+@Composable
+private fun NextLine(dataset: Dataset, next: Occurrence, now: LocalDateTime, onClick: () -> Unit) {
+    val activity = next.activity
+    Row(
+        Modifier.fillMaxWidth().clickable(
+            onClick = onClick,
+        ).padding(start = 12.dp, end = 14.dp, top = 9.dp, bottom = 9.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Box(
+            Modifier.width(4.dp).height(18.dp)
+                .background(dataset.subjectColor(activity.subjectId), RoundedCornerShape(2.dp)),
+        )
+        Text(
+            buildAnnotatedString {
+                withStyle(SpanStyle(color = MaterialTheme.colorScheme.onSurfaceVariant)) {
+                    append(stringResource(R.string.next_label))
+                }
+                append(" ")
+                append(
+                    listOfNotNull(
+                        dataset.subjectName(activity.subjectId),
+                        dataset.roomsById[activity.roomId]?.code,
+                    ).joinToString(" · "),
+                )
+            },
+            style = MaterialTheme.typography.bodyMedium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f),
+        )
+        ChangeDot(activity.id)
+        Text(
+            if (next.date ==
+                now.date
+            ) {
+                activity.slot.start.toString()
+            } else {
+                "${next.date.dayName()}, ${activity.slot.start}"
+            },
+            style = TimeStyle,
+        )
+    }
+}
+
+@Composable
+private fun NextClass(dataset: Dataset, next: Occurrence, now: LocalDateTime, onClick: () -> Unit) {
+    val heading = if (next.date == now.date) {
+        stringResource(R.string.next_in_minutes, minutesBetween(now.time, next.start.time))
+    } else {
+        stringResource(R.string.next_on, "${next.date.dayName()}, ${next.activity.slot.start}")
+    }
+    Row(
+        Modifier.fillMaxWidth().height(IntrinsicSize.Min).clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            Modifier.width(4.dp).fillMaxHeight()
+                .background(dataset.subjectColor(next.activity.subjectId), RoundedCornerShape(2.dp)),
+        )
+        Column(Modifier.weight(1f).padding(start = 12.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(
+                heading,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                dataset.subjectName(next.activity.subjectId),
+                style = MaterialTheme.typography.titleMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                listOfNotNull(
+                    next.activity.type.label(),
+                    dataset.roomsById[next.activity.roomId]?.code,
+                ).joinToString(" · "),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            ChangeTagFor(next.activity.id, Modifier.padding(top = 4.dp))
+        }
+        Text(
+            next.activity.slot.start.toString(),
+            style = TimeStyle.copy(fontSize = MaterialTheme.typography.titleMedium.fontSize),
+        )
     }
 }
 
@@ -416,11 +590,12 @@ private fun DayTimeline(
     open: (Occurrence) -> Unit,
 ) {
     if (occurrences.isEmpty()) {
+        // scrollable, so pull-to-refresh works on an empty day too
         Text(
             stringResource(R.string.nothing_today),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = modifier.fillMaxWidth().padding(16.dp),
+            modifier = modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(16.dp),
         )
         return
     }
@@ -609,12 +784,16 @@ private fun OccurrenceBlock(
             when {
                 // week grid: short name, then as much as the height allows
                 compact -> {
-                    Text(
-                        dataset.subjectShortName(occurrence.activity.subjectId),
-                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
-                        color = text,
-                        maxLines = 1,
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            dataset.subjectShortName(occurrence.activity.subjectId),
+                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
+                            color = text,
+                            maxLines = 1,
+                            modifier = Modifier.weight(1f, fill = false),
+                        )
+                        ChangeDot(occurrence.activity.id, Modifier.padding(start = 2.dp))
+                    }
                     if (minutes >= 90) Line(type, muted)
                     if (minutes >= 50) room?.let { Line(it, muted) }
                 }
@@ -647,16 +826,21 @@ private fun OccurrenceBlock(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
+                    ChangeTagFor(occurrence.activity.id, Modifier.padding(top = 4.dp))
                 }
                 // an hour: the name, then time, type and room on one line
                 else -> {
-                    Text(
-                        dataset.subjectName(occurrence.activity.subjectId),
-                        style = MaterialTheme.typography.titleSmall,
-                        color = text,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            dataset.subjectName(occurrence.activity.subjectId),
+                            style = MaterialTheme.typography.titleSmall,
+                            color = text,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false),
+                        )
+                        ChangeDot(occurrence.activity.id, Modifier.padding(start = 6.dp))
+                    }
                     if (minutes >= 50) {
                         Line(listOfNotNull("${slot.start} - ${slot.end}", type, room).joinToString(" · "), muted)
                     }

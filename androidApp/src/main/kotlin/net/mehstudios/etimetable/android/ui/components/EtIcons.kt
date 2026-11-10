@@ -24,6 +24,8 @@ object EtIcons {
     val Person = icon("Person", "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21c0-4 4-6 8-6s8 2 8 6")
     val ChevronLeft = icon("ChevronLeft", "M15 6l-6 6 6 6", width = 2f)
     val ChevronRight = icon("ChevronRight", "M9 6l6 6-6 6", width = 2f)
+    val ChevronDown = icon("ChevronDown", "M6 9l6 6 6-6", width = 2f)
+    val ChevronUp = icon("ChevronUp", "M6 15l6-6 6 6", width = 2f)
     val Search = icon("Search", "M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM20 20l-4-4", width = 2f)
     val Pin = icon("Pin", "M12 17v5M5 17h14l-2-4V5H7v8z", width = 2f)
     val Eye = icon("Eye", "M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z")

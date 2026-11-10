@@ -85,3 +85,25 @@ SELECT etag, json FROM events_cache WHERE id = 1;
 
 saveEvents:
 INSERT OR REPLACE INTO events_cache (id, etag, json) VALUES (1, ?, ?);
+
+-- Changes to the student's own classes, found when a sync brings a new dataset.
+-- One row per class and kind of change; the note is JSON (ChangeNote).
+CREATE TABLE change_note (
+    activity_id TEXT NOT NULL,
+    kind TEXT NOT NULL,
+    seen_at INTEGER NOT NULL,
+    json TEXT NOT NULL,
+    PRIMARY KEY (activity_id, kind)
+);
+
+selectChangeNotes:
+SELECT json FROM change_note ORDER BY seen_at;
+
+insertChangeNote:
+INSERT OR REPLACE INTO change_note (activity_id, kind, seen_at, json) VALUES (?, ?, ?, ?);
+
+deleteChangeNotesBefore:
+DELETE FROM change_note WHERE seen_at < ?;
+
+deleteAllChangeNotes:
+DELETE FROM change_note;
