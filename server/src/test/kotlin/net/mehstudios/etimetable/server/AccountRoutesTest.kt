@@ -169,6 +169,66 @@ class AccountRoutesTest {
     }
 
     @Test
+    fun classesAnImportRemovedDoNotBlockTheNextSave() = withServer { services, client ->
+        val token = client.token()
+        val sample = sampleDataset()
+        val extra = sample.activities.first { it.id == "calit-l-1541A" }.copy(id = "calit-extra")
+        services.datasets.replace(sample.copy(activities = sample.activities + extra), makeCurrent = true)
+        val profile = Profile(
+            enrollment = Enrollment.National("1541E", "1541E/A"),
+            extraSlots = listOf(ExtraSlot("calit-extra")),
+            droppedSlots = setOf("calit-l-1541A"),
+        )
+        assertEquals(HttpStatusCode.OK, client.putProfile(token, profile).status)
+
+        // the next import has neither class; the phone still has both in its copy of the profile
+        services.datasets.replace(
+            sample.copy(
+                activities = sample.activities.filterNot {
+                    it.id == "calit-l-1541A"
+                },
+            ),
+            makeCurrent = true,
+        )
+        val saved = client.putProfile(token, profile)
+        assertEquals(HttpStatusCode.OK, saved.status)
+        val stored = saved.body<Profile>()
+        assertEquals(emptyList(), stored.extraSlots)
+        assertEquals(emptySet(), stored.droppedSlots)
+
+        // an id the student never had is still refused
+        val unknown = client.putProfile(token, stored.copy(droppedSlots = setOf("nope")))
+        assertEquals(ErrorCodes.UNKNOWN_ACTIVITY, unknown.body<ApiError>().code)
+    }
+
+    @Test
+    fun aGroupAnImportRemovedDoesNotBlockOtherChanges() = withServer { services, client ->
+        val token = client.token()
+        val sample = sampleDataset()
+        services.datasets.replace(sample, makeCurrent = true)
+        val profile = Profile(enrollment = Enrollment.National("1541E", "1541E/A"))
+        assertEquals(HttpStatusCode.OK, client.putProfile(token, profile).status)
+
+        services.datasets.replace(
+            sample.copy(
+                groups = sample.groups.filterNot { it.id == "1541E" },
+                halfGroups = sample.halfGroups.filterNot { it.groupId == "1541E" },
+            ),
+            makeCurrent = true,
+        )
+        // the same group as before: the student can still change their phone
+        val phone = client.put("/api/v1/me") {
+            bearerAuth(token)
+            contentType(ContentType.Application.Json)
+            setBody(profile.copy(firstName = "Ana", lastName = "Pop", phone = "0798765432"))
+        }
+        assertEquals(HttpStatusCode.OK, phone.status)
+        // a group that is not in the timetable, and was not theirs, is refused
+        val other = client.putProfile(token, Profile(enrollment = Enrollment.National("9999X")))
+        assertEquals(ErrorCodes.UNKNOWN_GROUP, other.body<ApiError>().code)
+    }
+
+    @Test
     fun logoutAndDelete() = withServer { _, client ->
         val token = client.token()
         assertEquals(HttpStatusCode.NoContent, client.post("/api/v1/auth/logout") { bearerAuth(token) }.status)
