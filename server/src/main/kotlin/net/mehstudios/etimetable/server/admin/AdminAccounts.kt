@@ -33,6 +33,8 @@ data class Admin(
     val shell: Shell? = null,
     val mustChangePassword: Boolean = false,
     val sessionId: UUID? = null,
+    /** Two-step sign-in is required for every account and this one has not set it up yet. */
+    val needsTwoStep: Boolean = false,
 )
 
 /**
@@ -266,7 +268,10 @@ class AdminAccounts(
     suspend fun adminFor(token: String): Admin? = db.transaction { c ->
         val admin = c.query(
             """
-            SELECT a.id, a.email, a.role, a.must_change_password, s.id
+            SELECT a.id, a.email, a.role, a.must_change_password, s.id,
+                a.totp_enabled_at IS NULL AND coalesce(
+                    (SELECT value = 'true' FROM dashboard_setting WHERE key = '$REQUIRE_TWO_STEP'), false
+                )
             FROM admin_session s JOIN admin a ON a.id = s.admin_id
             WHERE s.token_hash = ? AND s.expires_at > now() AND s.verified AND a.disabled_at IS NULL
             """.trimIndent(),
@@ -278,6 +283,7 @@ class AdminAccounts(
                 AdminRole.valueOf(it.getString(3).uppercase()),
                 mustChangePassword = it.getBoolean(4),
                 sessionId = it.getObject(5, UUID::class.java),
+                needsTwoStep = it.getBoolean(6),
             )
         }.singleOrNull()
         if (admin != null) {
@@ -526,9 +532,40 @@ class AdminAccounts(
         return codes
     }
 
+    /** Whether every account must use two-step sign-in. */
+    suspend fun twoStepRequired(): Boolean = db.transaction { c ->
+        c.query("SELECT value = 'true' FROM dashboard_setting WHERE key = ?", REQUIRE_TWO_STEP) { it.getBoolean(1) }
+            .singleOrNull() ?: false
+    }
+
+    /**
+     * Requires two-step sign-in for every account, or stops requiring it. Only an admin who
+     * uses it can require it, so nobody turns it on without knowing the setup works.
+     */
+    suspend fun requireTwoStep(required: Boolean, by: Admin) {
+        if (required && !twoStepEnabled(by.id)) {
+            throw AdminFormError("Pornește întâi autentificarea în doi pași pentru contul tău, din Contul meu.")
+        }
+        db.transaction { c ->
+            c.update(
+                """
+                INSERT INTO dashboard_setting (key, value, changed_by_email) VALUES (?, ?, ?)
+                ON CONFLICT (key) DO UPDATE SET value = excluded.value, changed_at = now(),
+                    changed_by_email = excluded.changed_by_email
+                """.trimIndent(),
+                REQUIRE_TWO_STEP,
+                required.toString(),
+                by.email,
+            )
+        }
+    }
+
     /** The owner turns it off with their password; an admin can reset it for someone who lost their phone. */
     suspend fun disableTotp(id: UUID, password: String?) {
         if (password != null) {
+            if (twoStepRequired()) {
+                throw AdminFormError("Autentificarea în doi pași este obligatorie pentru toate conturile.")
+            }
             val hash = db.transaction { c ->
                 c.query("SELECT password_hash FROM admin WHERE id = ?", id) { it.getString(1) }.single()
             }
@@ -583,6 +620,7 @@ class AdminAccounts(
 
     private companion object {
         const val MAX_FAILURES = 5
+        const val REQUIRE_TWO_STEP = "require_two_step"
         const val SAFE_CHARS = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"
         val EMAIL = Regex("[^@\\s]+@[^@\\s]+\\.[^@\\s]+")
         val DUMMY_HASH = Passwords.hash("not a real password")

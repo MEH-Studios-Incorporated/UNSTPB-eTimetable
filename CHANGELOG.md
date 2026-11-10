@@ -6,6 +6,11 @@ Each section is also the text of the matching GitHub release.
 
 ### Added
 
+- Administrators can require two-step sign-in for every dashboard account.
+  An account without it goes straight to its setup after the password and
+  cannot open anything else until it is done. Only an administrator who
+  uses it can turn this on.
+
 - A "Săptămână" view in Gestionare orar: the week of a group, half-group,
   room or professor on an hour grid, each class a block in its subject's
   colour with its type, room and time. Classes at the same time sit side by
