@@ -193,6 +193,12 @@ Each section is also the text of the matching GitHub release.
 
 ### Fixed
 
+- After an import removed a class a student had picked, dropped or added
+  as an extra slot, or removed their group, every later save of their
+  profile was refused, even a new phone number. The server now drops the
+  classes that no longer exist from what the student already had, and
+  accepts their old group until they pick a new one.
+
 - The dashboard accepted any number of wrong passwords. Five wrong
   passwords or codes for one account within 15 minutes now lock it for 15
   minutes.

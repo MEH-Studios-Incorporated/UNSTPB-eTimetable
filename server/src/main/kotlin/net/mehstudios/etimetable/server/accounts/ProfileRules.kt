@@ -15,12 +15,39 @@ import net.mehstudios.etimetable.schedule.findClash
 import net.mehstudios.etimetable.server.ApiProblem
 
 /**
+ * [profile] without the classes an import removed since the student saved [saved]: picks,
+ * dropped slots and extra slots whose class no longer exists and that the saved profile
+ * already had. Without this a student could not save anything after such an import.
+ * Ids that are new and unknown stay, so [checkProfile] still refuses them.
+ */
+fun withoutRemovedClasses(profile: Profile, saved: Profile?, dataset: Dataset?): Profile {
+    if (dataset == null || saved == null) return profile
+    val savedIds = buildSet {
+        (saved.enrollment as? Enrollment.Erasmus)?.let { addAll(it.activityIds) }
+        addAll(saved.droppedSlots)
+        saved.extraSlots.forEach { add(it.activityId) }
+    }
+    fun gone(id: String) = id !in dataset.activitiesById && id in savedIds
+    val enrollment = when (val e = profile.enrollment) {
+        is Enrollment.Erasmus -> e.copy(activityIds = e.activityIds.filterNot(::gone).toSet())
+        else -> e
+    }
+    return profile.copy(
+        enrollment = enrollment,
+        droppedSlots = profile.droppedSlots.filterNot(::gone).toSet(),
+        extraSlots = profile.extraSlots.filterNot { gone(it.activityId) },
+    )
+}
+
+/**
  * The checks a profile must pass: ids that exist in the current semester and
  * no clashes between Erasmus picks or extra slots. A dropped slot frees its time,
  * so an extra slot may take it. Whether the student
- * really belongs to the group is not checked, on purpose (docs/brief.md).
+ * really belongs to the group is not checked, on purpose (docs/brief.md). A group
+ * that an import removed is accepted while it is the one already [saved], so the
+ * student can still change their name or phone before picking a new group.
  */
-fun checkProfile(profile: Profile, dataset: Dataset?) {
+fun checkProfile(profile: Profile, dataset: Dataset?, saved: Profile? = null) {
     checkContact(profile)
     // before the first semester there is nothing to check against
     if (dataset == null) return
@@ -29,9 +56,16 @@ fun checkProfile(profile: Profile, dataset: Dataset?) {
     when (val enrollment = profile.enrollment) {
         null -> Unit
         is Enrollment.National -> {
-            if (enrollment.groupId !in dataset.groupsById) unknown(ErrorCodes.UNKNOWN_GROUP, enrollment.groupId)
+            val kept = saved?.enrollment == enrollment
+            if (enrollment.groupId !in dataset.groupsById &&
+                !kept
+            ) {
+                unknown(ErrorCodes.UNKNOWN_GROUP, enrollment.groupId)
+            }
             enrollment.halfGroupId?.let { half ->
-                if (dataset.halfGroupsById[half]?.groupId != enrollment.groupId) unknown(ErrorCodes.UNKNOWN_GROUP, half)
+                if (dataset.halfGroupsById[half]?.groupId != enrollment.groupId && !kept) {
+                    unknown(ErrorCodes.UNKNOWN_GROUP, half)
+                }
             }
         }
         is Enrollment.Erasmus -> {

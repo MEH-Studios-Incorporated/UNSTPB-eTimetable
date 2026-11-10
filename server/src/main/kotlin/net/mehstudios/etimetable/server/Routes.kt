@@ -34,6 +34,7 @@ import net.mehstudios.etimetable.api.SignupRequest
 import net.mehstudios.etimetable.api.TimetableReportRequest
 import net.mehstudios.etimetable.model.Profile
 import net.mehstudios.etimetable.server.accounts.checkProfile
+import net.mehstudios.etimetable.server.accounts.withoutRemovedClasses
 import net.mehstudios.etimetable.server.db.query
 import net.mehstudios.etimetable.server.db.transaction
 import net.mehstudios.etimetable.server.reports.ReportLimitExceeded
@@ -125,9 +126,12 @@ fun Route.apiRoutes(services: Services) {
             }
             get("/me") { call.respond(services.accounts.profile(call.studentId())) }
             put("/me") {
-                val profile = call.receive<Profile>()
-                checkProfile(profile, services.datasets.current()?.dataset)
+                val dataset = services.datasets.current()?.dataset
+                val saved = services.accounts.profile(call.studentId())
+                val profile = withoutRemovedClasses(call.receive<Profile>(), saved, dataset)
+                checkProfile(profile, dataset, saved)
                 services.accounts.saveProfile(call.studentId(), profile)
+                // the answer is what was stored, so the app forgets the removed classes too
                 call.respond(profile)
             }
             rateLimit(PUSH_TOKEN_RATE_LIMIT) {
