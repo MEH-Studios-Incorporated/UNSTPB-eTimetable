@@ -39,18 +39,19 @@ iOS app is next.
 
 ## Screens
 
-These are the approved designs, not screenshots of a finished app yet.
+The Android app on FAIMA's timetable, in the light and the dark theme. The
+events are samples.
 
 <p>
-<img src="design/mockups/Main.png" width="190" alt="Today: the day's timeline with the next class and a room change">
-<img src="design/mockups/Week.png" width="190" alt="The week view">
-<img src="design/mockups/Subject.png" width="190" alt="A subject's labs, with a clash and an add sheet">
-<img src="design/mockups/Erasmus.png" width="190" alt="Erasmus students picking their lab slots">
+<img src="design/screenshots/today-light.webp" width="190" alt="A day of group 1521A on the timeline: German, statistics and communication seminars with their rooms">
+<img src="design/screenshots/week-dark.webp" width="190" alt="The week as a table of times and days, in the dark theme">
+<img src="design/screenshots/events-light.webp" width="190" alt="The Events tab: cards with a picture, the title and the day, time and place">
+<img src="design/screenshots/event-dark.webp" width="190" alt="An event's page in the dark theme: the picture fades into the page under the title">
 </p>
 
-All ten screens, including dark mode, the widgets and the sign-in and About
-pages, are in [design/mockups](design/mockups). The colours, type and logo
-rules are in [docs/design.md](docs/design.md).
+The approved designs we started from, ten screens including the widgets and
+the sign-in and About pages, are in [design/mockups](design/mockups). The
+colours, type and logo rules are in [docs/design.md](docs/design.md).
 
 ## Why we are making it
 

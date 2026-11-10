@@ -7,8 +7,8 @@ differs from it, this list is right.
 ## Navigation
 
 A bottom bar with five tabs: Timetable, Subjects, Professors,
-Announcements, Events. The profile opens from the top bar on every tab. Tapping a
-subject, room or professor anywhere opens its page.
+Announcements, Events. The profile opens from the top bar on every tab.
+Tapping a subject, room or professor anywhere opens its page.
 
 The apps run in portrait only. A timetable reads top to bottom and every
 screen is laid out for a phone held upright; a sideways version of each
