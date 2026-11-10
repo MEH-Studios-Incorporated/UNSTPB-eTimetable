@@ -37,8 +37,8 @@ private val GONE_CODES = setOf("UNREGISTERED", "SENDER_ID_MISMATCH")
 class FcmSender(
     private val key: ServiceAccountKey,
     private val http: HttpPost = JdkHttpPost(),
-    private val tokens: GoogleAccessTokens = GoogleAccessTokens(key, http),
     private val wait: suspend (Duration) -> Unit = { delay(it) },
+    private val tokens: GoogleAccessTokens = GoogleAccessTokens(key, http, wait = wait),
 ) : PushSender {
     private val log = LoggerFactory.getLogger(FcmSender::class.java)
     private val url = "https://fcm.googleapis.com/v1/projects/${key.projectId}/messages:send"

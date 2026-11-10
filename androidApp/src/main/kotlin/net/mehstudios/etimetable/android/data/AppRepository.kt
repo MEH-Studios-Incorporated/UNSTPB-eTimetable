@@ -73,7 +73,9 @@ class AppRepository(
     val state: StateFlow<AppState> = _state.asStateFlow()
     private val syncLock = Mutex()
 
-    // true once per process: a new process means the app was closed in between
+    // true once per process: a new process means the app was closed in between; Firebase's
+    // thread reads it in signedIn()
+    @Volatile
     private var started = false
 
     suspend fun load() {
@@ -91,6 +93,15 @@ class AppRepository(
     /** Downloads what changed. Returns false when the server could not be reached. */
     suspend fun refresh(): Boolean = syncLock.withLock {
         _state.update { it.copy(syncing = true) }
+        try {
+            syncOnce()
+        } finally {
+            // a sync cancelled halfway (WorkManager replacing its job) must not stay "syncing"
+            _state.update { it.copy(syncing = false) }
+        }
+    }
+
+    private suspend fun syncOnce(): Boolean {
         val ok = withContext(Dispatchers.IO) {
             try {
                 endSessionOnServer()
@@ -116,8 +127,8 @@ class AppRepository(
             }
         }
         readStore(signedIn = session.token() != null, email = session.email())
-        _state.update { it.copy(syncing = false, lastSyncFailed = !ok) }
-        ok
+        _state.update { it.copy(lastSyncFailed = !ok) }
+        return ok
     }
 
     suspend fun signIn(email: String, password: String, remember: Boolean): ActionResult =
@@ -169,15 +180,12 @@ class AppRepository(
      */
     suspend fun signedIn(): Boolean = session.token() != null && (started || session.remember())
 
-    /**
-     * Tells the server where to send announcements. [fresh] is a token Firebase just
-     * handed out; without it the current one is sent if the server does not have it yet.
-     */
-    suspend fun registerPush(fresh: String? = null) {
+    /** Tells the server where to send announcements, when it does not have this phone's token yet. */
+    suspend fun registerPush() {
         val token = session.token() ?: return
         withContext(Dispatchers.IO) {
             try {
-                val push = fresh ?: pushToken() ?: return@withContext
+                val push = pushToken() ?: return@withContext
                 if (push == session.pushToken()) return@withContext
                 api.registerPushToken(token, push, PushPlatform.ANDROID)
                 session.savePushToken(push)

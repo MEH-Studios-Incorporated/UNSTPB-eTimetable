@@ -11,6 +11,7 @@ import net.mehstudios.etimetable.api.PushFields
 
 /** Receives the server's messages from Firebase, and the phone's new tokens. */
 class PushService : FirebaseMessagingService() {
+    // Firebase calls this on a background thread, so the short read of the session can block
     override fun onMessageReceived(message: RemoteMessage) {
         val data = message.data
         if (data[PushFields.KIND] != PushFields.KIND_ANNOUNCEMENT) return
@@ -26,9 +27,12 @@ class PushService : FirebaseMessagingService() {
         SyncWorker.syncNow(this)
     }
 
-    /** Firebase calls both on a background thread, so blocking on the repository is fine. */
+    /**
+     * The sync sends the new token, as it sends one the server does not have yet; a network
+     * call here would hold up the messages Firebase delivers on this thread.
+     */
     override fun onNewToken(token: String) {
-        runBlocking { repository().registerPush(token) }
+        SyncWorker.syncNow(this)
     }
 
     private fun container() = (application as EtimetableApp).container

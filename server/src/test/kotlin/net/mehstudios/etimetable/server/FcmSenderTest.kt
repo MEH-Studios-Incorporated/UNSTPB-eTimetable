@@ -13,6 +13,8 @@ import net.mehstudios.etimetable.server.push.HttpReply
 import net.mehstudios.etimetable.server.push.PushResult
 import net.mehstudios.etimetable.server.push.ServiceAccountKey
 import net.mehstudios.etimetable.server.push.ServiceAccountRefused
+import net.mehstudios.etimetable.server.push.TokenEndpointUnavailable
+import java.io.IOException
 import java.net.URLDecoder
 import java.security.KeyPairGenerator
 import java.security.Signature
@@ -20,6 +22,7 @@ import java.util.Base64
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
@@ -194,5 +197,79 @@ class FcmSenderTest {
 
         val error = assertFailsWith<IllegalStateException> { pushSenders(broken) }
         assertTrue("ETT_FCM_SERVICE_ACCOUNT" in error.message.orEmpty(), error.message)
+    }
+
+    @Test
+    fun aCutOffKeyIsReportedWithoutQuotingIt() {
+        // a value whose closing quote was lost in .env
+        val truncated = keyFile.take(keyFile.indexOf("-----END"))
+        val secret = pem.lines()[1]
+
+        val error = assertFailsWith<IllegalStateException> { pushSenders(truncated) }
+        val message = error.message.orEmpty()
+        assertTrue("ETT_FCM_SERVICE_ACCOUNT" in message, message)
+        assertFalse("PRIVATE KEY" in message || secret.take(20) in message, message)
+        assertFalse(secret.take(20) in error.stackTraceToString(), "the key is in the stack trace")
+    }
+
+    @Test
+    fun aKeyWithoutAPrivateKeyNamesTheMissingField() {
+        val noKey = Json.encodeToString(mapOf("project_id" to "p", "client_email" to "push@p.iam.gserviceaccount.com"))
+
+        val error = assertFailsWith<IllegalStateException> { pushSenders(noKey) }
+        assertTrue("private_key" in error.message.orEmpty(), error.message)
+    }
+
+    /** Google's token endpoint answering [oauth] in turn (an exception is thrown), FCM always 200. */
+    private fun tokenEndpoint(vararg oauth: Any): Pair<HttpPost, () -> Int> {
+        val answers = ArrayDeque(oauth.toList())
+        var asked = 0
+        val http = HttpPost { url, _, _ ->
+            if (url.startsWith("https://fcm.")) return@HttpPost HttpReply(200, "{}")
+            asked++
+            when (val next = answers.removeFirst()) {
+                is Exception -> throw next
+                is Int -> if (next == 200) {
+                    HttpReply(200, """{"access_token":"ya29.test","expires_in":3599}""")
+                } else {
+                    HttpReply(next, "{}")
+                }
+                else -> error("bad answer $next")
+            }
+        }
+        return http to { asked }
+    }
+
+    @Test
+    fun aBusyOrUnreachableTokenEndpointIsAskedOnceMore() = runBlocking {
+        for (first in listOf<Any>(503, 429, IOException("connection reset"))) {
+            val (http, asked) = tokenEndpoint(first, 200)
+            val sender = FcmSender(ServiceAccountKey.parse(keyFile), http, wait = { waits += it })
+
+            assertEquals(PushResult.SENT, sender.send("phone-1", mapOf("id" to "a1")), "after $first")
+            assertEquals(2, asked(), "after $first")
+        }
+    }
+
+    @Test
+    fun aTokenEndpointThatStaysDownStopsTheRunButIsNotHeldAsARefusal() = runBlocking {
+        val (http, asked) = tokenEndpoint(503, 503, 200)
+        val sender = FcmSender(ServiceAccountKey.parse(keyFile), http, wait = { waits += it })
+
+        assertFailsWith<TokenEndpointUnavailable> { sender.send("phone-1", mapOf("id" to "a1")) }
+        // the next announcement asks again at once, unlike after a refusal
+        assertEquals(PushResult.SENT, sender.send("phone-1", mapOf("id" to "a1")))
+        assertEquals(3, asked())
+    }
+
+    @Test
+    fun onlyBadRequestAndAuthErrorsAreRefusals() = runBlocking {
+        for (status in listOf(400, 401, 403)) {
+            val (http, asked) = tokenEndpoint(status)
+            val sender = FcmSender(ServiceAccountKey.parse(keyFile), http, wait = { waits += it })
+
+            assertFailsWith<ServiceAccountRefused> { sender.send("phone-1", mapOf("id" to "a1")) }
+            assertEquals(1, asked(), "status $status")
+        }
     }
 }

@@ -99,15 +99,16 @@ private enum class Tab { TIMETABLE, SUBJECTS, PROFESSORS, ANNOUNCEMENTS }
 fun EtRoot(container: AppContainer, openAnnouncement: String? = null, onOpened: () -> Unit = {}) {
     val repository = container.repository
     val context = LocalContext.current
-    // null until read from the preferences, off the main thread
-    var askForPush by remember { mutableStateOf<Boolean?>(null) }
+    // null until read from the preferences, off the main thread; saved, so a rotation or a
+    // language change does not go through the empty loading frame again
+    var askForPush by rememberSaveable { mutableStateOf<Boolean?>(null) }
     val state by repository.state.collectAsStateWithLifecycle()
     val online by container.connectivity.online.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     var editingEnrollment by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
-        askForPush = withContext(Dispatchers.IO) { Push.shouldAsk(context) }
+        if (askForPush == null) askForPush = withContext(Dispatchers.IO) { Push.shouldAsk(context) }
         repository.load()
         repository.refresh()
     }
@@ -295,6 +296,13 @@ private fun MainScreen(
         showAnnouncement(id)
         onAnnouncementOpened()
     }
+    // any page the student opens while waiting wins over the announcement still on its way
+    val otherPageOpen = tab != Tab.ANNOUNCEMENTS ||
+        showProfile ||
+        professorId != null ||
+        subjectId != null ||
+        announcementId != null
+    LaunchedEffect(otherPageOpen) { if (otherPageOpen) pendingAnnouncement = null }
     // opens the announcement once it is on the phone; until then its tab shows
     LaunchedEffect(pendingAnnouncement, state.announcements) {
         val id = pendingAnnouncement ?: return@LaunchedEffect

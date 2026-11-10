@@ -15,17 +15,26 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
+import kotlinx.coroutines.withTimeoutOrNull
 import net.mehstudios.etimetable.api.PushFields
 import net.mehstudios.etimetable.api.PushPlatform
 import net.mehstudios.etimetable.model.Announcement
 import org.slf4j.LoggerFactory
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.minutes
 
 /** Most messages in flight at once; FCM answers each in about 100 ms. */
 private const val PARALLEL_SENDS = 8
 
 /** The notification shows two lines of the text; the app has the rest after its sync. */
 private const val PREVIEW_LENGTH = 180
+
+/**
+ * A run stops after this, so a gateway that keeps asking for Retry-After cannot hold the
+ * sends for good. 2,000 phones take about 30 s when FCM answers normally.
+ */
+private val RUN_DEADLINE = 10.minutes
 
 /**
  * Sends every new announcement to every registered phone. [senders] has one entry per
@@ -37,6 +46,7 @@ class PushNotifier(
     private val senders: Map<PushPlatform, PushSender>,
     private val clockCheck: ClockCheck? = null,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
+    private val deadline: Duration = RUN_DEADLINE,
 ) {
     private val log = LoggerFactory.getLogger(PushNotifier::class.java)
 
@@ -54,16 +64,27 @@ class PushNotifier(
         val devices = tokens.all().filter { it.platform in senders }
         val data = messageOf(announcement)
         val permits = Semaphore(PARALLEL_SENDS)
-        val results = try {
-            coroutineScope {
-                devices.map { device ->
-                    async { device.token to permits.withPermit { sendOne(device, data) } }
-                }.awaitAll().toMap()
+        val results = ConcurrentHashMap<String, PushResult>()
+        val finished = try {
+            withTimeoutOrNull(deadline) {
+                coroutineScope {
+                    devices.map { device ->
+                        async { results[device.token] = permits.withPermit { sendOne(device, data) } }
+                    }.awaitAll()
+                }
             }
-        } catch (e: ServiceAccountRefused) {
+        } catch (e: NoAccessToken) {
             // every other phone would get the same answer, so the run stops here
             log.error("Announcement {} was not sent: {}", announcement.id, e.message)
             return@launch
+        }
+        if (finished == null) {
+            log.warn(
+                "Announcement {} stopped after {}, {} phones not reached",
+                announcement.id,
+                deadline,
+                devices.size - results.size,
+            )
         }
         val gone = results.filterValues { it == PushResult.GONE }.keys
         tokens.forget(gone)
@@ -71,7 +92,7 @@ class PushNotifier(
         log.info(
             "Announcement {} sent to {} phones, {} gone, {} failed",
             announcement.id,
-            devices.size - gone.size - failed,
+            results.size - gone.size - failed,
             gone.size,
             failed,
         )
@@ -86,7 +107,7 @@ class PushNotifier(
         val sender = senders.getValue(device.platform)
         return try {
             sender.send(device.token, data)
-        } catch (e: ServiceAccountRefused) {
+        } catch (e: NoAccessToken) {
             throw e
         } catch (e: CancellationException) {
             throw e
@@ -112,8 +133,10 @@ class PushNotifier(
                 .replace(Regex("""[*_`]"""), "")
                 .replace(Regex("""\s+"""), " ")
                 .trim()
-            if (plain.length <= PREVIEW_LENGTH) return plain
-            val cut = plain.take(PREVIEW_LENGTH).substringBeforeLast(' ')
+            if (plain.codePointCount(0, plain.length) <= PREVIEW_LENGTH) return plain
+            // cut by code points, so an emoji is never split in half
+            val head = plain.substring(0, plain.offsetByCodePoints(0, PREVIEW_LENGTH))
+            val cut = head.substringBeforeLast(' ').ifBlank { head }
             return "$cut…"
         }
     }

@@ -44,6 +44,7 @@ import net.mehstudios.etimetable.server.push.ClockCheck
 import net.mehstudios.etimetable.server.push.FcmSender
 import net.mehstudios.etimetable.server.push.GOOGLE_TOKEN_URL
 import net.mehstudios.etimetable.server.push.HttpDateClock
+import net.mehstudios.etimetable.server.push.InvalidServiceAccountKey
 import net.mehstudios.etimetable.server.push.PushNotifier
 import net.mehstudios.etimetable.server.push.PushSender
 import net.mehstudios.etimetable.server.push.PushTokens
@@ -82,10 +83,10 @@ internal fun pushSenders(fcmServiceAccount: String?): Map<PushPlatform, PushSend
         return emptyMap()
     }
     // a key that is not JSON, or whose private key is not an RSA key, fails here and not at
-    // the first announcement
+    // the first announcement; the message names the problem and quotes nothing of the key
     val sender = try {
         FcmSender(ServiceAccountKey.parse(fcm))
-    } catch (e: Exception) {
+    } catch (e: InvalidServiceAccountKey) {
         error("ETT_FCM_SERVICE_ACCOUNT is not a Firebase service account key: ${e.message}")
     }
     log.info("Push notifications go to Android phones through Firebase project {}", sender.projectId)
