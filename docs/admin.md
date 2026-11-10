@@ -12,6 +12,16 @@ semestrul curent și ce mai e de făcut: activități fără profesor sau fără
 sală, săli sau profesori cu două activități în același timp, profesori fără
 email. Fiecare rând trimite unde se rezolvă.
 
+Bara de sus arată săptămâna de predare, ca în aplicație, și semestrul
+curent. Butonul **Temă** trece panoul între tema luminoasă și cea
+întunecată; până îl apeși, panoul urmează setarea calculatorului. În meniu,
+lângă **Probleme de orar**, apare câte probleme așteaptă verificarea.
+
+Listele lungi (materii, profesori, studenți, probleme de orar) au pagini:
+jos se vede ce rânduri sunt afișate, de exemplu "11-20 din 243", câte
+rânduri să arate o pagină (10, 25 sau 50) și linkurile spre celelalte
+pagini. Căutarea și filtrele se păstrează când schimbi pagina.
+
 Adresa serverului fără `/admin` este pagina publică a aplicației, pentru
 studenți: de unde se descarcă și ce face. Are un link spre panou.
 
@@ -86,9 +96,13 @@ descarcă orarul actual înainte de a-l modifica în Excel.
 
   Un profesor fără activități se poate șterge; unul nou se adaugă de pe
   listă.
-- **Săli.** Sălile sunt grupate pe corpuri; numele și adresa corpului se
-  schimbă de aici. Pagina unei săli arată săptămâna ei, deci și orele în
-  care e liberă.
+- **Săli.** Fila **Săli** este un tabel cu toate sălile: corpul, locurile,
+  câte activități are fiecare și câte ore pe săptămână e ocupată (o
+  activitate din săptămânile pare sau impare contează pe jumătate). Se
+  caută după cod și se filtrează după corp. Fila **Corpuri** listează
+  corpurile cu adresa și numărul de săli; numele și adresa unui corp se
+  schimbă pe pagina lui. Pagina unei săli arată săptămâna ei, deci și orele
+  în care e liberă.
 - **Studenți** (doar administratorii). Conturile, după email sau nume, cu
   grupa aleasă. **Schimbă** pune o parolă nouă pentru cine și-a pierdut-o și
   îl deconectează de pe toate telefoanele; spune-i parola pe altă cale.
@@ -138,8 +152,10 @@ Diacriticele se păstrează dacă fișierul este salvat ca "CSV UTF-8".
 ## Gestionare orar în browser
 
 **Gestionare orar** caută după materie, profesor, sală sau grupă, cu filtre
-pentru zi și activități fără sală sau profesor. Bifează activitățile de
-modificat (cel mult 200), alege sala sau profesorul și, opțional, deplasarea
+pentru zi și activități fără sală sau profesor, în pagini de 10, 25 sau 50
+de rânduri; căutarea cuprinde toate paginile. Bifează activitățile de
+modificat de pe pagina deschisă (căsuța din capul tabelului le bifează pe
+toate de pe pagină), alege sala sau profesorul și, opțional, deplasarea
 în minute. **Previzualizează modificările** arată noile ore și suprapunerile
 noi. Numai **Confirmă și salvează** le publică. Dacă alt editor a modificat
 orarul între timp, reîncarcă pagina și verifică selecția. Linkul fiecărei

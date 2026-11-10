@@ -19,7 +19,19 @@ import kotlin.time.Duration.Companion.hours
 
 enum class AdminRole { ADMIN, EDITOR }
 
-data class Admin(val id: UUID, val email: String, val role: AdminRole)
+data class Admin(val id: UUID, val email: String, val role: AdminRole, val shell: Shell? = null)
+
+/**
+ * What the page frame shows around every dashboard page: the teaching week as the app
+ * shows it, the current semester, the open reports, and the theme the admin picked.
+ */
+data class Shell(
+    val week: Int? = null,
+    val weekLabel: String? = null,
+    val semester: String? = null,
+    val openReports: Int = 0,
+    val theme: String? = null,
+)
 
 /** Thrown with a message meant for the person filling in the form, in Romanian. */
 class AdminFormError(message: String) : RuntimeException(message)

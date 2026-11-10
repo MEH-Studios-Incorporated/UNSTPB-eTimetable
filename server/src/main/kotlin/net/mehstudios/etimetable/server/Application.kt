@@ -36,6 +36,7 @@ import net.mehstudios.etimetable.server.accounts.Accounts
 import net.mehstudios.etimetable.server.admin.AdminAccounts
 import net.mehstudios.etimetable.server.admin.AdminCookie
 import net.mehstudios.etimetable.server.admin.adminRoutes
+import net.mehstudios.etimetable.server.admin.respondAdminError
 import net.mehstudios.etimetable.server.announcements.AnnouncementRepository
 import net.mehstudios.etimetable.server.dataset.DatasetRepository
 import net.mehstudios.etimetable.server.db.createDataSource
@@ -133,11 +134,24 @@ fun Application.module(services: Services, secureCookies: Boolean = false, downl
     install(StatusPages) {
         exception<ApiProblem> { call, e -> call.respond(e.status, e.error) }
         exception<BadRequestException> { call, e ->
+            if (call.request.path().startsWith(
+                    "/admin",
+                )
+            ) {
+                return@exception call.respondAdminError(HttpStatusCode.BadRequest)
+            }
             call.respond(HttpStatusCode.BadRequest, ApiError(ErrorCodes.BAD_REQUEST, e.message.orEmpty()))
         }
         exception<Throwable> { call, e ->
             call.application.environment.log.error("Unhandled error on ${call.request.path()}", e)
+            if (call.request.path().startsWith("/admin")) {
+                return@exception call.respondAdminError(HttpStatusCode.InternalServerError)
+            }
             call.respond(HttpStatusCode.InternalServerError, ApiError(ErrorCodes.INTERNAL))
+        }
+        // the dashboard answers people, not apps: a page instead of an empty body
+        status(HttpStatusCode.NotFound, HttpStatusCode.Forbidden) { call, status ->
+            if (call.request.path().startsWith("/admin")) call.respondAdminError(status)
         }
     }
     install(RateLimit) {

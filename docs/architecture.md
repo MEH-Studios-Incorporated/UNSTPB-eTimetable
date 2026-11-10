@@ -30,7 +30,7 @@ framework `shared/` produces.
 | iOS widget | WidgetKit, reading the app's database through an App Group |
 | Server | Ktor on the JVM (Java 21) |
 | Server database | PostgreSQL through JDBC and HikariCP, Flyway for migrations |
-| Admin dashboard | HTML rendered by the server (kotlinx.html), plain forms, no JavaScript |
+| Admin dashboard | HTML rendered by the server (kotlinx.html), plain forms; one small optional script (`admin.js`) |
 | Push | Firebase Cloud Messaging HTTP v1 for Android, APNs for iOS |
 | Packaging | One Docker image for the server, `docker compose` with PostgreSQL |
 

@@ -348,8 +348,8 @@ class TimetableReportRoutesTest {
         }
         val browser = browser()
         browser.adminLogin()
-        val first = browser.get("/admin/reports").bodyAsText()
-        val second = browser.get("/admin/reports?page=1").bodyAsText()
+        val first = browser.get("/admin/reports?size=50").bodyAsText()
+        val second = browser.get("/admin/reports?size=50&page=2").bodyAsText()
         val reportLink = Regex("href=\"/admin/reports/([0-9a-f-]{36})\"")
         val firstIds = reportLink.findAll(first).map { it.groupValues[1] }.toSet()
         val secondIds = reportLink.findAll(second).map { it.groupValues[1] }.toSet()
@@ -358,5 +358,7 @@ class TimetableReportRoutesTest {
         assertEquals(51, (firstIds + secondIds).size)
         assertTrue("Pagina următoare" in first)
         assertFalse("Pagina următoare" in second)
+        assertTrue("1-50 din 51" in first)
+        assertTrue("51-51 din 51" in second)
     }
 }

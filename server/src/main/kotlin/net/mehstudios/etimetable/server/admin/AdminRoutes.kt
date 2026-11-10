@@ -925,27 +925,32 @@ private fun Route.adminListRoutes(services: Services) {
             ) {
                 notice(call.parameters["msg"])
                 notice(call.parameters["err"], error = true)
-                table {
-                    thead {
-                        tr {
-                            th { +"Email" }
-                            th { +"Rol" }
-                            th { }
-                        }
-                    }
-                    tbody {
-                        admins.forEach { other ->
+                tableCard {
+                    table {
+                        thead {
                             tr {
-                                td { +other.email }
-                                td { +(if (other.role == AdminRole.ADMIN) "Administrator" else "Editor") }
-                                td("actions") {
-                                    if (other.id != admin.id) {
-                                        form(action = "/admin/admins/${other.id}/delete", method = FormMethod.post) {
-                                            onSubmit = "return confirm('Ștergi contul ${other.email}?')"
-                                            button(classes = "danger") { +"Șterge" }
+                                th { +"Email" }
+                                th { +"Rol" }
+                                th { }
+                            }
+                        }
+                        tbody {
+                            admins.forEach { other ->
+                                tr {
+                                    td { +other.email }
+                                    td { +(if (other.role == AdminRole.ADMIN) "Administrator" else "Editor") }
+                                    td("actions") {
+                                        if (other.id != admin.id) {
+                                            form(
+                                                action = "/admin/admins/${other.id}/delete",
+                                                method = FormMethod.post,
+                                            ) {
+                                                onSubmit = "return confirm('Ștergi contul ${other.email}?')"
+                                                button(classes = "danger") { +"Șterge" }
+                                            }
+                                        } else {
+                                            a(href = "/admin/password") { +"Schimbă parola" }
                                         }
-                                    } else {
-                                        a(href = "/admin/password") { +"Schimbă parola" }
                                     }
                                 }
                             }
@@ -1097,7 +1102,7 @@ private fun dateTime(a: Announcement): String {
 private fun HTML.loginPage(error: String?) {
     adminPage("Administrare eTimetable", null, null) {
         div("login") {
-            img(src = "/admin/static/faima-seal.png", alt = "Sigiliul FAIMA")
+            seal()
             h1 { +"Administrare eTimetable" }
             p("sub") { +"Orarul și anunțurile FAIMA" }
             notice(error, error = true)
@@ -1123,8 +1128,33 @@ private fun HTML.loginPage(error: String?) {
     }
 }
 
-internal suspend fun RoutingContext.currentAdmin(services: Services): Admin? =
-    call.sessions.get<AdminCookie>()?.let { services.admins.adminFor(it.token) }
+internal suspend fun RoutingContext.currentAdmin(services: Services): Admin? {
+    val admin = call.sessions.get<AdminCookie>()?.let { services.admins.adminFor(it.token) } ?: return null
+    return admin.copy(shell = shell(services))
+}
+
+/** The theme cookie admin.js sets; anything else means "follow the system". */
+private const val THEME_COOKIE = "ett_theme"
+
+private suspend fun RoutingContext.shell(services: Services): Shell {
+    val theme = call.request.cookies[THEME_COOKIE]?.takeIf { it == "light" || it == "dark" }
+    val dataset = services.datasets.current()?.dataset
+        ?: return Shell(openReports = services.reports.openCount(), theme = theme)
+    val today = Clock.System.facultyNow().date
+    val calendar = TeachingCalendar(dataset.semester)
+    val week = calendar.weekOf(today)
+    val label = when {
+        week != null -> "Săptămâna ${if (week.parity == Parity.ODD) "impară" else "pară"}"
+        else -> calendar.breakOn(today)?.name?.ro
+    }
+    return Shell(
+        week = week?.number,
+        weekLabel = label,
+        semester = dataset.semester.name.ro,
+        openReports = services.reports.openCount(),
+        theme = theme,
+    )
+}
 
 /**
  * The session cookie is SameSite=Lax, so other sites cannot post with it.

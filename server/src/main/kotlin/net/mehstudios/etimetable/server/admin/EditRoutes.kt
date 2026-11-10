@@ -24,6 +24,7 @@ import net.mehstudios.etimetable.model.LocalizedText
 import net.mehstudios.etimetable.model.OfficeHour
 import net.mehstudios.etimetable.model.Professor
 import net.mehstudios.etimetable.model.Room
+import net.mehstudios.etimetable.model.Subject
 import net.mehstudios.etimetable.model.WeeklySlot
 import net.mehstudios.etimetable.schedule.FacultyTimeZone
 import net.mehstudios.etimetable.server.ApiProblem
@@ -45,7 +46,7 @@ fun Route.editRoutes(services: Services) {
                 ?: return@page call.respondRedirect(
                     "/admin/semesters?err=${"Niciun semestru nu este curent încă.".encodeURLParameter()}",
                 )
-            call.respondRedirect("/admin/semesters/$id/$part")
+            call.respondRedirect(linkTo("/admin/semesters/$id/$part", call.request.queryParameters, emptyMap()))
         }
     }
     subjectRoutes(services)
@@ -86,86 +87,29 @@ private fun Route.subjectRoutes(services: Services) {
                         ).contains(TimetableSheet.fold(query))
                     )
         }
+        val paging = call.parameters.paging(subjects.size)
         call.respondHtml {
             adminPage("Materii", admin, Section.SUBJECTS, context = { semesterLink(dataset) }) {
-                form(action = "${dataset.base()}/subjects", method = FormMethod.get, classes = "filters") {
-                    searchInput(name = "q") {
-                        value = query
-                        placeholder = "Caută după nume sau cod"
-                    }
-                    select {
-                        name = "programme"
-                        option {
-                            value = ""
-                            +"Toate specializările"
-                        }
-                        dataset.programmes.forEach { p ->
-                            option {
-                                value = p.id
-                                selected = p.id == programme
-                                +p.code
-                            }
-                        }
-                    }
-                    select {
-                        name = "year"
-                        option {
-                            value = ""
-                            +"Toți anii"
-                        }
-                        dataset.subjects.map { it.year }.distinct().sorted().forEach { y ->
-                            option {
-                                value = y.toString()
-                                selected = y == year
-                                +"Anul $y"
-                            }
-                        }
-                    }
-                    button(classes = "secondary") { +"Filtrează" }
-                }
-                p("hint") { +"${subjects.size} din ${dataset.subjects.size} materii." }
-                div("scroll") {
-                    table {
-                        thead {
-                            tr {
-                                th { +"Materie" }
-                                th { +"Specializare" }
-                                th(classes = "num") { +"An" }
-                                th(classes = "num") { +"Activități" }
-                                th(classes = "num") { +"Fără profesor" }
-                            }
-                        }
-                        tbody {
-                            subjects.forEach { s ->
-                                val activities = dataset.activities.filter { it.subjectId == s.id }
-                                tr {
-                                    td {
-                                        a(href = "${dataset.base()}/subjects/${s.id.encodeURLParameter()}") {
-                                            +s.name.ro
-                                        }
-                                        div("hint") { +s.code }
-                                    }
-                                    td {
-                                        +(
-                                            dataset.programmes.firstOrNull { it.id == s.programmeId }?.code
-                                                ?: s.programmeId
-                                            )
-                                    }
-                                    td("num") { +s.year.toString() }
-                                    td("num") { +activities.size.toString() }
-                                    td("num") {
-                                        val missing = activities.count { it.professorId == null }
-                                        if (missing > 0) span("tag") { +missing.toString() }
-                                    }
-                                }
-                            }
-                        }
+                tableCard(
+                    filters = { subjectFilters(dataset, query, programme, year) },
+                    footer = { pager(paging, "${dataset.base()}/subjects", call.request.queryParameters) },
+                ) {
+                    if (subjects.isEmpty()) {
+                        emptyState(
+                            "Nicio materie",
+                            if (dataset.subjects.isEmpty()) {
+                                "Materiile apar după importul orarului."
+                            } else {
+                                "Schimbă filtrele."
+                            },
+                        )
+                    } else {
+                        subjectTable(dataset, paging.slice(subjects))
                     }
                 }
             }
         }
     }
-
     page("/semesters/{id}/subjects/{subject}", services) { admin ->
         val dataset = semesterOrNull(services) ?: return@page call.respond(HttpStatusCode.NotFound)
         val subject = dataset.subjectsById[call.parameters["subject"].orEmpty()]
@@ -327,48 +271,53 @@ private fun Route.professorRoutes(services: Services) {
         val dataset = semesterOrNull(services) ?: return@page call.respond(HttpStatusCode.NotFound)
         val query = call.parameters["q"].orEmpty().trim()
         val (msg, err) = message()
+        val noEmail = call.parameters["no_email"] == "on"
+        val idle = call.parameters["idle"] == "on"
+        val teaching = dataset.activities.mapNotNull { it.professorId }.toSet()
         val professors = dataset.professors
             .filter {
                 query.isEmpty() ||
                     TimetableSheet.fold(it.displayName + " " + it.email.orEmpty()).contains(TimetableSheet.fold(query))
             }
+            .filter { !noEmail || it.email == null }
+            .filter { !idle || it.id !in teaching }
             .sortedBy { TimetableSheet.fold(it.name) }
+        val paging = call.parameters.paging(professors.size)
         call.respondHtml {
             adminPage("Profesori", admin, Section.PROFESSORS, context = { semesterLink(dataset) }) {
                 notice(msg)
                 notice(err, error = true)
-                form(action = "${dataset.base()}/professors", method = FormMethod.get, classes = "filters") {
-                    searchInput(name = "q") {
-                        value = query
-                        placeholder = "Caută după nume sau email"
-                    }
-                    button(classes = "secondary") { +"Caută" }
-                }
-                div("scroll") {
-                    table {
-                        thead {
-                            tr {
-                                th { +"Profesor" }
-                                th { +"Email" }
-                                th(classes = "num") { +"Activități" }
-                                th(classes = "num") { +"Consultații" }
+                tableCard(
+                    filters = {
+                        form(action = "${dataset.base()}/professors", method = FormMethod.get, classes = "filters") {
+                            searchInput(name = "q") {
+                                value = query
+                                placeholder = "Caută după nume sau email"
                             }
-                        }
-                        tbody {
-                            professors.forEach { p ->
-                                tr {
-                                    td {
-                                        a(href = "${dataset.base()}/professors/${p.id.encodeURLParameter()}") {
-                                            +p.name
-                                        }
-                                        div("hint") { +p.title }
-                                    }
-                                    td { if (p.email != null) +p.email.orEmpty() else span("tag") { +"lipsește" } }
-                                    td("num") { +dataset.activities.count { it.professorId == p.id }.toString() }
-                                    td("num") { +p.officeHours.size.toString() }
-                                }
+                            label("check") {
+                                checkBoxInput(name = "no_email") { checked = noEmail }
+                                +"Fără email"
                             }
+                            label("check") {
+                                checkBoxInput(name = "idle") { checked = idle }
+                                +"Fără activități"
+                            }
+                            button(classes = "secondary") { +"Filtrează" }
                         }
+                    },
+                    footer = { pager(paging, "${dataset.base()}/professors", call.request.queryParameters) },
+                ) {
+                    if (professors.isEmpty()) {
+                        emptyState(
+                            "Niciun profesor",
+                            if (query.isEmpty()) {
+                                "Adaugă unul mai jos sau importă orarul."
+                            } else {
+                                "Nimeni nu se potrivește căutării."
+                            },
+                        )
+                    } else {
+                        professorTable(dataset, paging.slice(professors))
                     }
                 }
                 h2 { +"Profesor nou" }
@@ -957,7 +906,10 @@ private fun Route.roomRoutes(services: Services) {
     page("/semesters/{id}/rooms", services) { admin ->
         val dataset = semesterOrNull(services) ?: return@page call.respond(HttpStatusCode.NotFound)
         val (msg, err) = message()
-        val use = dataset.activities.groupingBy { it.roomId }.eachCount()
+        val buildings = call.parameters["view"] == "buildings"
+        val query = call.parameters["q"].orEmpty().trim()
+        val folded = TimetableSheet.fold(query)
+        val path = "${dataset.base()}/rooms"
         call.respondHtml {
             adminPage(
                 "Săli",
@@ -970,38 +922,137 @@ private fun Route.roomRoutes(services: Services) {
             ) {
                 notice(msg)
                 notice(err, error = true)
-                div("cols buildings") {
-                    dataset.buildings.sortedBy { it.code }.forEach { building ->
-                        val rooms = dataset.rooms.filter { it.buildingId == building.id }.sortedBy { it.code }
-                        div("card") {
-                            form(
-                                action = "${dataset.base()}/buildings/${building.id.encodeURLParameter()}",
-                                method = FormMethod.post,
-                                classes = "building",
-                            ) {
-                                strong { +building.code }
-                                textInput(name = "name") {
-                                    value = building.name
-                                    attributes["aria-label"] = "Numele corpului ${building.code}"
+                if (buildings) {
+                    val rows = dataset.buildings
+                        .filter {
+                            folded.isEmpty() ||
+                                TimetableSheet.fold("${it.code} ${it.name} ${it.address.orEmpty()}").contains(folded)
+                        }
+                        .sortedBy { TimetableSheet.fold(it.code) }
+                    val paging = call.parameters.paging(rows.size)
+                    tableCard(
+                        filters = {
+                            roomTabs(dataset, path, buildings = true)
+                            form(action = path, method = FormMethod.get, classes = "filters") {
+                                hiddenInput(name = "view") { value = "buildings" }
+                                searchInput(name = "q") {
+                                    value = query
+                                    placeholder = "Caută după cod, nume sau adresă"
+                                    attributes["aria-label"] = "Caută corpuri"
                                 }
-                                textInput(name = "address") {
-                                    value = building.address.orEmpty()
-                                    placeholder = "Adresa"
-                                    attributes["aria-label"] = "Adresa corpului ${building.code}"
-                                }
-                                button(classes = "secondary") { +"Salvează" }
+                                button(classes = "secondary") { +"Caută" }
                             }
-                            div("chips") {
-                                rooms.forEach { room ->
-                                    a(href = "${dataset.base()}/rooms/${room.id.encodeURLParameter()}") {
-                                        +room.code
-                                        span("hint") { +" ${use[room.id] ?: 0}" }
+                        },
+                        footer = { pager(paging, path, call.request.queryParameters) },
+                    ) {
+                        if (rows.isEmpty()) {
+                            emptyState("Niciun corp", "Corpurile apar după importul orarului, din codurile sălilor.")
+                        } else {
+                            buildingTable(dataset, paging.slice(rows))
+                        }
+                    }
+                } else {
+                    val building = call.parameters["building"].orEmpty()
+                    val rows = dataset.rooms
+                        .filter { building.isEmpty() || it.buildingId == building }
+                        .filter {
+                            folded.isEmpty() ||
+                                TimetableSheet.fold(
+                                    "${it.code} ${dataset.buildingsById[it.buildingId]?.name.orEmpty()}",
+                                )
+                                    .contains(folded)
+                        }
+                        .sortedWith(compareBy({ TimetableSheet.fold(it.buildingId) }, { TimetableSheet.fold(it.code) }))
+                    val paging = call.parameters.paging(rows.size)
+                    tableCard(
+                        filters = {
+                            roomTabs(dataset, path, buildings = false)
+                            form(action = path, method = FormMethod.get, classes = "filters") {
+                                searchInput(name = "q") {
+                                    value = query
+                                    placeholder = "Caută o sală"
+                                    attributes["aria-label"] = "Caută săli"
+                                }
+                                select {
+                                    name = "building"
+                                    attributes["aria-label"] = "Corp"
+                                    option {
+                                        value = ""
+                                        +"Toate corpurile"
+                                    }
+                                    dataset.buildings.sortedBy { it.code }.forEach { b ->
+                                        option {
+                                            value = b.id
+                                            selected = b.id == building
+                                            +b.code
+                                        }
                                     }
                                 }
+                                button(classes = "secondary") { +"Filtrează" }
                             }
+                        },
+                        footer = { pager(paging, path, call.request.queryParameters) },
+                    ) {
+                        if (rows.isEmpty()) {
+                            emptyState(
+                                "Nicio sală",
+                                if (dataset.rooms.isEmpty()) {
+                                    "Sălile apar după importul orarului."
+                                } else {
+                                    "Schimbă căutarea sau corpul."
+                                },
+                            )
+                        } else {
+                            roomTable(dataset, paging.slice(rows))
                         }
                     }
                 }
+            }
+        }
+    }
+
+    page("/semesters/{id}/buildings/{building}", services) { admin ->
+        val dataset = semesterOrNull(services) ?: return@page call.respond(HttpStatusCode.NotFound)
+        val building = dataset.buildingsById[call.parameters["building"].orEmpty()]
+            ?: return@page call.respond(HttpStatusCode.NotFound)
+        val rooms = dataset.rooms.filter { it.buildingId == building.id }.sortedBy { TimetableSheet.fold(it.code) }
+        call.respondHtml {
+            adminPage(
+                "Corpul ${building.code}",
+                admin,
+                Section.ROOMS,
+                context = { a(href = "${dataset.base()}/rooms?view=buildings") { +"Corpuri" } },
+            ) {
+                form(
+                    action = "${dataset.base()}/buildings/${building.id.encodeURLParameter()}",
+                    method = FormMethod.post,
+                    classes = "card",
+                ) {
+                    field("name", "Nume") {
+                        textInput(name = "name") {
+                            id = "name"
+                            required = true
+                            value = building.name
+                        }
+                    }
+                    field("address", "Adresă") {
+                        textInput(name = "address") {
+                            id = "address"
+                            value = building.address.orEmpty()
+                            placeholder = "Splaiul Independenței 313"
+                        }
+                        p("hint") { +"Studenții o văd pe pagina sălii, cu un link spre hartă." }
+                    }
+                    div("form-actions") {
+                        button { +"Salvează" }
+                        a(href = "${dataset.base()}/rooms?view=buildings", classes = "btn secondary") { +"Înapoi" }
+                    }
+                }
+                h2 {
+                    +"Săli"
+                    span("count") { +rooms.size.toString() }
+                }
+                tableCard { roomTable(dataset, rooms) }
             }
         }
     }
@@ -1011,11 +1062,11 @@ private fun Route.roomRoutes(services: Services) {
         val id = call.parameters["building"].orEmpty()
         val form = call.receiveParameters()
         val name = form["name"].orEmpty().trim()
-        val list = "${dataset.base()}/rooms"
+        val list = "${dataset.base()}/rooms?view=buildings"
         if (id !in dataset.buildingsById ||
             name.isEmpty()
         ) {
-            return@action call.respondRedirect("$list?${err("Numele corpului este obligatoriu.")}")
+            return@action call.respondRedirect("$list&${err("Numele corpului este obligatoriu.")}")
         }
         services.save(
             dataset.copy(
@@ -1030,7 +1081,7 @@ private fun Route.roomRoutes(services: Services) {
                 },
             ),
         )
-        call.respondRedirect("$list?${msg("Corpul a fost salvat.")}")
+        call.respondRedirect("$list&${msg("Corpul a fost salvat.")}")
     }
 
     page("/semesters/{id}/rooms/{room}", services) { admin ->
@@ -1098,7 +1149,8 @@ private fun Route.studentRoutes(services: Services) {
     page("/students", services, AdminRole.ADMIN) { admin ->
         val query = call.parameters["q"].orEmpty()
         val (msg, err) = message()
-        val students = services.accounts.list(query)
+        val paging = call.parameters.paging(services.accounts.count(query))
+        val students = services.accounts.list(query, paging.offset, paging.size)
         val counts = services.accounts.counts()
         call.respondHtml {
             adminPage(
@@ -1109,69 +1161,85 @@ private fun Route.studentRoutes(services: Services) {
             ) {
                 notice(msg)
                 notice(err, error = true)
-                form(action = "/admin/students", method = FormMethod.get, classes = "filters") {
-                    searchInput(name = "q") {
-                        value = query
-                        placeholder = "Caută după email sau nume"
-                    }
-                    button(classes = "secondary") { +"Caută" }
-                }
                 p("hint") {
                     +"Datele sunt cele scrise de studenți; nimic nu este verificat. "
                     +"O parolă nouă îi deconectează de pe toate telefoanele."
                 }
-                div("scroll") {
-                    table {
-                        thead {
-                            tr {
-                                th { +"Student" }
-                                th { +"Telefon" }
-                                th { +"Înscriere" }
-                                th { +"Cont creat" }
-                                th { }
+                tableCard(
+                    filters = {
+                        form(action = "/admin/students", method = FormMethod.get, classes = "filters") {
+                            searchInput(name = "q") {
+                                value = query
+                                placeholder = "Caută după email sau nume"
                             }
+                            button(classes = "secondary") { +"Caută" }
                         }
-                        tbody {
-                            students.forEach { s ->
+                    },
+                    footer = { pager(paging, "/admin/students", call.request.queryParameters) },
+                ) {
+                    if (students.isEmpty()) {
+                        emptyState(
+                            if (query.isBlank()) "Niciun cont de student" else "Niciun student găsit",
+                            if (query.isBlank()) {
+                                "Conturile apar când studenții se înscriu în aplicație."
+                            } else {
+                                "Caută după altă adresă sau alt nume."
+                            },
+                        )
+                    } else {
+                        table {
+                            thead {
                                 tr {
-                                    td {
-                                        +s.profile.fullName.ifBlank { "(fără nume)" }
-                                        div("hint") { +s.email }
-                                    }
-                                    td("tnum") { +s.profile.phone }
-                                    td {
-                                        +when (val e = s.profile.enrollment) {
-                                            is Enrollment.National -> listOfNotNull(e.groupId, e.halfGroupId).last()
-                                            is Enrollment.Erasmus -> "Erasmus, ${e.activityIds.size} ore"
-                                            null -> "nu a ales"
+                                    th { +"Student" }
+                                    th { +"Telefon" }
+                                    th { +"Înscriere" }
+                                    th { +"Cont creat" }
+                                    th { }
+                                }
+                            }
+                            tbody {
+                                students.forEach { s ->
+                                    tr {
+                                        td {
+                                            +s.profile.fullName.ifBlank { "(fără nume)" }
+                                            div("hint") { +s.email }
                                         }
-                                    }
-                                    td("tnum") {
-                                        val local = s.createdAt.toLocalDateTime(FacultyTimeZone)
-                                        +longDate(local.date)
-                                    }
-                                    td("actions") {
-                                        form(
-                                            action = "/admin/students/${s.id}/password",
-                                            method = FormMethod.post,
-                                            classes = "inline-form",
-                                        ) {
-                                            passwordInput(name = "password") {
-                                                placeholder = "Parolă nouă"
-                                                minLength = "8"
-                                                required = true
-                                                attributes["autocomplete"] = "new-password"
-                                                attributes["aria-label"] = "Parolă nouă pentru ${s.email}"
+                                        td("tnum") { +s.profile.phone }
+                                        td {
+                                            +when (val e = s.profile.enrollment) {
+                                                is Enrollment.National -> listOfNotNull(e.groupId, e.halfGroupId).last()
+                                                is Enrollment.Erasmus -> "Erasmus, ${e.activityIds.size} ore"
+                                                null -> "nu a ales"
                                             }
-                                            button(classes = "secondary") { +"Schimbă" }
                                         }
-                                        form(
-                                            action = "/admin/students/${s.id}/delete",
-                                            method = FormMethod.post,
-                                            classes = "inline",
-                                        ) {
-                                            onSubmit = "return confirm('Ștergi contul ${s.email}? Nu se poate anula.')"
-                                            button(classes = "danger") { +"Șterge" }
+                                        td("tnum") {
+                                            val local = s.createdAt.toLocalDateTime(FacultyTimeZone)
+                                            +longDate(local.date)
+                                        }
+                                        td("actions") {
+                                            form(
+                                                action = "/admin/students/${s.id}/password",
+                                                method = FormMethod.post,
+                                                classes = "inline-form",
+                                            ) {
+                                                passwordInput(name = "password") {
+                                                    placeholder = "Parolă nouă"
+                                                    minLength = "8"
+                                                    required = true
+                                                    attributes["autocomplete"] = "new-password"
+                                                    attributes["aria-label"] = "Parolă nouă pentru ${s.email}"
+                                                }
+                                                button(classes = "secondary") { +"Schimbă" }
+                                            }
+                                            form(
+                                                action = "/admin/students/${s.id}/delete",
+                                                method = FormMethod.post,
+                                                classes = "inline",
+                                            ) {
+                                                onSubmit =
+                                                    "return confirm('Ștergi contul ${s.email}? Nu se poate anula.')"
+                                                button(classes = "danger") { +"Șterge" }
+                                            }
                                         }
                                     }
                                 }
@@ -1179,7 +1247,6 @@ private fun Route.studentRoutes(services: Services) {
                         }
                     }
                 }
-                if (students.isEmpty()) p("hint") { +"Niciun cont." }
             }
         }
     }
@@ -1201,5 +1268,226 @@ private fun Route.studentRoutes(services: Services) {
             ?: return@action call.respond(HttpStatusCode.NotFound)
         services.accounts.delete(id)
         call.respondRedirect("/admin/students?${msg("Contul a fost șters.")}")
+    }
+}
+
+private fun FlowContent.subjectFilters(dataset: Dataset, query: String, programme: String, year: Int?) {
+    form(action = "${dataset.base()}/subjects", method = FormMethod.get, classes = "filters") {
+        searchInput(name = "q") {
+            value = query
+            placeholder = "Caută după nume sau cod"
+        }
+        select {
+            name = "programme"
+            option {
+                value = ""
+                +"Toate specializările"
+            }
+            dataset.programmes.forEach { p ->
+                option {
+                    value = p.id
+                    selected = p.id == programme
+                    +p.code
+                }
+            }
+        }
+        select {
+            name = "year"
+            option {
+                value = ""
+                +"Toți anii"
+            }
+            dataset.subjects.map { it.year }.distinct().sorted().forEach { y ->
+                option {
+                    value = y.toString()
+                    selected = y == year
+                    +"Anul $y"
+                }
+            }
+        }
+        button(classes = "secondary") { +"Filtrează" }
+    }
+}
+
+private fun FlowContent.subjectTable(dataset: Dataset, rows: List<Subject>) {
+    val bySubject = dataset.activities.groupBy { it.subjectId }
+    table {
+        thead {
+            tr {
+                th { +"Materie" }
+                th { +"Specializare" }
+                th(classes = "num") { +"An" }
+                th { +"Activități" }
+                th { +"Profesori" }
+                th(classes = "num") { +"Ore pe săptămână" }
+                th(classes = "num") { +"Fără profesor" }
+            }
+        }
+        tbody {
+            rows.forEach { s ->
+                val activities = bySubject[s.id].orEmpty()
+                val teachers = activities.mapNotNull { it.professorId }.distinct()
+                    .mapNotNull { dataset.professorsById[it]?.name }.sorted()
+                tr {
+                    td {
+                        a(href = "${dataset.base()}/subjects/${s.id.encodeURLParameter()}") { +s.name.ro }
+                        div("hint") { +s.code }
+                    }
+                    td { +(dataset.programmes.firstOrNull { it.id == s.programmeId }?.code ?: s.programmeId) }
+                    td("num") { +s.year.toString() }
+                    td {
+                        // "1 Curs · 4 Laborator", in the order of the activity types
+                        +activities.groupingBy { it.type }.eachCount().entries.sortedBy { it.key.ordinal }
+                            .joinToString(" · ") { (type, n) -> "$n ${TYPE_NAMES.getValue(type)}" }
+                            .ifEmpty { "-" }
+                    }
+                    td { shortList(teachers) }
+                    td("num") { +weeklyHours(activities) }
+                    td("num") {
+                        val missing = activities.count { it.professorId == null }
+                        if (missing > 0) span("tag") { +missing.toString() } else +"-"
+                    }
+                }
+            }
+        }
+    }
+}
+
+private fun FlowContent.professorTable(dataset: Dataset, rows: List<Professor>) {
+    val byProfessor = dataset.activities.groupBy { it.professorId }
+    table {
+        thead {
+            tr {
+                th { +"Profesor" }
+                th { +"Email" }
+                th { +"Materii" }
+                th(classes = "num") { +"Activități" }
+                th(classes = "num") { +"Ore pe săptămână" }
+                th { +"Birou" }
+                th(classes = "num") { +"Consultații" }
+            }
+        }
+        tbody {
+            rows.forEach { p ->
+                val activities = byProfessor[p.id].orEmpty()
+                val subjects = activities.map { it.subjectId }.distinct()
+                    .mapNotNull { dataset.subjectsById[it]?.name?.ro }.sorted()
+                tr {
+                    td {
+                        a(href = "${dataset.base()}/professors/${p.id.encodeURLParameter()}") { +p.name }
+                        div("hint") { +p.title }
+                    }
+                    td { if (p.email != null) +p.email.orEmpty() else span("tag") { +"lipsește" } }
+                    td { shortList(subjects) }
+                    td("num") { +activities.size.toString() }
+                    td("num") { +weeklyHours(activities) }
+                    td { +(p.officeRoomId?.let { dataset.roomsById[it]?.code ?: it } ?: "-") }
+                    td("num") { +p.officeHours.size.toString() }
+                }
+            }
+        }
+    }
+}
+
+/** The first two names, then how many more. */
+private fun FlowContent.shortList(names: List<String>) {
+    if (names.isEmpty()) {
+        span("hint") { +"-" }
+        return
+    }
+    +names.take(2).joinToString(", ")
+    if (names.size > 2) span("hint") { +" și încă ${names.size - 2}" }
+}
+
+private fun FlowContent.roomTabs(dataset: Dataset, path: String, buildings: Boolean) {
+    nav("tabs") {
+        attributes["aria-label"] = "Vizualizare"
+        a(href = path, classes = if (buildings) null else "active") {
+            +"Săli"
+            span("n") { +dataset.rooms.size.toString() }
+        }
+        a(href = "$path?view=buildings", classes = if (buildings) "active" else null) {
+            +"Corpuri"
+            span("n") { +dataset.buildings.size.toString() }
+        }
+    }
+}
+
+private fun FlowContent.roomTable(dataset: Dataset, rows: List<Room>) {
+    val use = dataset.activities.groupBy { it.roomId }
+    table {
+        thead {
+            tr {
+                th { +"Sală" }
+                th { +"Corp" }
+                th(classes = "num") { +"Locuri" }
+                th(classes = "num") { +"Activități" }
+                th(classes = "num") { +"Ore pe săptămână" }
+            }
+        }
+        tbody {
+            rows.forEach { room ->
+                val activities = use[room.id].orEmpty()
+                tr {
+                    td { a(href = "${dataset.base()}/rooms/${room.id.encodeURLParameter()}") { +room.code } }
+                    td {
+                        val building = dataset.buildingsById[room.buildingId]
+                        +(building?.code ?: room.buildingId)
+                        if (building != null && building.name != building.code) div("hint") { +building.name }
+                    }
+                    td("num") { +(room.capacity?.toString() ?: "-") }
+                    td("num") { +activities.size.toString() }
+                    td("num") { +weeklyHours(activities) }
+                }
+            }
+        }
+    }
+}
+
+private fun FlowContent.buildingTable(dataset: Dataset, rows: List<Building>) {
+    val rooms = dataset.rooms.groupingBy { it.buildingId }.eachCount()
+    table {
+        thead {
+            tr {
+                th { +"Corp" }
+                th { +"Adresă" }
+                th(classes = "num") { +"Săli" }
+            }
+        }
+        tbody {
+            rows.forEach { b ->
+                tr {
+                    td {
+                        a(href = "${dataset.base()}/buildings/${b.id.encodeURLParameter()}") { +b.code }
+                        if (b.name != b.code) div("hint") { +b.name }
+                    }
+                    td { if (b.address != null) +b.address.orEmpty() else span("tag") { +"lipsește" } }
+                    td("num") {
+                        a(href = "${dataset.base()}/rooms?building=${b.id.encodeURLParameter()}") {
+                            +(rooms[b.id] ?: 0).toString()
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** Hours a room is taught in a week, counting an odd- or even-week class as half. */
+private fun weeklyHours(activities: List<Activity>): String {
+    val minutes = activities.sumOf { a ->
+        val length = (a.slot.end.toSecondOfDay() - a.slot.start.toSecondOfDay()) / 60.0
+        when (a.slot.weeks) {
+            net.mehstudios.etimetable.model.WeekRule.Odd, net.mehstudios.etimetable.model.WeekRule.Even -> length / 2
+            else -> length
+        }
+    }
+    val hours = minutes / 60
+    return if (hours % 1.0 ==
+        0.0
+    ) {
+        hours.toInt().toString()
+    } else {
+        "%.1f".format(java.util.Locale.ROOT, hours).replace('.', ',')
     }
 }

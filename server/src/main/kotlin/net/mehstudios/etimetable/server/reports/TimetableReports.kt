@@ -142,8 +142,14 @@ class TimetableReports(private val db: DataSource) {
         c.query("SELECT count(*) FROM timetable_report WHERE status = 'open'") { it.getInt(1) }.single()
     }
 
-    /** One extra row tells the page whether another page exists. */
-    suspend fun page(closed: Boolean, page: Int): List<TimetableReport> = db.transaction { c ->
+    /** How many reports are open, or closed, for the dashboard's tabs and pages. */
+    suspend fun count(closed: Boolean): Int = db.transaction { c ->
+        val status = if (closed) "status <> 'open'" else "status = 'open'"
+        c.query("SELECT count(*) FROM timetable_report WHERE $status") { it.getInt(1) }.single()
+    }
+
+    /** Newest first, [limit] rows from [offset]. */
+    suspend fun page(closed: Boolean, offset: Int, limit: Int): List<TimetableReport> = db.transaction { c ->
         // A plain comparison on status, so the planner can use timetable_report_queue.
         val status = if (closed) "r.status <> 'open'" else "r.status = 'open'"
         c.query(
@@ -154,8 +160,8 @@ class TimetableReports(private val db: DataSource) {
             WHERE $status
             ORDER BY r.created_at DESC, r.id DESC LIMIT ? OFFSET ?
             """.trimIndent(),
-            REPORT_PAGE_SIZE + 1,
-            page.coerceIn(0, 1_000_000) * REPORT_PAGE_SIZE,
+            limit,
+            offset,
         ) { it.report() }
     }
 
@@ -201,4 +207,3 @@ class TimetableReports(private val db: DataSource) {
 }
 
 const val REPORTS_PER_HOUR = 5
-const val REPORT_PAGE_SIZE = 50
