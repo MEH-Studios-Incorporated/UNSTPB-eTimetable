@@ -405,7 +405,7 @@ private fun HTML.recoveryCodesPage(admin: Admin, codes: List<String>) {
 private fun HTML.loginPage(error: String?, email: String = "") {
     adminPage("Administrare eTimetable", null, null) {
         div("login") {
-            img(src = "/admin/static/faima-seal.png", alt = "Sigiliul FAIMA")
+            seal()
             h1 { +"Administrare eTimetable" }
             p("sub") { +"Orarul și anunțurile FAIMA" }
             notice(error, error = true)
@@ -435,7 +435,7 @@ private fun HTML.loginPage(error: String?, email: String = "") {
 private fun HTML.codePage(error: String?) {
     adminPage("Codul de autentificare", null, null) {
         div("login") {
-            img(src = "/admin/static/faima-seal.png", alt = "Sigiliul FAIMA")
+            seal()
             h1 { +"Codul de autentificare" }
             p("sub") { +"Scrie codul de 6 cifre din aplicația de pe telefon." }
             notice(error, error = true)

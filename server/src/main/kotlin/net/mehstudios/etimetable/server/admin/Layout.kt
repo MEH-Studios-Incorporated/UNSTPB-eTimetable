@@ -24,7 +24,9 @@ import kotlinx.html.main
 import kotlinx.html.meta
 import kotlinx.html.nav
 import kotlinx.html.p
+import kotlinx.html.picture
 import kotlinx.html.script
+import kotlinx.html.source
 import kotlinx.html.span
 import kotlinx.html.style
 import kotlinx.html.title
@@ -249,7 +251,7 @@ body.shell { display: flex; flex-wrap: wrap; align-content: flex-start; min-heig
 .topbar .ticket .text { padding: 3px 10px; font-weight: 500; }
 .topbar .semester { color: var(--muted); }
 .topbar .spacer { flex: 1; }
-main { box-sizing: border-box; width: 100%; max-width: 1200px; padding: 28px 32px 72px; }
+main { box-sizing: border-box; width: 100%; padding: 28px 32px 72px; }
 main > * { animation: rise 180ms ease-out both; }
 @keyframes rise { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 .page-head { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: flex-end; justify-content: space-between; margin-bottom: 24px; }
@@ -336,6 +338,7 @@ label.check { display: flex; gap: 8px; align-items: center; font-weight: 500; fo
 input[type=text], input[type=time], input[type=url], input[type=email], input[type=password], input[type=date], input[type=search], input[type=number], textarea, select {
   width: 100%; max-width: 560px; padding: 9px 12px; border: 1px solid var(--strong); border-radius: 6px; background: var(--surface);
   font: inherit; color: var(--text); transition: border-color 150ms; }
+input:autofill { filter: none; box-shadow: 0 0 0 100px var(--primary-soft) inset; -webkit-text-fill-color: var(--text); }
 input:focus, textarea:focus, select:focus { outline: 2px solid var(--primary-soft); border-color: var(--primary); }
 textarea { max-width: 100%; min-height: 140px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13px; line-height: 1.5; }
 .hint { font-size: 13px; color: var(--muted); margin: 6px 0 0; }
@@ -398,7 +401,7 @@ a.slot:hover { border-color: var(--primary); }
 body.plain { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #1E1E1E; }
 body.plain main { max-width: 400px; padding: 24px 16px; }
 .login { background: var(--surface); border-radius: 10px; padding: 28px 28px 24px; }
-.login img { display: block; width: 88px; margin: 0 auto 14px; }
+.login img { display: block; width: 88px; height: 88px; margin: 0 auto 14px; }
 .login h1 { text-align: center; font-size: 20px; margin: 0 0 4px; }
 .login .sub { text-align: center; color: var(--muted); margin: 0 0 20px; }
 .login button { width: 100%; justify-content: center; margin-top: 6px; }
@@ -423,6 +426,17 @@ body.plain main { max-width: 400px; padding: 24px 16px; }
 }
 """
 
+/** The FAIMA seal for the sign-in card: black on the light card, white on the dark one. */
+internal fun FlowContent.seal() {
+    picture {
+        source {
+            attributes["srcset"] = "/admin/static/faima-seal-white.png"
+            attributes["media"] = "(prefers-color-scheme: dark)"
+        }
+        img(src = "/admin/static/faima-seal.png", alt = "Sigiliul FAIMA")
+    }
+}
+
 /** A dashboard error as a page a person can read, never a JSON body or a blank screen. */
 suspend fun io.ktor.server.application.ApplicationCall.respondAdminError(status: io.ktor.http.HttpStatusCode) {
     val (title, text) = when (status.value) {
@@ -436,7 +450,7 @@ suspend fun io.ktor.server.application.ApplicationCall.respondAdminError(status:
     respondHtml(status) {
         adminPage(title, null, null) {
             div("login") {
-                img(src = "/admin/static/faima-seal.png", alt = "Sigiliul FAIMA")
+                seal()
                 h1 { +title }
                 p("sub") { +text }
                 a(href = "/admin", classes = "btn") {
