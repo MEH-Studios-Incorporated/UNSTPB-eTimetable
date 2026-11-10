@@ -33,72 +33,87 @@ internal fun Route.scheduleRoutes(services: Services) {
         val incomplete = call.parameters["incomplete"] == "on"
         val activities = dataset.activities.filter { a ->
             (day == null || a.slot.isoDay == day) &&
-                (!incomplete || a.roomId == null || a.professorId == null)
+                (!incomplete || a.roomId == null || a.professorId == null) &&
+                (q.isEmpty() || TimetableSheet.fold(searchText(dataset, a)).contains(q))
         }.sortedWith(compareBy({ it.slot.isoDay }, { it.slot.start }, { it.subjectId }))
-        val visibleCount = activities.count { TimetableSheet.fold(searchText(dataset, it)).contains(q) }
+        val paging = call.parameters.paging(activities.size, defaultSize = 25)
+        val path = "/admin/semesters/${id.encodeURLParameter()}/schedule"
         call.respondHtml {
-            adminPage("Gestionare orar", admin, Section.SCHEDULE, context = { +dataset.semester.name.ro }) {
+            adminPage(
+                "Gestionare orar",
+                admin,
+                Section.SCHEDULE,
+                context = { +dataset.semester.name.ro },
+                actions = {
+                    a(href = "/admin/semesters/${id.encodeURLParameter()}/activities/new", classes = "btn") {
+                        +"Adaugă activitate"
+                    }
+                },
+            ) {
                 notice(call.parameters["msg"])
                 notice(call.parameters["err"], error = true)
-                form(method = FormMethod.get, classes = "filters") {
-                    this.id = "schedule-filters"
-                    searchInput(name = "q") {
-                        this.id = "schedule-search"
-                        value = call.parameters["q"].orEmpty()
-                        placeholder = "Materie, profesor, sală sau grupă"
-                        attributes["aria-label"] = "Caută activități"
-                    }
-                    select {
-                        name = "day"
-                        option {
-                            value = ""
-                            +"Toate zilele"
-                        }
-                        DAY_NAMES.forEachIndexed { index, label ->
-                            option {
-                                value = (index + 1).toString()
-                                selected = day == index + 1
-                                +label
+                tableCard(
+                    filters = {
+                        form(action = path, method = FormMethod.get, classes = "filters") {
+                            searchInput(name = "q") {
+                                value = call.parameters["q"].orEmpty()
+                                placeholder = "Materie, profesor, sală sau grupă"
+                                attributes["aria-label"] = "Caută activități"
                             }
-                        }
-                    }
-                    label("check") {
-                        checkBoxInput(name = "incomplete") { checked = incomplete }
-                        +"Fără sală sau profesor"
-                    }
-                    button { +"Filtrează" }
-                }
-                a(href = "/admin/semesters/${id.encodeURLParameter()}/activities/new", classes = "btn") {
-                    +"Adaugă activitate"
-                }
-                p("hint") {
-                    span {
-                        this.id = "schedule-count"
-                        +"${activityCount(visibleCount)}."
-                    }
-                    +" Bifează rândurile de modificat și verifică previzualizarea."
-                }
-                form(action = "/admin/semesters/${id.encodeURLParameter()}/schedule", method = FormMethod.post) {
-                    hiddenInput(name = "version") { value = version.toString() }
-                    div("scroll") {
-                        table {
-                            thead {
-                                tr {
-                                    listOf("Selectează", "Activitate", "Când", "Profesor / sală", "Grupe").forEach {
-                                        th { +it }
+                            select {
+                                name = "day"
+                                attributes["aria-label"] = "Ziua"
+                                option {
+                                    value = ""
+                                    +"Toate zilele"
+                                }
+                                DAY_NAMES.forEachIndexed { index, label ->
+                                    option {
+                                        value = (index + 1).toString()
+                                        selected = day == index + 1
+                                        +label
                                     }
                                 }
                             }
-                            tbody {
-                                activities.forEach { a ->
-                                    tr {
-                                        attributes["data-search"] = TimetableSheet.fold(searchText(dataset, a))
-                                        if (!TimetableSheet.fold(searchText(dataset, a)).contains(q)) {
+                            label("check") {
+                                checkBoxInput(name = "incomplete") { checked = incomplete }
+                                +"Fără sală sau profesor"
+                            }
+                            button(classes = "secondary") { +"Filtrează" }
+                        }
+                    },
+                    footer = { pager(paging, path, call.request.queryParameters) },
+                ) {
+                    if (activities.isEmpty()) {
+                        emptyState(
+                            "Nicio activitate",
+                            if (dataset.activities.isEmpty()) {
+                                "Importă orarul sau adaugă o activitate."
+                            } else {
+                                "Schimbă căutarea sau filtrele."
+                            },
+                        )
+                    } else {
+                        table {
+                            thead {
+                                tr {
+                                    th {
+                                        checkBoxInput {
+                                            attributes["data-select-all"] = "activity"
+                                            attributes["aria-label"] = "Selectează toate rândurile de pe pagină"
                                             attributes["hidden"] = "hidden"
                                         }
+                                    }
+                                    listOf("Activitate", "Când", "Profesor / sală", "Grupe").forEach { th { +it } }
+                                }
+                            }
+                            tbody {
+                                paging.slice(activities).forEach { a ->
+                                    tr {
                                         td {
                                             checkBoxInput(name = "activity") {
                                                 value = a.id
+                                                attributes["form"] = "schedule-bulk"
                                                 attributes["aria-label"] =
                                                     "Selectează ${a.id}"
                                             }
@@ -133,6 +148,13 @@ internal fun Route.scheduleRoutes(services: Services) {
                                 }
                             }
                         }
+                    }
+                }
+                form(action = path, method = FormMethod.post) {
+                    this.id = "schedule-bulk"
+                    hiddenInput(name = "version") { value = version.toString() }
+                    p("hint") {
+                        +"Bifează rândurile de modificat, apoi alege ce se schimbă și verifică previzualizarea."
                     }
                     div("card") {
                         h2 { +"Modifică selecția" }
@@ -202,51 +224,10 @@ internal fun Route.scheduleRoutes(services: Services) {
                         div("form-actions") {
                             button { +"Previzualizează modificările" }
                             span("hint") {
-                                this.id = "schedule-selected"
+                                attributes["data-selected-count"] = ""
                                 attributes["aria-live"] = "polite"
                             }
                         }
-                    }
-                }
-                script {
-                    unsafe {
-                        +"""
-                        (() => {
-                          const input = document.getElementById('schedule-search');
-                          const rows = Array.from(document.querySelectorAll('tr[data-search]'));
-                          const count = document.getElementById('schedule-count');
-                          const selectedCount = document.getElementById('schedule-selected');
-                          const fold = value => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
-                          // Same rule as plural() on the server: 1 activitate, 2 activități, 20 de activități.
-                          const activities = n => n === 1 ? '1 activitate'
-                            : (n % 100 >= 1 && n % 100 <= 19) ? n + ' activități' : n + ' de activități';
-                          const selection = () => {
-                            const ticked = rows.filter(row => row.querySelector('input[name=activity]').checked);
-                            const hidden = ticked.filter(row => row.hidden).length;
-                            selectedCount.textContent = ticked.length === 0 ? ''
-                              : (ticked.length === 1 ? '1 selectată' : ticked.length + ' selectate')
-                                + (hidden > 0 ? ', dintre care ' + hidden + ' ascunse de căutare' : '');
-                          };
-                          const filter = () => {
-                            const query = fold(input.value);
-                            let visible = 0;
-                            rows.forEach(row => {
-                              row.hidden = !row.dataset.search.includes(query);
-                              if (!row.hidden) visible += 1;
-                            });
-                            count.textContent = activities(visible) + '.';
-                            selection();
-                            const url = new URL(window.location.href);
-                            if (input.value.trim()) url.searchParams.set('q', input.value.trim());
-                            else url.searchParams.delete('q');
-                            history.replaceState(null, '', url);
-                          };
-                          input.addEventListener('input', filter);
-                          input.addEventListener('search', filter);
-                          rows.forEach(row => row.querySelector('input[name=activity]').addEventListener('change', selection));
-                          filter();
-                        })();
-                        """.trimIndent()
                     }
                 }
             }

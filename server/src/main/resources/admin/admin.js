@@ -29,4 +29,27 @@
       select.form.submit();
     });
   });
+
+  // "Select all on this page", and how many rows are ticked.
+  document.querySelectorAll("input[data-select-all]").forEach(function (all) {
+    var boxes = Array.prototype.slice.call(
+      document.querySelectorAll('input[type=checkbox][name="' + all.getAttribute("data-select-all") + '"]')
+    );
+    var counts = document.querySelectorAll("[data-selected-count]");
+    function update() {
+      var ticked = boxes.filter(function (box) { return box.checked; }).length;
+      all.checked = ticked > 0 && ticked === boxes.length;
+      all.indeterminate = ticked > 0 && ticked < boxes.length;
+      counts.forEach(function (count) {
+        count.textContent = ticked === 0 ? "" : ticked === 1 ? "1 selectată" : ticked + " selectate";
+      });
+    }
+    all.hidden = false;
+    all.addEventListener("change", function () {
+      boxes.forEach(function (box) { box.checked = all.checked; });
+      update();
+    });
+    boxes.forEach(function (box) { box.addEventListener("change", update); });
+    update();
+  });
 })();

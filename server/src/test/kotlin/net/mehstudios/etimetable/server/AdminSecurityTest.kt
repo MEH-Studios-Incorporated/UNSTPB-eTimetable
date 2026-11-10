@@ -191,7 +191,7 @@ class AdminSecurityTest {
         val disabled = browser.submitForm("/admin/admins/${editor.id}/disable", parameters { })
         assertTrue("msg=" in disabled.location().orEmpty())
         val login = browser().login("editor@faima.test", "parola-de-test")
-        assertEquals(HttpStatusCode.Forbidden, login.status)
+        assertEquals(HttpStatusCode.Unauthorized, login.status)
         assertTrue("dezactivat" in login.bodyAsText())
         val log = browser.get("/admin/audit?q=dezactivat").bodyAsText()
         assertTrue("a dezactivat contul editor@faima.test" in log)

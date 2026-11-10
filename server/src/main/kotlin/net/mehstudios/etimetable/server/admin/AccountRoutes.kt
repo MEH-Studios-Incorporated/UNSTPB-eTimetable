@@ -52,7 +52,7 @@ private fun Route.loginRoutes(services: Services) {
             LoginResult.Wrong -> call.respondHtml(HttpStatusCode.Unauthorized) {
                 loginPage(error = "Email sau parolă greșită.", email = email)
             }
-            LoginResult.Disabled -> call.respondHtml(HttpStatusCode.Forbidden) {
+            LoginResult.Disabled -> call.respondHtml(HttpStatusCode.Unauthorized) {
                 loginPage(error = "Contul este dezactivat. Cere unui administrator să îl reactiveze.", email = email)
             }
             is LoginResult.Locked -> call.respondHtml(HttpStatusCode.TooManyRequests) {

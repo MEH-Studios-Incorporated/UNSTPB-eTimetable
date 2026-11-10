@@ -3,6 +3,7 @@
 
 package net.mehstudios.etimetable.server.admin
 
+import io.ktor.server.html.respondHtml
 import kotlinx.html.ButtonType
 import kotlinx.html.FlowContent
 import kotlinx.html.FormMethod
@@ -421,3 +422,28 @@ body.plain main { max-width: 400px; padding: 24px 16px; }
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
 """
+
+/** A dashboard error as a page a person can read, never a JSON body or a blank screen. */
+suspend fun io.ktor.server.application.ApplicationCall.respondAdminError(status: io.ktor.http.HttpStatusCode) {
+    val (title, text) = when (status.value) {
+        404 -> "Pagina nu există" to "Linkul este greșit sau ce arăta a fost șters între timp."
+        403 -> "Nu ai acces aici" to "Pagina este doar pentru administratori, sau formularul a venit de pe alt site."
+        400 -> "Cererea nu a putut fi citită" to "Reîncarcă pagina și încearcă din nou."
+        else ->
+            "Ceva nu a mers" to
+                "Serverul a întâlnit o eroare. Încearcă din nou; dacă se repetă, spune-le dezvoltatorilor ora la care s-a întâmplat."
+    }
+    respondHtml(status) {
+        adminPage(title, null, null) {
+            div("login") {
+                img(src = "/admin/static/faima-seal.png", alt = "Sigiliul FAIMA")
+                h1 { +title }
+                p("sub") { +text }
+                a(href = "/admin", classes = "btn") {
+                    style = "width: 100%; justify-content: center"
+                    +"Înapoi la panou"
+                }
+            }
+        }
+    }
+}
