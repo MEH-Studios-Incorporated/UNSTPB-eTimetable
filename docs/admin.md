@@ -131,8 +131,8 @@ descarcă orarul actual înainte de a-l modifica în Excel.
   activitate din săptămânile pare sau impare contează pe jumătate). Se
   caută după cod și se filtrează după corp. Fila **Corpuri** listează
   corpurile cu adresa și numărul de săli; numele și adresa unui corp se
-  schimbă pe pagina lui. Pagina unei săli arată săptămâna ei, deci și orele
-  în care e liberă.
+  schimbă pe pagina lui. Pagina unei săli arată săptămâna ei pe ore, deci și
+  orele în care e liberă.
 - **Studenți** (doar administratorii). Conturile, după email sau nume, cu
   grupa aleasă. **Schimbă** pune o parolă nouă pentru cine și-a pierdut-o și
   îl deconectează de pe toate telefoanele; spune-i parola pe altă cale.
@@ -190,6 +190,22 @@ toate de pe pagină), alege sala sau profesorul și, opțional, deplasarea
 noi. Numai **Confirmă și salvează** le publică. Dacă alt editor a modificat
 orarul între timp, reîncarcă pagina și verifică selecția. Linkul fiecărei
 activități deschide editorul complet.
+
+Fila **Săptămână** arată orarul ca în aplicație: zilele de luni până vineri,
+orele de la 08:00 la 20:00 (mai mult dacă o activitate iese din interval) și
+fiecare activitate ca un bloc în culoarea materiei, cu tipul, sala și ora.
+Sus alegi o grupă sau o semigrupă, o sală sau un profesor. **Toate**,
+**Impare** și **Pare** estompează activitățile care nu au loc în săptămânile
+alese; cele marcate "Impară" sau "Pară" au loc doar o dată la două
+săptămâni. Activitățile care se suprapun stau una lângă alta, ca
+laboratoarele celor două semigrupe. Un clic pe un bloc deschide lângă
+săptămână formularul activității, cu suprapunerile ei cu alte activități
+ale aceleiași săli, ale aceluiași profesor sau ale acelorași grupe. După
+**Salvează** rămâi în aceeași săptămână, cu activitatea selectată. Pe
+telefon săptămâna se derulează în lateral, iar formularul apare deasupra ei.
+
+Pagina unei grupe, a unei săli și a unui profesor arată aceeași săptămână;
+la sală și la profesor apar și consultațiile, ca blocuri gri.
 
 ## Publicarea anunțurilor
 

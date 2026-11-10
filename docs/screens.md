@@ -243,16 +243,20 @@ the three, and preview before confirming.
 The preview lists the resulting slots and any new booking conflicts.
 Moves across midnight are refused. A changed semester revision requires
 staff to reload instead of overwriting another editor's work.
+Its "Săptămână" tab shows the week of one group, half-group, room or
+professor on an hour grid. Clicking a class opens a panel beside the grid
+(`?activity=<id>`, rendered by the server) with its clashes and the
+activity form; a save returns to the same view with the class selected.
 The announcement list has 20 posts per page, with links to older posts.
 
 A dark sidebar with the sections, each page with a title, a context line and
 its main actions on the right: an overview (today's week, counts, a list of
 what still needs doing), semesters with their calendar, CSV import and
-export, groups by series and each group's week; subjects (search, filters,
+export, groups by series and each group's week on an hour grid; subjects (search, filters,
 rename, every activity, one professor for all of a subject's labs or
 seminars); single activities (add, edit, delete, with the importer's rules
 for days, times and weeks; a new room adds itself); professors (contact,
-office, office hours one per line, their activities); rooms by building
+office, office hours one per line, their week); rooms by building
 (building names and addresses, each room's week); announcements (write,
 preview, publish, edit, pin); events (a card grid of the coming and past
 ones, a form with the picture, day, start and optional end, place,

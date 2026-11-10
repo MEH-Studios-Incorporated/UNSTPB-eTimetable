@@ -584,37 +584,24 @@ private fun Route.semesterRoutes(services: Services) {
                     ) { +"Adaugă activitate" }
                 },
             ) {
-                div("scroll") {
-                    div("week") {
-                        (1..5).forEach { day ->
-                            div("day") {
-                                h3 { +DAY_NAMES[day - 1] }
-                                activities.filter { it.slot.isoDay == day }.sortedBy { it.slot.start }.forEach { a ->
-                                    val back = "/admin/semesters/${dataset.semester.id}/groups/" +
-                                        group.id.encodeURLParameter()
-                                    a(
-                                        href = "/admin/semesters/${dataset.semester.id}/activities/" +
-                                            "${a.id.encodeURLParameter()}?back=${back.encodeURLParameter()}",
-                                        classes = "slot ${slotKind(a.type)}".trim(),
-                                    ) {
-                                        span("time") {
-                                            +"${a.slot.start} - ${a.slot.end} · ${TYPE_NAMES.getValue(a.type)}"
-                                        }
-                                        strong { +(dataset.subjectsById[a.subjectId]?.name?.ro ?: a.subjectId) }
-                                        +listOfNotNull(
-                                            dataset.roomsById[a.roomId]?.code,
-                                            dataset.professorsById[a.professorId]?.displayName,
-                                            weeksLabel(a.slot.weeks),
-                                            a.audience.halfGroupIds.mapNotNull {
-                                                dataset.halfGroupsById[it]
-                                            }.joinToString { "${group.code}/${it.suffix}" }.ifEmpty { null },
-                                        ).joinToString(" · ")
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+                val colours = subjectColours(dataset)
+                val path = "/admin/semesters/${dataset.semester.id}/groups/${group.id.encodeURLParameter()}"
+                val back = linkTo(path, call.request.queryParameters, emptyMap())
+                weekGrid(
+                    activities.map { a ->
+                        classEntry(
+                            dataset,
+                            colours,
+                            a,
+                            activityHref(dataset, a, back),
+                            halvesOf(dataset, group, a),
+                            who = dataset.professorsById[a.professorId]?.displayName?.trim(),
+                        )
+                    },
+                    TeachingCalendar(dataset.semester),
+                    path,
+                    call.request.queryParameters,
+                )
             }
         }
     }

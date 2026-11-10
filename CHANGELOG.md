@@ -6,6 +6,16 @@ Each section is also the text of the matching GitHub release.
 
 ### Added
 
+- A "Săptămână" view in Gestionare orar: the week of a group, half-group,
+  room or professor on an hour grid, each class a block in its subject's
+  colour with its type, room and time. Classes at the same time sit side by
+  side, and Toate / Impare / Pare fades the classes of the other weeks.
+  Clicking a class opens its form beside the grid with any clash in the
+  same room, with the same professor or the same students; saving returns
+  to the same week with the class still selected.
+- The group, room and professor pages show their week on the same hour
+  grid instead of five lists, with office hours as grey blocks.
+
 - Two-step sign-in for the dashboard with an authenticator app (a QR code
   to scan, a six-digit code after the password) and ten one-time recovery
   codes for a lost phone.

@@ -202,7 +202,9 @@ button.link { padding: 0; border: 0; background: none; color: inherit; font-weig
  * Styles that belong to one feature live next to its routes as a constant and are
  * listed here, one line each, so features do not edit the same block of CSS.
  */
-private val FEATURE_STYLES: List<String> = listOf()
+private val FEATURE_STYLES: List<String> = listOf(
+    WEEK_GRID_STYLES,
+)
 
 private val ADMIN_STYLES = """
 :root { --side: #292929; --side-line: #292929; --side-hover: #3A3A3A; --ok: #2F7A4B; --error-soft: #FBEAE9;
@@ -375,16 +377,6 @@ form.building input { width: auto; flex: 1 1 200px; }
 .chips a .hint { margin: 0; font-size: 12px; }
 .inline-form { display: inline-flex; gap: 6px; margin: 0 6px 0 0; }
 .inline-form input { width: 150px; padding: 5px 8px; font-size: 13px; }
-a.slot { display: block; color: var(--text); text-decoration: none; transition: border-color 150ms, transform 150ms; }
-a.slot:hover { border-color: var(--primary); }
-.slot.office { border-left-color: var(--muted); background: var(--alt); }
-.week { display: grid; grid-template-columns: repeat(5, minmax(170px, 1fr)); gap: 10px; }
-.day h3 { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; margin: 0 0 8px; }
-.slot { background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--primary); border-radius: 6px;
-  padding: 8px 10px; margin-bottom: 8px; font-size: 13px; }
-.slot.lab { border-left-color: #B07A1F; } .slot.seminar { border-left-color: #2F7F7A; } .slot.project { border-left-color: #7A4C92; }
-.slot .time { font-variant-numeric: tabular-nums; color: var(--muted); }
-.slot strong { display: block; font-size: 14px; margin: 2px 0; }
 .announcement h3 { font-size: 16px; margin: 0 0 2px; }
 .announcement .meta { color: var(--muted); font-size: 13px; margin: 0 0 10px; }
 .announcement .body { border-top: 1px solid var(--border); padding-top: 10px; }
