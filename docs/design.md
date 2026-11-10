@@ -124,6 +124,33 @@ the student is not touching the screen, apart from the current-time line.
 Material Symbols (outlined, weight 400) on Android and in the dashboard, SF
 Symbols on iOS. No custom illustrations.
 
+## Dashboard
+
+The dashboard uses the same tokens, with Libre Franklin served by the server
+itself. Its layout was chosen on 10 November 2026 from three drawn options
+(the one called "Evoluție": the existing tokens made consistent, no new
+brand colours):
+
+- A page frame on every page: the ink sidebar (`#292929`, `#141414` in the
+  dark theme) with the sections grouped under Orar, Comunicare and Conturi,
+  each with a stroke icon, and a count of open problem reports; a top bar
+  with the teaching week as the app shows it ("7 · Săptămâna impară"), the
+  current semester and the theme switch.
+- One table component (`tableCard` in `admin/Components.kt`): a filter bar,
+  uppercase hairline headers, row hover, and a footer with "11-20 din 243",
+  10, 25 or 50 rows per page and the page links. Every list with more than
+  a handful of rows uses it; the paging happens in the database where the
+  list comes from there.
+- Empty tables say what is missing and what to do, never just "nimic".
+- Dark theme from the dark column of the colour table. It follows the
+  system until the admin picks one with the switch; the choice is a cookie,
+  so the server renders the right theme and nothing flashes.
+- Motion: 150 ms for hover and focus, 180 ms for a page's content rising
+  into place. `prefers-reduced-motion` turns all of it off.
+- JavaScript is optional: `admin/static/admin.js` adds the theme switch and
+  applies the rows-per-page choice as soon as it changes. Without it every
+  page still works through plain links and forms.
+
 ## Platform behaviour
 
 Each app follows its platform: Material 3 components and navigation on

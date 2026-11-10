@@ -99,6 +99,15 @@ Each section is also the text of the matching GitHub release.
 
 ### Changed
 
+- The dashboard has a new frame: the sections are grouped under Orar,
+  Comunicare and Conturi with icons, the sidebar counts the open problem
+  reports, and a bar on top shows the teaching week and the semester. A
+  switch next to it turns on the dark theme, which otherwise follows the
+  computer's setting.
+- Long lists in the dashboard come in pages of 10, 25 or 50 rows, with
+  "11-20 din 243" and links to every page. The student list no longer
+  stops at 200 accounts, and searching it treats `%` and `_` as plain
+  characters. Empty lists say what to do next.
 - The app stays in portrait when the phone is turned.
 - Password fields on Android have a show or hide control. The password and
   confirmation fields are controlled separately when creating an account.

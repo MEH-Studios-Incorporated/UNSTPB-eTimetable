@@ -239,6 +239,23 @@ class AdminEditTest {
     }
 
     @Test
+    fun studentsArePagedAndSearchedInTheDatabase() = withSemester { services, browser ->
+        // past the API's sign-up limit, so the accounts are made directly
+        repeat(12) { i ->
+            services.accounts.signup(SignupRequest("s$i@stud.upb.ro", "parola-buna", "Student", "Nr$i", "0712345678"))
+        }
+        val first = browser.get("/admin/students").bodyAsText()
+        assertTrue("1-10 din 12" in first)
+        val second = browser.get("/admin/students?page=2").bodyAsText()
+        assertTrue("11-12 din 12" in second)
+        val found = browser.get("/admin/students?q=nr1").bodyAsText()
+        // nr1, nr10, nr11
+        assertTrue("1-3 din 3" in found)
+        // a LIKE wildcard in the search is taken literally
+        assertTrue("Niciun student găsit" in browser.get("/admin/students?q=%25").bodyAsText())
+    }
+
+    @Test
     fun editorsDoNotSeeStudents() = withSemester { services, browser ->
         services.admins.create("editor@faima.test", "parola-editor", AdminRole.EDITOR)
         browser.submitForm("/admin/logout", parameters { })

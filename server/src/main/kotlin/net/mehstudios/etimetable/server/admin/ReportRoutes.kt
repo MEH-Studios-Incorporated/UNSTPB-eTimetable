@@ -16,7 +16,6 @@ import kotlinx.datetime.toLocalDateTime
 import kotlinx.html.*
 import net.mehstudios.etimetable.schedule.FacultyTimeZone
 import net.mehstudios.etimetable.server.Services
-import net.mehstudios.etimetable.server.reports.REPORT_PAGE_SIZE
 import net.mehstudios.etimetable.server.reports.ReportStatus
 import net.mehstudios.etimetable.server.reports.TimetableReport
 import java.security.MessageDigest
@@ -27,9 +26,10 @@ import kotlin.time.Instant
 internal fun Route.reportRoutes(services: Services) {
     page("/reports", services) { admin ->
         val closed = call.parameters["status"] == "closed"
-        val page = call.parameters["page"]?.toIntOrNull()?.coerceIn(0, 1_000_000) ?: 0
-        val reports = services.reports.page(closed, page)
-        val filter = if (closed) "closed" else "open"
+        val openCount = services.reports.count(closed = false)
+        val closedCount = services.reports.count(closed = true)
+        val paging = call.parameters.paging(if (closed) closedCount else openCount)
+        val reports = services.reports.page(closed, paging.offset, paging.size)
         call.respondHtml {
             adminPage(
                 "Probleme de orar",
@@ -37,16 +37,28 @@ internal fun Route.reportRoutes(services: Services) {
                 Section.REPORTS,
                 context = { +"Sesizări trimise de studenți despre activitățile din orar." },
             ) {
-                div("filters") {
-                    a(href = "/admin/reports", classes = "btn ${if (closed) "secondary" else ""}") { +"Deschise" }
-                    a(href = "/admin/reports?status=closed", classes = "btn ${if (closed) "" else "secondary"}") {
-                        +"Închise"
-                    }
-                }
-                if (reports.isEmpty()) {
-                    p("card") { +"Nicio sesizare pe această pagină." }
-                } else {
-                    div("scroll") {
+                tableCard(
+                    filters = {
+                        nav("tabs") {
+                            attributes["aria-label"] = "Stare"
+                            a(href = "/admin/reports", classes = if (closed) null else "active") {
+                                +"Deschise"
+                                span("n") { +openCount.toString() }
+                            }
+                            a(href = "/admin/reports?status=closed", classes = if (closed) "active" else null) {
+                                +"Închise"
+                                span("n") { +closedCount.toString() }
+                            }
+                        }
+                    },
+                    footer = { pager(paging, "/admin/reports", call.request.queryParameters) },
+                ) {
+                    if (reports.isEmpty()) {
+                        emptyState(
+                            if (closed) "Nicio problemă închisă" else "Nicio problemă deschisă",
+                            if (closed) null else "Studenții trimit problemele din aplicație, de pe pagina clasei.",
+                        )
+                    } else {
                         table {
                             thead {
                                 tr {
@@ -58,7 +70,7 @@ internal fun Route.reportRoutes(services: Services) {
                                 }
                             }
                             tbody {
-                                reports.take(REPORT_PAGE_SIZE).forEach { report ->
+                                reports.forEach { report ->
                                     tr {
                                         td {
                                             a(href = "/admin/reports/${report.id}") { +report.snapshot.subjectName }
@@ -75,18 +87,6 @@ internal fun Route.reportRoutes(services: Services) {
                                     }
                                 }
                             }
-                        }
-                    }
-                }
-                div("form-actions") {
-                    if (page > 0) {
-                        a(href = "/admin/reports?status=$filter&page=${page - 1}", classes = "btn secondary") {
-                            +"Pagina precedentă"
-                        }
-                    }
-                    if (reports.size > REPORT_PAGE_SIZE) {
-                        a(href = "/admin/reports?status=$filter&page=${page + 1}", classes = "btn secondary") {
-                            +"Pagina următoare"
                         }
                     }
                 }

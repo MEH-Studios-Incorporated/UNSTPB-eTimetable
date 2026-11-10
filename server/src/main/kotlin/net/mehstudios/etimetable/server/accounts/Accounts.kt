@@ -105,26 +105,37 @@ class Accounts(private val db: DataSource) {
     }
 
     /** Students for the dashboard, newest first; [query] matches the email or the name. */
-    suspend fun list(query: String = "", limit: Int = 200): List<StudentAccount> = db.transaction { c ->
-        val like = "%${query.trim().lowercase()}%"
-        c.query(
-            """
+    suspend fun list(query: String = "", offset: Int = 0, limit: Int = 200): List<StudentAccount> =
+        db.transaction { c ->
+            val like = likePattern(query)
+            c.query(
+                """
             SELECT id, email, profile, created_at FROM student
-            WHERE lower(email) LIKE ? OR lower(profile ->> 'firstName' || ' ' || (profile ->> 'lastName')) LIKE ?
-            ORDER BY created_at DESC LIMIT ?
-            """.trimIndent(),
-            like,
-            like,
-            limit,
-        ) {
-            StudentAccount(
-                UUID.fromString(it.getString(1)),
-                it.getString(2),
-                AppJson.decodeFromString(Profile.serializer(), it.getString(3)),
-                it.getObject(4, java.time.OffsetDateTime::class.java).toInstant().toKotlinInstant(),
-            )
+            WHERE $STUDENT_MATCH
+            ORDER BY created_at DESC, id LIMIT ? OFFSET ?
+                """.trimIndent(),
+                like,
+                like,
+                limit,
+                offset,
+            ) {
+                StudentAccount(
+                    UUID.fromString(it.getString(1)),
+                    it.getString(2),
+                    AppJson.decodeFromString(Profile.serializer(), it.getString(3)),
+                    it.getObject(4, java.time.OffsetDateTime::class.java).toInstant().toKotlinInstant(),
+                )
+            }
         }
+
+    /** How many students [list] finds for [query], for the dashboard's pages. */
+    suspend fun count(query: String = ""): Int = db.transaction { c ->
+        val like = likePattern(query)
+        c.query("SELECT count(*) FROM student WHERE $STUDENT_MATCH", like, like) { it.getInt(1) }.single()
     }
+
+    private fun likePattern(query: String) =
+        "%" + query.trim().lowercase().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
 
     /**
      * An admin sets a new password when a student has lost theirs; every session ends, so
@@ -173,3 +184,6 @@ class Accounts(private val db: DataSource) {
 data class StudentCounts(val total: Int, val national: Int, val erasmus: Int)
 
 data class StudentAccount(val id: UUID, val email: String, val profile: Profile, val createdAt: kotlin.time.Instant)
+
+private const val STUDENT_MATCH =
+    "lower(email) LIKE ? OR lower(concat_ws(' ', profile ->> 'firstName', profile ->> 'lastName')) LIKE ?"
