@@ -665,6 +665,7 @@ private fun Route.announcementRoutes(services: Services) {
                 announcements,
                 draft = null,
                 msg = call.parameters["msg"],
+                err = call.parameters["err"],
             )
         }
     }
@@ -678,10 +679,20 @@ private fun Route.announcementRoutes(services: Services) {
                     announcements,
                     draft,
                     msg = null,
+                    err = null,
                 )
             }
         }
-        services.announcements.publish(draft.title, draft.body, draft.author, pinned = draft.pinned)
+        val announcement = with(draft) {
+            services.announcements.publish(title, body, author, pinned = pinned)
+        }
+        // every message would fail, so the admin hears why instead of phones staying silent
+        val drift = services.push.clockDrift()
+        if (drift != null) {
+            val notice = clockNotice(drift).encodeURLParameter()
+            return@action call.respondRedirect("/admin/announcements?err=$notice")
+        }
+        services.push.announce(announcement)
         call.respondRedirect("/admin/announcements?msg=${"Anunțul a fost publicat.".encodeURLParameter()}")
     }
     page("/announcements/{id}", services) { admin ->
@@ -745,7 +756,13 @@ private class Draft(
 }
 
 /** [fetched] holds one announcement more than a page when an older page exists. */
-private fun HTML.announcementsPage(admin: Admin, fetched: List<Announcement>, draft: Draft?, msg: String?) {
+private fun HTML.announcementsPage(
+    admin: Admin,
+    fetched: List<Announcement>,
+    draft: Draft?,
+    msg: String?,
+    err: String?,
+) {
     val announcements = fetched.take(ANNOUNCEMENT_PAGE_SIZE)
     adminPage(
         "Anunțuri",
@@ -754,6 +771,7 @@ private fun HTML.announcementsPage(admin: Admin, fetched: List<Announcement>, dr
         context = { +"Ajung la toți studenții, la următoarea sincronizare a aplicației." },
     ) {
         notice(msg)
+        notice(err, error = true)
         h2 {
             id = "new"
             style = "margin-top: 0"

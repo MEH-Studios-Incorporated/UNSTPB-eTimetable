@@ -16,7 +16,15 @@ class AppContainer(context: Context) {
     val store = createLocalStore(context)
     private val api = ApiClient(OkHttp.create(), BuildConfig.API_BASE_URL)
     val connectivity = Connectivity(context)
-    val repository = AppRepository(store, api, Sync(api, store), SessionStore(context)) {
+    val alerts = InAppAlerts()
+    val repository = AppRepository(
+        store,
+        api,
+        Sync(api, store),
+        SessionStore(context),
+        pushToken = Push::token,
+        notifications = AnnouncementNotifications.posted(context),
+    ) {
         // the home screen widgets show the same timetable
         WidgetUpdates.refresh(context.applicationContext)
     }
