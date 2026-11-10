@@ -77,6 +77,36 @@ când: conturi, orar, anunțuri, evenimente, probleme de orar și conturi de
 studenți. Se poate filtra după categorie și persoană și se poate căuta în
 text. Intrările nu se pot modifica sau șterge din panou.
 
+### Tokenuri API
+
+Un program (de exemplu un agent care pregătește orarul) poate trimite
+fișierul cu orarul fără browser. Se identifică cu un token, pe care îl
+creează un administrator pe pagina **Tokenuri API**:
+
+1. **Token nou**: un nume după care îl recunoști ("Agentul de orar"),
+   drepturile (deocamdată doar `timetable:write`, adică înlocuirea orarului
+   unui semestru) și, opțional, ziua în care expiră.
+2. Tokenul (începe cu `ett_`) apare o singură dată. Copiază-l atunci în
+   programul care îl folosește; serverul păstrează doar amprenta lui
+   SHA-256, așa că nu ți-l mai poate arăta.
+3. Lista arată când a fost creat, de cine, când expiră și când a fost
+   folosit ultima dată. **Revocă** îl oprește pe loc.
+
+Crearea, revocarea și fiecare import făcut cu un token apar în **Jurnal**;
+importul apare sub numele tokenului. Programul trimite același fișier ca la
+import, cu aceeași verificare (vezi `docs/data-model.md`, "Admin API"):
+
+```
+curl -X POST \
+  -H "Authorization: Bearer ett_..." \
+  -H "Content-Type: text/csv" \
+  --data-binary @orar.csv \
+  "https://orar.faima.upb.ro/api/admin/v1/semesters/2026-1/timetable?dry_run=true"
+```
+
+Cu `dry_run=true` primește doar diferențele și erorile; fără el, orarul se
+înlocuiește dacă fișierul nu are erori.
+
 ## Un semestru nou
 
 1. **Semestre → Semestru nou.** Codul (de exemplu `2026-2`) rămâne același
@@ -102,7 +132,8 @@ text. Intrările nu se pot modifica sau șterge din panou.
    2026-11-30 pară
    ```
 
-3. **Importă orarul** din fișierul descris mai jos.
+3. **Importă orarul** din fișierul descris mai jos, pas cu pas (vezi
+   "Importul pas cu pas").
 4. Verifică orarul unei grupe din lista **Grupe**.
 5. **Fă-l curent** din lista de semestre. Abia atunci îl văd studenții, la
    următoarea sincronizare.
@@ -158,9 +189,37 @@ semestrului ("Descarcă orarul actual"), să îl modifici și să îl imporți
 [`examples/orar-exemplu.csv`](examples/orar-exemplu.csv).
 
 Importul înlocuiește tot orarul semestrului. Dacă un rând are o greșeală, nu
-se salvează nimic și pagina spune ce rând și ce anume. O sală sau un profesor
-în două locuri în același timp apar ca avertismente; orarul se salvează
-oricum.
+se salvează nimic și previzualizarea spune ce rând și ce anume. O sală sau un
+profesor în două locuri în același timp apar ca avertismente; orarul se
+salvează oricum.
+
+### Importul pas cu pas
+
+Din pagina semestrului ("Importă orarul") sau de la adresa
+`/admin/semesters/<cod>/import`:
+
+1. **Încarcă.** Alegi fișierul CSV. Fișierele Excel (`.xlsx`) nu se citesc
+   direct: salvează-le întâi ca "CSV UTF-8".
+2. **Coloane.** Panoul caută coloanele de mai jos după numele din primul
+   rând al fișierului, fără să țină cont de litere mari și diacritice; merg
+   și nume românești ca `zi`, `ora început`, `sală`, `materie`, `grupe`.
+   Dacă le-a găsit pe toate cele obligatorii, un singur clic duce mai
+   departe. Altfel alegi, pentru fiecare coloană, coloana din fișier care o
+   conține. Sub listă se văd primele rânduri din fișier.
+3. **Previzualizare.** Diferența dintre orarul de acum al semestrului și
+   cel din fișier: câte activități se adaugă, se modifică și se elimină
+   (cifrele sunt și filtre), apoi lista lor, cu valoarea veche tăiată și
+   cea nouă evidențiată. Rândurile cu erori apar în aceeași listă, cu
+   numărul lor din fișier. Nimic nu se salvează încă.
+4. **Confirmă.** Bifezi "Am verificat diferențele" și apeși **Importă
+   orarul**. Dacă între timp cineva a modificat orarul semestrului (de
+   exemplu din Gestionare orar), panoul refuză și te trimite înapoi la
+   previzualizare, ca să vezi diferențele față de orarul nou.
+
+Un fișier cu erori nu se poate confirma: corectează-l și încarcă-l din nou.
+Fișierul încărcat se păstrează 24 de ore între pași; **Renunță la import**
+îl șterge pe loc. Importul confirmat apare în **Jurnal**, cu câte activități
+s-au adăugat, modificat și eliminat.
 
 | Coloană | Ce conține | Exemplu |
 | --- | --- | --- |

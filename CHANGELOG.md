@@ -16,6 +16,18 @@ Each section is also the text of the matching GitHub release.
 - The group, room and professor pages show their week on the same hour
   grid instead of five lists, with office hours as grey blocks.
 
+- The timetable import in the dashboard goes in four steps: upload the
+  CSV, check the columns (found by name, in Romanian too, with a list to
+  fix any that were not), see what changes (how many classes are added,
+  changed and removed, each with its old and new values, and the rows with
+  errors with their line number) and confirm. Nothing is saved before the
+  confirmation, and a confirmation is refused if someone changed the
+  timetable since the preview.
+- API tokens for programs that send the timetable without the browser:
+  administrators create them on the new "Tokenuri API" page (shown once,
+  optional expiry, revocable), and a program sends the CSV to
+  `/api/admin/v1/semesters/<id>/timetable`, with `dry_run=true` to only get
+  the differences. Every import with a token is in the log.
 - Two-step sign-in for the dashboard with an authenticator app (a QR code
   to scan, a six-digit code after the password) and ten one-time recovery
   codes for a lost phone.

@@ -50,11 +50,17 @@ enum class Section(val label: String, val href: String, val group: String?, val 
         "M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM3 19c1-3 3-4 6-4s5 1 6 4M16 11a3 3 0 1 0 0-6M18 15c2 1 3 2 3 4",
     ),
     ADMINS("Administratori", "/admin/admins", null, "M12 3l7 3v6c0 4-3 7-7 9-4-2-7-5-7-9V6z"),
+    API_TOKENS(
+        "Tokenuri API",
+        "/admin/api-tokens",
+        null,
+        "M8 20a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM11 13l8-8M16 8l3 3M14 10l2 2",
+    ),
     AUDIT("Jurnal", "/admin/audit", null, "M8 4h11v16H8zM5 8h3M5 12h3M5 16h3M11 9h5M11 13h5"),
 }
 
 /** Sections only administrators see: other admins, the log, and the students' personal data. */
-private val ADMIN_ONLY = setOf(Section.ADMINS, Section.STUDENTS, Section.AUDIT)
+private val ADMIN_ONLY = setOf(Section.ADMINS, Section.API_TOKENS, Section.STUDENTS, Section.AUDIT)
 
 /**
  * Every dashboard page: the sidebar with the sections, a top bar with the teaching week and
@@ -207,6 +213,7 @@ private val FEATURE_STYLES: List<String> = listOf(
     OVERVIEW_STYLES,
     WEEK_GRID_STYLES,
     COMPOSE_STYLES,
+    IMPORT_STYLES,
 )
 
 private val ADMIN_STYLES = """
