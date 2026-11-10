@@ -19,6 +19,8 @@ private fun roleName(role: AdminRole) = if (role == AdminRole.ADMIN) "Administra
 internal fun Route.adminListRoutes(services: Services) {
     page("/admins", services, AdminRole.ADMIN) { admin ->
         val accounts = services.admins.list()
+        val policyOn = services.admins.twoStepRequired()
+        val selfHasTwoStep = accounts.firstOrNull { it.id == admin.id }?.twoStep == true
         call.respondHtml {
             adminPage(
                 "Administratori",
@@ -62,6 +64,7 @@ internal fun Route.adminListRoutes(services: Services) {
                         }
                     }
                 }
+                twoStepPolicy(policyOn, selfHasTwoStep, accounts.count { !it.disabled && !it.twoStep })
                 h2 {
                     id = "new"
                     +"Cont nou"
@@ -98,6 +101,31 @@ internal fun Route.adminListRoutes(services: Services) {
                 }
             }
         }
+    }
+
+    action("/admins/two-step-policy", services, AdminRole.ADMIN) { admin ->
+        val required = call.receiveParameters()["required"] == "true"
+        val result = try {
+            services.admins.requireTwoStep(required, admin)
+            services.audit.record(
+                admin,
+                AuditCategory.ACCOUNTS,
+                if (required) {
+                    "a cerut autentificarea în doi pași pentru toate conturile"
+                } else {
+                    "nu mai cere autentificarea în doi pași pentru toate conturile"
+                },
+            )
+            val text = if (required) {
+                "Autentificarea în doi pași este obligatorie."
+            } else {
+                "Autentificarea în doi pași nu mai este obligatorie."
+            }
+            "msg=" + text.encodeURLParameter()
+        } catch (e: AdminFormError) {
+            "err=" + e.message.orEmpty().encodeURLParameter()
+        }
+        call.respondRedirect("/admin/admins?$result")
     }
 
     action("/admins", services, AdminRole.ADMIN) { admin ->
@@ -451,6 +479,37 @@ internal fun Route.auditRoutes(services: Services) {
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+private fun FlowContent.twoStepPolicy(policyOn: Boolean, selfHasTwoStep: Boolean, without: Int) {
+    form(action = "/admin/admins/two-step-policy", method = FormMethod.post, classes = "card") {
+        h2 {
+            style = "margin-top: 0"
+            +"Autentificare în doi pași pentru toate conturile"
+        }
+        if (policyOn) {
+            p {
+                span("dot ok")
+                +"Obligatorie. Un cont fără ea ajunge, după parolă, la pagina unde o pornește, și nu o poate opri."
+            }
+            if (without > 0) {
+                p("hint") { +"$without ${plural(without, "cont activ nu a", "conturi active nu au")} pornit-o încă." }
+            }
+            hiddenInput(name = "required") { value = "false" }
+            button(classes = "secondary") { +"Nu o mai cere" }
+        } else {
+            p {
+                span("dot")
+                +"Opțională. Fiecare o pornește din Contul meu."
+            }
+            hiddenInput(name = "required") { value = "true" }
+            if (selfHasTwoStep) {
+                button { +"Cere-o pentru toate conturile" }
+            } else {
+                p("hint") { +"Ca s-o poți cere pentru toți, pornește-o întâi pentru contul tău, din Contul meu." }
             }
         }
     }

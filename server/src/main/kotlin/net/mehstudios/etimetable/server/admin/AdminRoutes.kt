@@ -63,7 +63,7 @@ fun Route.adminRoutes(services: Services) {
 
         get {
             val admin = currentAdmin(services) ?: return@get call.respondRedirect("/admin/login")
-            if (admin.mustChangePassword) return@get call.respondRedirect("/admin/account")
+            setupFirst(admin)?.let { return@get call.respondRedirect(it) }
             overview(services, admin)
         }
 
@@ -511,6 +511,19 @@ private fun withoutDefaultPort(host: String) = host.removeSuffix(":80").removeSu
 /** Pages a person with a temporary password may still open: the one where they change it. */
 private val FIRST_SIGN_IN_PAGES = setOf("/admin/account", "/admin/account/password")
 
+/** Pages open to an account that still has to set up the required two-step sign-in. */
+private val TWO_STEP_SETUP_PAGES = FIRST_SIGN_IN_PAGES + "/admin/account/two-step"
+
+/** Where a signed-in admin has to go before anything else, or null. */
+internal fun RoutingContext.setupFirst(admin: Admin): String? {
+    val path = call.request.path()
+    return when {
+        admin.mustChangePassword && path !in FIRST_SIGN_IN_PAGES -> "/admin/account"
+        admin.needsTwoStep && path !in TWO_STEP_SETUP_PAGES -> "/admin/account/two-step"
+        else -> null
+    }
+}
+
 internal fun Route.page(
     path: String,
     services: Services,
@@ -518,9 +531,7 @@ internal fun Route.page(
     body: suspend RoutingContext.(Admin) -> Unit,
 ) = get(path) {
     val admin = currentAdmin(services) ?: return@get call.respondRedirect("/admin/login")
-    if (admin.mustChangePassword && call.request.path() !in FIRST_SIGN_IN_PAGES) {
-        return@get call.respondRedirect("/admin/account")
-    }
+    setupFirst(admin)?.let { return@get call.respondRedirect(it) }
     if (role == AdminRole.ADMIN && admin.role != AdminRole.ADMIN) return@get call.respond(HttpStatusCode.Forbidden)
     body(admin)
 }
@@ -533,9 +544,7 @@ internal fun Route.action(
 ) = post(path) {
     if (!sameOrigin()) return@post call.respond(HttpStatusCode.Forbidden)
     val admin = currentAdmin(services) ?: return@post call.respondRedirect("/admin/login")
-    if (admin.mustChangePassword && call.request.path() !in FIRST_SIGN_IN_PAGES) {
-        return@post call.respondRedirect("/admin/account")
-    }
+    setupFirst(admin)?.let { return@post call.respondRedirect(it) }
     if (role == AdminRole.ADMIN && admin.role != AdminRole.ADMIN) return@post call.respond(HttpStatusCode.Forbidden)
     body(admin)
 }
