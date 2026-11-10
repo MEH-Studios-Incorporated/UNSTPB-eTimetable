@@ -271,11 +271,16 @@ private fun Route.professorRoutes(services: Services) {
         val dataset = semesterOrNull(services) ?: return@page call.respond(HttpStatusCode.NotFound)
         val query = call.parameters["q"].orEmpty().trim()
         val (msg, err) = message()
+        val noEmail = call.parameters["no_email"] == "on"
+        val idle = call.parameters["idle"] == "on"
+        val teaching = dataset.activities.mapNotNull { it.professorId }.toSet()
         val professors = dataset.professors
             .filter {
                 query.isEmpty() ||
                     TimetableSheet.fold(it.displayName + " " + it.email.orEmpty()).contains(TimetableSheet.fold(query))
             }
+            .filter { !noEmail || it.email == null }
+            .filter { !idle || it.id !in teaching }
             .sortedBy { TimetableSheet.fold(it.name) }
         val paging = call.parameters.paging(professors.size)
         call.respondHtml {
@@ -289,7 +294,15 @@ private fun Route.professorRoutes(services: Services) {
                                 value = query
                                 placeholder = "Caută după nume sau email"
                             }
-                            button(classes = "secondary") { +"Caută" }
+                            label("check") {
+                                checkBoxInput(name = "no_email") { checked = noEmail }
+                                +"Fără email"
+                            }
+                            label("check") {
+                                checkBoxInput(name = "idle") { checked = idle }
+                                +"Fără activități"
+                            }
+                            button(classes = "secondary") { +"Filtrează" }
                         }
                     },
                     footer = { pager(paging, "${dataset.base()}/professors", call.request.queryParameters) },
@@ -1297,37 +1310,42 @@ private fun FlowContent.subjectFilters(dataset: Dataset, query: String, programm
 }
 
 private fun FlowContent.subjectTable(dataset: Dataset, rows: List<Subject>) {
+    val bySubject = dataset.activities.groupBy { it.subjectId }
     table {
         thead {
             tr {
                 th { +"Materie" }
                 th { +"Specializare" }
                 th(classes = "num") { +"An" }
-                th(classes = "num") { +"Activități" }
+                th { +"Activități" }
+                th { +"Profesori" }
+                th(classes = "num") { +"Ore pe săptămână" }
                 th(classes = "num") { +"Fără profesor" }
             }
         }
         tbody {
             rows.forEach { s ->
-                val activities = dataset.activities.filter { it.subjectId == s.id }
+                val activities = bySubject[s.id].orEmpty()
+                val teachers = activities.mapNotNull { it.professorId }.distinct()
+                    .mapNotNull { dataset.professorsById[it]?.name }.sorted()
                 tr {
                     td {
-                        a(href = "${dataset.base()}/subjects/${s.id.encodeURLParameter()}") {
-                            +s.name.ro
-                        }
+                        a(href = "${dataset.base()}/subjects/${s.id.encodeURLParameter()}") { +s.name.ro }
                         div("hint") { +s.code }
                     }
-                    td {
-                        +(
-                            dataset.programmes.firstOrNull { it.id == s.programmeId }?.code
-                                ?: s.programmeId
-                            )
-                    }
+                    td { +(dataset.programmes.firstOrNull { it.id == s.programmeId }?.code ?: s.programmeId) }
                     td("num") { +s.year.toString() }
-                    td("num") { +activities.size.toString() }
+                    td {
+                        // "1 Curs · 4 Laborator", in the order of the activity types
+                        +activities.groupingBy { it.type }.eachCount().entries.sortedBy { it.key.ordinal }
+                            .joinToString(" · ") { (type, n) -> "$n ${TYPE_NAMES.getValue(type)}" }
+                            .ifEmpty { "-" }
+                    }
+                    td { shortList(teachers) }
+                    td("num") { +weeklyHours(activities) }
                     td("num") {
                         val missing = activities.count { it.professorId == null }
-                        if (missing > 0) span("tag") { +missing.toString() }
+                        if (missing > 0) span("tag") { +missing.toString() } else +"-"
                     }
                 }
             }
@@ -1336,31 +1354,49 @@ private fun FlowContent.subjectTable(dataset: Dataset, rows: List<Subject>) {
 }
 
 private fun FlowContent.professorTable(dataset: Dataset, rows: List<Professor>) {
+    val byProfessor = dataset.activities.groupBy { it.professorId }
     table {
         thead {
             tr {
                 th { +"Profesor" }
                 th { +"Email" }
+                th { +"Materii" }
                 th(classes = "num") { +"Activități" }
+                th(classes = "num") { +"Ore pe săptămână" }
+                th { +"Birou" }
                 th(classes = "num") { +"Consultații" }
             }
         }
         tbody {
             rows.forEach { p ->
+                val activities = byProfessor[p.id].orEmpty()
+                val subjects = activities.map { it.subjectId }.distinct()
+                    .mapNotNull { dataset.subjectsById[it]?.name?.ro }.sorted()
                 tr {
                     td {
-                        a(href = "${dataset.base()}/professors/${p.id.encodeURLParameter()}") {
-                            +p.name
-                        }
+                        a(href = "${dataset.base()}/professors/${p.id.encodeURLParameter()}") { +p.name }
                         div("hint") { +p.title }
                     }
                     td { if (p.email != null) +p.email.orEmpty() else span("tag") { +"lipsește" } }
-                    td("num") { +dataset.activities.count { it.professorId == p.id }.toString() }
+                    td { shortList(subjects) }
+                    td("num") { +activities.size.toString() }
+                    td("num") { +weeklyHours(activities) }
+                    td { +(p.officeRoomId?.let { dataset.roomsById[it]?.code ?: it } ?: "-") }
                     td("num") { +p.officeHours.size.toString() }
                 }
             }
         }
     }
+}
+
+/** The first two names, then how many more. */
+private fun FlowContent.shortList(names: List<String>) {
+    if (names.isEmpty()) {
+        span("hint") { +"-" }
+        return
+    }
+    +names.take(2).joinToString(", ")
+    if (names.size > 2) span("hint") { +" și încă ${names.size - 2}" }
 }
 
 private fun FlowContent.roomTabs(dataset: Dataset, path: String, buildings: Boolean) {

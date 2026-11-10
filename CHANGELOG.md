@@ -113,6 +113,10 @@ Each section is also the text of the matching GitHub release.
   hours taught per week) with a search and a building filter, and a second
   tab for buildings; a building's name and address are edited on its own
   page instead of in 33 cards.
+- Profesori in the dashboard shows each teacher's subjects, classes, hours
+  per week and office, and filters those without an email or without
+  classes. Materii shows the classes of each type, the teachers and the
+  hours per week. Pages use the whole width of the screen.
 - A dashboard error, a missing page or a page for administrators only now
   shows a short page in Romanian instead of JSON or a blank screen.
 - The app stays in portrait when the phone is turned.

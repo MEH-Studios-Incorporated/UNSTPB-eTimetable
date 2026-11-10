@@ -1102,7 +1102,7 @@ private fun dateTime(a: Announcement): String {
 private fun HTML.loginPage(error: String?) {
     adminPage("Administrare eTimetable", null, null) {
         div("login") {
-            img(src = "/admin/static/faima-seal.png", alt = "Sigiliul FAIMA")
+            seal()
             h1 { +"Administrare eTimetable" }
             p("sub") { +"Orarul și anunțurile FAIMA" }
             notice(error, error = true)
