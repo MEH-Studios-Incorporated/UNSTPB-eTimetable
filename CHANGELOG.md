@@ -6,6 +6,10 @@ Each section is also the text of the matching GitHub release.
 
 ### Added
 
+- The timetable import reads Excel files (.xlsx) as well as CSV: the
+  first sheet, with times and dates as they show in Excel. Programs that
+  send the timetable with a token can send either too.
+
 - A "Săptămână" view in Gestionare orar: the week of a group, half-group,
   room or professor on an hour grid, each class a block in its subject's
   colour with its type, room and time. Classes at the same time sit side by

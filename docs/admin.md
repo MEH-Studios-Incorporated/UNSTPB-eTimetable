@@ -198,8 +198,10 @@ salvează oricum.
 Din pagina semestrului ("Importă orarul") sau de la adresa
 `/admin/semesters/<cod>/import`:
 
-1. **Încarcă.** Alegi fișierul CSV. Fișierele Excel (`.xlsx`) nu se citesc
-   direct: salvează-le întâi ca "CSV UTF-8".
+1. **Încarcă.** Alegi fișierul CSV sau Excel (`.xlsx`). Din Excel se citește
+   prima foaie; orele și datele formatate ca ore și date se citesc cum se
+   văd (09:00, 2026-11-10). Fișierele `.xls` vechi trebuie salvate întâi ca
+   `.xlsx` sau "CSV UTF-8".
 2. **Coloane.** Panoul caută coloanele de mai jos după numele din primul
    rând al fișierului, fără să țină cont de litere mari și diacritice; merg
    și nume românești ca `zi`, `ora început`, `sală`, `materie`, `grupe`.

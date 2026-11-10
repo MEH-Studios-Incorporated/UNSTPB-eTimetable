@@ -197,7 +197,7 @@ gets `401` with `unauthorized`.
 
 | Method and path | What it does |
 | --- | --- |
-| `POST /api/admin/v1/semesters/<id>/timetable` | Body: the timetable CSV (`text/csv`, at most 5 MB, the format in `docs/admin.md`). Needs `timetable:write`. With `?dry_run=true` returns the difference and saves nothing; without it replaces the semester's timetable. |
+| `POST /api/admin/v1/semesters/<id>/timetable` | Body: the timetable as CSV (`text/csv`) or an Excel workbook (`.xlsx`, first sheet), at most 5 MB, the format in `docs/admin.md`. Needs `timetable:write`. With `?dry_run=true` returns the difference and saves nothing; without it replaces the semester's timetable. |
 
 Columns are matched by name as in the dashboard's import (case and
 diacritics do not matter, Romanian names work). The answer is JSON:
