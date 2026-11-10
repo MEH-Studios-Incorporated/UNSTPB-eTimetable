@@ -201,6 +201,11 @@ internal fun Route.reportRoutes(services: Services) {
                 }
             }
         }
+        services.audit.record(
+            admin,
+            AuditCategory.REPORTS,
+            "a marcat o problemă de orar ca ${status.label().lowercase()}",
+        )
         call.respondRedirect("/admin/reports/$id")
     }
 }

@@ -35,6 +35,7 @@ import net.mehstudios.etimetable.api.PushPlatform
 import net.mehstudios.etimetable.server.accounts.Accounts
 import net.mehstudios.etimetable.server.admin.AdminAccounts
 import net.mehstudios.etimetable.server.admin.AdminCookie
+import net.mehstudios.etimetable.server.admin.AuditLog
 import net.mehstudios.etimetable.server.admin.adminRoutes
 import net.mehstudios.etimetable.server.admin.respondAdminError
 import net.mehstudios.etimetable.server.announcements.AnnouncementRepository
@@ -114,6 +115,7 @@ class Services(
     val events = EventRepository(db)
     val accounts = Accounts(db)
     val admins = AdminAccounts(db)
+    val audit = AuditLog(db)
     val reports = TimetableReports(db)
     val pushTokens = PushTokens(db)
     val push = PushNotifier(pushTokens, pushSenders, clockCheck)

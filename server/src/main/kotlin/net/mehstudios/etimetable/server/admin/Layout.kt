@@ -50,10 +50,11 @@ enum class Section(val label: String, val href: String, val group: String?, val 
         "M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM3 19c1-3 3-4 6-4s5 1 6 4M16 11a3 3 0 1 0 0-6M18 15c2 1 3 2 3 4",
     ),
     ADMINS("Administratori", "/admin/admins", null, "M12 3l7 3v6c0 4-3 7-7 9-4-2-7-5-7-9V6z"),
+    AUDIT("Jurnal", "/admin/audit", null, "M8 4h11v16H8zM5 8h3M5 12h3M5 16h3M11 9h5M11 13h5"),
 }
 
-/** Sections only administrators see: other admins, and the students' personal data. */
-private val ADMIN_ONLY = setOf(Section.ADMINS, Section.STUDENTS)
+/** Sections only administrators see: other admins, the log, and the students' personal data. */
+private val ADMIN_ONLY = setOf(Section.ADMINS, Section.STUDENTS, Section.AUDIT)
 
 /**
  * Every dashboard page: the sidebar with the sections, a top bar with the teaching week and
@@ -76,7 +77,7 @@ fun HTML.adminPage(
         meta(name = "robots", content = "noindex")
         title("$pageTitle · eTimetable")
         link(rel = "icon", href = "/admin/static/faima-seal.png")
-        style { unsafe { +(BASE_STYLES + ADMIN_STYLES) } }
+        style { unsafe { +(BASE_STYLES + ADMIN_STYLES + FEATURE_STYLES.joinToString("\n")) } }
         script(src = "/admin/static/admin.js") { defer = true }
     }
     body(if (admin == null) "plain" else "shell") {
@@ -132,7 +133,7 @@ private fun FlowContent.sidebar(admin: Admin, current: Section?) {
             span("email") { +admin.email }
             span("role") { +(if (admin.role == AdminRole.ADMIN) "Administrator" else "Editor") }
             div("links") {
-                a(href = "/admin/password") { +"Parola" }
+                a(href = "/admin/account") { +"Contul meu" }
                 a(href = "/") {
                     attributes["target"] = "_blank"
                     +"Pagina publică"
@@ -196,6 +197,12 @@ h1, h2, h3 { font-weight: 600; letter-spacing: -0.01em; }
 .btn.danger, button.danger { background: var(--surface); color: var(--now); border-color: var(--border); }
 button.link { padding: 0; border: 0; background: none; color: inherit; font-weight: 500; }
 """
+
+/**
+ * Styles that belong to one feature live next to its routes as a constant and are
+ * listed here, one line each, so features do not edit the same block of CSS.
+ */
+private val FEATURE_STYLES: List<String> = listOf()
 
 private val ADMIN_STYLES = """
 :root { --side: #292929; --side-line: #292929; --side-hover: #3A3A3A; --ok: #2F7A4B; --error-soft: #FBEAE9;
@@ -316,6 +323,15 @@ td .btn, td button { padding: 5px 10px; font-size: 13px; }
 .pager .pages .current { background: var(--primary-soft); color: var(--primary); font-weight: 700; }
 .pager .pages .disabled { color: var(--strong); }
 .pager .pages .gap { min-width: 20px; color: var(--muted); }
+.qr { width: 200px; margin: 8px 0 12px; }
+.qr svg { display: block; border-radius: 6px; }
+.secret { font: 600 17px/24px ui-monospace, Menlo, Consolas, monospace; letter-spacing: 0.04em; background: var(--alt);
+  border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; display: inline-block; overflow-wrap: anywhere; }
+ul.codes { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; list-style: none; padding: 0; margin: 12px 0;
+  font: 600 15px/22px ui-monospace, Menlo, Consolas, monospace; }
+ul.codes li { background: var(--alt); border-radius: 6px; padding: 6px 10px; }
+form.back { margin: 8px 0 0; text-align: center; }
+form.back button.link { color: var(--muted); font-size: 13px; }
 .empty { padding: 32px 20px; text-align: center; color: var(--muted); }
 .empty strong { display: block; color: var(--text); font-size: 15px; margin-bottom: 4px; }
 .empty p { margin: 0 auto; max-width: 440px; }

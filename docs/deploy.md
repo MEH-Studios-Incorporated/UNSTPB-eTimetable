@@ -14,6 +14,8 @@ curl http://localhost:8080/api/v1/health
 The server creates and migrates its tables on every start. Set
 `ETT_ADMIN_EMAIL` and `ETT_ADMIN_PASSWORD` for the first start: that account
 signs in at `/admin`, changes its password and adds the other accounts.
+A password shorter than 12 characters works for that first sign-in, but the
+dashboard then asks for a new one before anything else.
 The address itself (`/`) is a public page for students: what the app does,
 the download links from `ETT_ANDROID_URL` and `ETT_IOS_URL`, the current
 teaching week and a link to the dashboard.
@@ -61,6 +63,12 @@ published on such a server.
 The server speaks plain HTTP on port 8080. Put it behind the university's
 HTTPS reverse proxy; the apps only talk to an `https://` address in
 release builds.
+
+The dashboard refuses a form post unless its `Origin` (or `Referer`) names
+the host the browser asked for, so the proxy must pass the original `Host`
+header (`proxy_set_header Host $host;` in nginx). Five wrong passwords or
+codes for one dashboard account within 15 minutes lock that account for 15
+minutes; the lock is per account, not per address, for the reason below.
 
 Sign-up and login are limited to 10 requests a minute per client address.
 Behind a reverse proxy every request arrives from the proxy's address, so

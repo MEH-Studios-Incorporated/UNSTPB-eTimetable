@@ -29,6 +29,7 @@ class ScheduleRoutesTest {
         application { module(services) }
         val browser = createClient {
             install(HttpCookies)
+            sameSite()
             followRedirects = false
         }
         browser.submitForm(
@@ -100,6 +101,7 @@ class ScheduleRoutesTest {
         application { module(services) }
         val browser = createClient {
             install(HttpCookies)
+            sameSite()
             followRedirects = false
         }
         browser.submitForm(

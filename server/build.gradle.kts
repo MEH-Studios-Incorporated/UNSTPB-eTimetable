@@ -34,6 +34,7 @@ dependencies {
     implementation(libs.flyway.postgresql)
     implementation(libs.postgresql)
     implementation(libs.bouncycastle)
+    implementation(libs.qrcodegen)
     implementation(libs.logback.classic)
 
     testImplementation(kotlin("test"))

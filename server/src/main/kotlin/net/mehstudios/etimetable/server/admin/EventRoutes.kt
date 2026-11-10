@@ -64,6 +64,7 @@ internal fun Route.eventRoutes(services: Services) {
             return@action call.respondHtml { eventsPage(admin, events, draft, msg = null, err = null) }
         }
         val event = services.events.publish(draft.fields!!, draft.imageHash!!)
+        services.audit.record(admin, AuditCategory.EVENTS, "a publicat evenimentul ${event.title}")
         if (draft.notify) {
             // every message would fail, so the admin hears why instead of phones staying silent
             val drift = services.push.clockDrift()
@@ -87,10 +88,15 @@ internal fun Route.eventRoutes(services: Services) {
             return@action call.respondHtml { editEventPage(admin, event, draft) }
         }
         services.events.update(event.id, draft.fields!!, draft.imageHash!!)
+        services.audit.record(admin, AuditCategory.EVENTS, "a modificat evenimentul ${draft.fields!!.title}")
         call.respondRedirect("/admin/events?msg=${"Evenimentul a fost salvat.".encodeURLParameter()}")
     }
-    action("/events/{id}/delete", services) { _ ->
-        services.events.delete(call.parameters["id"].orEmpty())
+    action("/events/{id}/delete", services) { admin ->
+        val id = call.parameters["id"].orEmpty()
+        services.events.byId(id)?.let {
+            services.audit.record(admin, AuditCategory.EVENTS, "a șters evenimentul ${it.title}")
+        }
+        services.events.delete(id)
         call.respondRedirect("/admin/events?msg=${"Evenimentul a fost șters.".encodeURLParameter()}")
     }
 }

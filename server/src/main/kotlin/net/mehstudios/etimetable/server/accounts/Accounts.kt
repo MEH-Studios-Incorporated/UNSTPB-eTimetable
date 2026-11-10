@@ -164,6 +164,10 @@ class Accounts(private val db: DataSource) {
         ) { StudentCounts(it.getInt(1), it.getInt(2), it.getInt(3)) }.single()
     }
 
+    suspend fun email(studentId: UUID): String? = db.transaction { c ->
+        c.query("SELECT email FROM student WHERE id = ?", studentId) { it.getString(1) }.singleOrNull()
+    }
+
     /** Deletes the account; its sessions go with it. */
     suspend fun delete(studentId: UUID) {
         db.transaction { c -> c.update("DELETE FROM student WHERE id = ?", studentId) }

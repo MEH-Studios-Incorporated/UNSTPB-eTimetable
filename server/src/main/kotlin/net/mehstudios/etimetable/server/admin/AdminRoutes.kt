@@ -12,6 +12,7 @@ import io.ktor.http.encodeURLParameter
 import io.ktor.server.html.respondHtml
 import io.ktor.server.http.content.staticResources
 import io.ktor.server.request.header
+import io.ktor.server.request.path
 import io.ktor.server.request.receiveMultipart
 import io.ktor.server.request.receiveParameters
 import io.ktor.server.response.header
@@ -23,7 +24,6 @@ import io.ktor.server.routing.RoutingContext
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
-import io.ktor.server.sessions.clear
 import io.ktor.server.sessions.get
 import io.ktor.server.sessions.sessions
 import io.ktor.server.sessions.set
@@ -46,7 +46,6 @@ import net.mehstudios.etimetable.schedule.facultyNow
 import net.mehstudios.etimetable.server.Services
 import net.mehstudios.etimetable.server.announcements.ANNOUNCEMENT_PAGE_SIZE
 import net.mehstudios.etimetable.server.timetable.TimetableSheet
-import java.util.UUID
 import kotlin.time.Clock
 
 @Serializable
@@ -72,58 +71,14 @@ fun Route.adminRoutes(services: Services) {
 
         get {
             val admin = currentAdmin(services) ?: return@get call.respondRedirect("/admin/login")
+            if (admin.mustChangePassword) return@get call.respondRedirect("/admin/account")
             overview(services, admin)
         }
 
-        get("/login") { call.respondHtml { loginPage(error = null) } }
-        post("/login") {
-            if (!sameOrigin()) return@post call.respond(HttpStatusCode.Forbidden)
-            val form = call.receiveParameters()
-            val token = services.admins.login(form["email"].orEmpty(), form["password"].orEmpty())
-            if (token == null) {
-                call.respondHtml(HttpStatusCode.Unauthorized) { loginPage(error = "Email sau parolă greșită.") }
-            } else {
-                call.sessions.set(AdminCookie(token))
-                call.respondRedirect("/admin")
-            }
-        }
-        post("/logout") {
-            call.sessions.get<AdminCookie>()?.let { services.admins.logout(it.token) }
-            call.sessions.clear<AdminCookie>()
-            call.respondRedirect("/admin/login")
-        }
-
-        page("/password", services) { admin ->
-            call.respondHtml {
-                adminPage("Schimbă parola", admin, null, context = { +admin.email }) {
-                    notice(call.parameters["msg"])
-                    notice(call.parameters["err"], error = true)
-                    form(action = "/admin/password", method = FormMethod.post, classes = "card") {
-                        field("password", "Parola nouă") {
-                            passwordInput(name = "password") {
-                                id = "password"
-                                required = true
-                                minLength = "8"
-                                attributes["autocomplete"] = "new-password"
-                            }
-                        }
-                        p("hint") { +"Cel puțin 8 caractere. După schimbare te conectezi din nou." }
-                        div("form-actions") { button { +"Schimbă parola" } }
-                    }
-                }
-            }
-        }
-        action("/password", services) { admin ->
-            val password = call.receiveParameters()["password"].orEmpty()
-            services.admins.changePassword(admin.id, password)
-            call.sessions.clear<AdminCookie>()
-            call.respondRedirect("/admin/login")
-        }
-
+        accountRoutes(services)
         semesterRoutes(services)
         announcementRoutes(services)
         eventRoutes(services)
-        adminListRoutes(services)
         editRoutes(services)
         reportRoutes(services)
         scheduleRoutes(services)
@@ -406,7 +361,7 @@ private fun Route.semesterRoutes(services: Services) {
         }
     }
 
-    action("/semesters", services) { _ ->
+    action("/semesters", services) { admin ->
         val form = call.receiveParameters()
         val id = form["id"].orEmpty().trim()
         val semester = try {
@@ -421,13 +376,15 @@ private fun Route.semesterRoutes(services: Services) {
         }
         val copy = if (form["copy_current"] == "on") services.datasets.current()?.dataset else null
         services.datasets.replace(copy?.copy(semester = semester) ?: Dataset(semester), makeCurrent = false)
+        services.audit.record(admin, AuditCategory.TIMETABLE, "a creat semestrul ${semester.name.ro}")
         call.respondRedirect("/admin/semesters/$id?msg=${"Semestrul a fost creat.".encodeURLParameter()}")
     }
 
-    action("/semesters/{id}/current", services) { _ ->
+    action("/semesters/{id}/current", services) { admin ->
         val id = call.parameters["id"].orEmpty()
         if (services.datasets.dataset(id) == null) return@action call.respond(HttpStatusCode.NotFound)
         services.datasets.makeCurrent(id)
+        services.audit.record(admin, AuditCategory.TIMETABLE, "a făcut curent semestrul $id")
         call.respondRedirect("/admin/semesters?msg=${"Aplicația arată acum semestrul $id.".encodeURLParameter()}")
     }
 
@@ -519,11 +476,12 @@ private fun Route.semesterRoutes(services: Services) {
         }
     }
 
-    action("/semesters/{id}/calendar", services) { _ ->
+    action("/semesters/{id}/calendar", services) { admin ->
         val id = call.parameters["id"].orEmpty()
         if (services.datasets.dataset(id) == null) return@action call.respond(HttpStatusCode.NotFound)
         val message = try {
             services.datasets.saveSemester(CalendarForm.parse(call.receiveParameters(), id))
+            services.audit.record(admin, AuditCategory.TIMETABLE, "a salvat calendarul semestrului $id")
             "msg=${"Calendarul a fost salvat.".encodeURLParameter()}"
         } catch (e: AdminFormError) {
             "err=${e.message.orEmpty().encodeURLParameter()}"
@@ -559,6 +517,13 @@ private fun Route.semesterRoutes(services: Services) {
         val result = TimetableSheet.import(sheet.orEmpty(), existing.semester)
         val imported = result.dataset
         if (imported != null) services.datasets.replace(imported, makeCurrent = false)
+        if (imported != null) {
+            services.audit.record(
+                admin,
+                AuditCategory.TIMETABLE,
+                "a importat orarul semestrului ${existing.semester.id}: ${imported.activities.size} activități",
+            )
+        }
         call.respondHtml(if (imported == null) HttpStatusCode.UnprocessableEntity else HttpStatusCode.OK) {
             adminPage(
                 if (imported == null) "Orarul nu a fost importat" else "Orar importat",
@@ -709,6 +674,7 @@ private fun Route.announcementRoutes(services: Services) {
             services.announcements.publish(title, body, author, pinned = pinned)
         }
         // every message would fail, so the admin hears why instead of phones staying silent
+        services.audit.record(admin, AuditCategory.ANNOUNCEMENTS, "a publicat anunțul ${announcement.title}")
         val drift = services.push.clockDrift()
         if (drift != null) {
             val notice = clockNotice(drift).encodeURLParameter()
@@ -732,14 +698,28 @@ private fun Route.announcementRoutes(services: Services) {
             return@action call.respondHtml { editAnnouncementPage(admin, announcement, draft) }
         }
         services.announcements.update(announcement.id, draft.title, draft.body, draft.author, draft.pinned)
+        services.audit.record(admin, AuditCategory.ANNOUNCEMENTS, "a modificat anunțul ${draft.title}")
         call.respondRedirect("/admin/announcements?msg=${"Anunțul a fost salvat.".encodeURLParameter()}")
     }
-    action("/announcements/{id}/pin", services) { _ ->
-        services.announcements.setPinned(call.parameters["id"].orEmpty(), call.receiveParameters()["pinned"] == "true")
+    action("/announcements/{id}/pin", services) { admin ->
+        val id = call.parameters["id"].orEmpty()
+        val pinned = call.receiveParameters()["pinned"] == "true"
+        services.announcements.setPinned(id, pinned)
+        services.announcements.byId(id)?.let {
+            services.audit.record(
+                admin,
+                AuditCategory.ANNOUNCEMENTS,
+                "${if (pinned) "a fixat" else "nu mai fixează"} anunțul ${it.title}",
+            )
+        }
         call.respondRedirect("/admin/announcements")
     }
-    action("/announcements/{id}/delete", services) { _ ->
-        services.announcements.delete(call.parameters["id"].orEmpty())
+    action("/announcements/{id}/delete", services) { admin ->
+        val id = call.parameters["id"].orEmpty()
+        services.announcements.byId(id)?.let {
+            services.audit.record(admin, AuditCategory.ANNOUNCEMENTS, "a șters anunțul ${it.title}")
+        }
+        services.announcements.delete(id)
         call.respondRedirect("/admin/announcements?msg=${"Anunțul a fost șters.".encodeURLParameter()}")
     }
 }
@@ -913,111 +893,6 @@ private fun FlowContent.announcementForm(action: String, draft: Draft?, submit: 
     }
 }
 
-private fun Route.adminListRoutes(services: Services) {
-    page("/admins", services, AdminRole.ADMIN) { admin ->
-        val admins = services.admins.list()
-        call.respondHtml {
-            adminPage(
-                "Administratori",
-                admin,
-                Section.ADMINS,
-                context = { +"Editorii schimbă orarul și anunțurile; administratorii și conturile." },
-            ) {
-                notice(call.parameters["msg"])
-                notice(call.parameters["err"], error = true)
-                tableCard {
-                    table {
-                        thead {
-                            tr {
-                                th { +"Email" }
-                                th { +"Rol" }
-                                th { }
-                            }
-                        }
-                        tbody {
-                            admins.forEach { other ->
-                                tr {
-                                    td { +other.email }
-                                    td { +(if (other.role == AdminRole.ADMIN) "Administrator" else "Editor") }
-                                    td("actions") {
-                                        if (other.id != admin.id) {
-                                            form(
-                                                action = "/admin/admins/${other.id}/delete",
-                                                method = FormMethod.post,
-                                            ) {
-                                                onSubmit = "return confirm('Ștergi contul ${other.email}?')"
-                                                button(classes = "danger") { +"Șterge" }
-                                            }
-                                        } else {
-                                            a(href = "/admin/password") { +"Schimbă parola" }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                h2 { +"Cont nou" }
-                form(action = "/admin/admins", method = FormMethod.post, classes = "card") {
-                    field("email", "Email") {
-                        emailInput(name = "email") {
-                            id = "email"
-                            required = true
-                        }
-                    }
-                    field("password", "Parolă inițială") {
-                        passwordInput(name = "password") {
-                            id = "password"
-                            required = true
-                            minLength = "8"
-                            attributes["autocomplete"] = "new-password"
-                        }
-                        p("hint") { +"Spune-i persoanei să o schimbe după prima conectare." }
-                    }
-                    field("role", "Rol") {
-                        select {
-                            id = "role"
-                            name = "role"
-                            option {
-                                value = "editor"
-                                +"Editor: orar și anunțuri"
-                            }
-                            option {
-                                value = "admin"
-                                +"Administrator: tot, inclusiv conturile"
-                            }
-                        }
-                    }
-                    div("form-actions") { button { +"Creează contul" } }
-                }
-            }
-        }
-    }
-    action("/admins", services, AdminRole.ADMIN) { _ ->
-        val form = call.receiveParameters()
-        val role = if (form["role"] == "admin") AdminRole.ADMIN else AdminRole.EDITOR
-        val result = try {
-            services.admins.create(form["email"].orEmpty(), form["password"].orEmpty(), role)
-            "msg=${"Contul a fost creat.".encodeURLParameter()}"
-        } catch (e: AdminFormError) {
-            "err=${e.message.orEmpty().encodeURLParameter()}"
-        }
-        call.respondRedirect("/admin/admins?$result")
-    }
-    action("/admins/{id}/delete", services, AdminRole.ADMIN) { _ ->
-        val id =
-            runCatching { UUID.fromString(call.parameters["id"]) }.getOrNull()
-                ?: return@action call.respond(HttpStatusCode.NotFound)
-        val result = try {
-            services.admins.delete(id)
-            "msg=${"Contul a fost șters.".encodeURLParameter()}"
-        } catch (e: AdminFormError) {
-            "err=${e.message.orEmpty().encodeURLParameter()}"
-        }
-        call.respondRedirect("/admin/admins?$result")
-    }
-}
-
 /** A label above its input. */
 internal fun FlowContent.field(id: String, label: String, input: FlowContent.() -> Unit) {
     div("field") {
@@ -1099,35 +974,6 @@ private fun dateTime(a: Announcement): String {
     return "${longDate(local.date)}, ${local.time.toString().take(5)}"
 }
 
-private fun HTML.loginPage(error: String?) {
-    adminPage("Administrare eTimetable", null, null) {
-        div("login") {
-            seal()
-            h1 { +"Administrare eTimetable" }
-            p("sub") { +"Orarul și anunțurile FAIMA" }
-            notice(error, error = true)
-            form(action = "/admin/login", method = FormMethod.post) {
-                field("email", "Email") {
-                    emailInput(name = "email") {
-                        id = "email"
-                        required = true
-                        attributes["autocomplete"] = "username"
-                    }
-                }
-                field("password", "Parolă") {
-                    passwordInput(name = "password") {
-                        id = "password"
-                        required = true
-                        attributes["autocomplete"] = "current-password"
-                    }
-                }
-                button { +"Conectează-te" }
-            }
-            a(href = "/", classes = "back") { +"Înapoi la pagina aplicației" }
-        }
-    }
-}
-
 internal suspend fun RoutingContext.currentAdmin(services: Services): Admin? {
     val admin = call.sessions.get<AdminCookie>()?.let { services.admins.adminFor(it.token) } ?: return null
     return admin.copy(shell = shell(services))
@@ -1157,14 +1003,26 @@ private suspend fun RoutingContext.shell(services: Services): Shell {
 }
 
 /**
- * The session cookie is SameSite=Lax, so other sites cannot post with it.
- * This also refuses posts whose Origin is another host, for older browsers.
+ * The session cookie is SameSite=Lax, so other sites cannot post with it. On top of that a
+ * post must say it comes from this host: browsers send Origin on every form post, and
+ * Referer where an older one does not. A post with neither, or one the browser marks as
+ * coming from another site, is refused.
  */
-private fun RoutingContext.sameOrigin(): Boolean {
-    val origin = call.request.header(HttpHeaders.Origin) ?: return true
-    val host = call.request.header(HttpHeaders.Host) ?: return false
-    return origin.substringAfter("://").substringBefore('/') == host
+internal fun RoutingContext.sameOrigin(): Boolean {
+    val fetchSite = call.request.header("Sec-Fetch-Site")
+    if (fetchSite != null && fetchSite != "same-origin" && fetchSite != "none") return false
+    val host = call.request.header(HttpHeaders.Host) ?: call.request.local.serverHost
+    val source = call.request.header(HttpHeaders.Origin)?.takeIf { it != "null" }
+        ?: call.request.header(HttpHeaders.Referrer)
+        ?: return false
+    return withoutDefaultPort(source.substringAfter("://").substringBefore('/')) == withoutDefaultPort(host)
 }
+
+/** Origin leaves out :80 and :443, a Host header may carry them. */
+private fun withoutDefaultPort(host: String) = host.removeSuffix(":80").removeSuffix(":443")
+
+/** Pages a person with a temporary password may still open: the one where they change it. */
+private val FIRST_SIGN_IN_PAGES = setOf("/admin/account", "/admin/account/password")
 
 internal fun Route.page(
     path: String,
@@ -1173,6 +1031,9 @@ internal fun Route.page(
     body: suspend RoutingContext.(Admin) -> Unit,
 ) = get(path) {
     val admin = currentAdmin(services) ?: return@get call.respondRedirect("/admin/login")
+    if (admin.mustChangePassword && call.request.path() !in FIRST_SIGN_IN_PAGES) {
+        return@get call.respondRedirect("/admin/account")
+    }
     if (role == AdminRole.ADMIN && admin.role != AdminRole.ADMIN) return@get call.respond(HttpStatusCode.Forbidden)
     body(admin)
 }
@@ -1185,6 +1046,9 @@ internal fun Route.action(
 ) = post(path) {
     if (!sameOrigin()) return@post call.respond(HttpStatusCode.Forbidden)
     val admin = currentAdmin(services) ?: return@post call.respondRedirect("/admin/login")
+    if (admin.mustChangePassword && call.request.path() !in FIRST_SIGN_IN_PAGES) {
+        return@post call.respondRedirect("/admin/account")
+    }
     if (role == AdminRole.ADMIN && admin.role != AdminRole.ADMIN) return@post call.respond(HttpStatusCode.Forbidden)
     body(admin)
 }

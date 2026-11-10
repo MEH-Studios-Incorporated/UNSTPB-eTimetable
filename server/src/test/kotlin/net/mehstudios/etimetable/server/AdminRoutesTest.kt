@@ -50,6 +50,7 @@ class AdminRoutesTest {
         application { module(services) }
         val browser = createClient {
             install(HttpCookies)
+            sameSite()
             install(ContentNegotiation) { json(AppJson) }
             followRedirects = false
         }
@@ -229,8 +230,8 @@ class AdminRoutesTest {
 
     @Test
     fun editorsCannotManageAccounts() = withDashboard { services, browser ->
-        services.admins.create("editor@faima.test", "parola-editor", AdminRole.EDITOR)
-        browser.login("editor@faima.test", "parola-editor")
+        services.admins.create("editor@faima.test", "parola-de-test", AdminRole.EDITOR)
+        browser.login("editor@faima.test", "parola-de-test")
         assertEquals(HttpStatusCode.OK, browser.get("/admin/announcements").status)
         assertEquals(HttpStatusCode.Forbidden, browser.get("/admin/admins").status)
     }
