@@ -142,27 +142,72 @@ class TimetableReports(private val db: DataSource) {
         c.query("SELECT count(*) FROM timetable_report WHERE status = 'open'") { it.getInt(1) }.single()
     }
 
-    /** How many reports are open, or closed, for the dashboard's tabs and pages. */
-    suspend fun count(closed: Boolean): Int = db.transaction { c ->
-        val status = if (closed) "status <> 'open'" else "status = 'open'"
-        c.query("SELECT count(*) FROM timetable_report WHERE $status") { it.getInt(1) }.single()
+    /** How many reports match, for the dashboard's tabs and pages. */
+    suspend fun count(closed: Boolean, semesterId: String? = null, text: String = ""): Int = db.transaction { c ->
+        val (where, args) = filter(closed, semesterId, text)
+        c.query(
+            "SELECT count(*) FROM timetable_report r JOIN student s ON s.id = r.student_id WHERE $where",
+            *args.toTypedArray(),
+        ) { it.getInt(1) }.single()
     }
 
     /** Newest first, [limit] rows from [offset]. */
-    suspend fun page(closed: Boolean, offset: Int, limit: Int): List<TimetableReport> = db.transaction { c ->
-        // A plain comparison on status, so the planner can use timetable_report_queue.
-        val status = if (closed) "r.status <> 'open'" else "r.status = 'open'"
+    suspend fun page(
+        closed: Boolean,
+        offset: Int,
+        limit: Int,
+        semesterId: String? = null,
+        text: String = "",
+    ): List<TimetableReport> = db.transaction { c ->
+        val (where, args) = filter(closed, semesterId, text)
         c.query(
             """
             SELECT r.*, s.email AS student_email, NULL AS reviewer_email,
                 trim(concat_ws(' ', s.profile ->> 'firstName', s.profile ->> 'lastName')) AS student_name
             FROM timetable_report r JOIN student s ON s.id = r.student_id
-            WHERE $status
+            WHERE $where
             ORDER BY r.created_at DESC, r.id DESC LIMIT ? OFFSET ?
             """.trimIndent(),
-            limit,
-            offset,
+            *(args + listOf(limit, offset)).toTypedArray(),
         ) { it.report() }
+    }
+
+    // A plain comparison on status, so the planner can use timetable_report_queue.
+    private fun filter(closed: Boolean, semesterId: String?, text: String): Pair<String, List<Any>> {
+        val parts = mutableListOf(if (closed) "r.status <> 'open'" else "r.status = 'open'")
+        val args = mutableListOf<Any>()
+        if (!semesterId.isNullOrBlank()) {
+            parts += "r.semester_id = ?"
+            args += semesterId
+        }
+        if (text.isNotBlank()) {
+            parts += """
+                lower(concat_ws(' ', r.snapshot ->> 'subjectName', r.description, s.email,
+                    s.profile ->> 'firstName', s.profile ->> 'lastName')) LIKE ?
+            """.trimIndent()
+            args += "%" + text.trim().lowercase().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
+        }
+        return parts.joinToString(" AND ") to args
+    }
+
+    /** The semesters reports were sent for, newest first, with their names from the snapshots. */
+    suspend fun semesters(): List<Pair<String, String>> = db.transaction { c ->
+        c.query(
+            """
+            SELECT semester_id, max(snapshot ->> 'semesterName') FROM timetable_report
+            GROUP BY semester_id ORDER BY max(created_at) DESC
+            """.trimIndent(),
+        ) { it.getString(1) to it.getString(2) }
+    }
+
+    /** Open reports about the same class, [except] the one being read. */
+    suspend fun openFor(semesterId: String, activityId: String, except: UUID): Int = db.transaction { c ->
+        c.query(
+            "SELECT count(*) FROM timetable_report WHERE semester_id = ? AND activity_id = ? AND status = 'open' AND id <> ?",
+            semesterId,
+            activityId,
+            except,
+        ) { it.getInt(1) }.single()
     }
 
     suspend fun find(id: UUID): TimetableReport? = db.transaction { c ->

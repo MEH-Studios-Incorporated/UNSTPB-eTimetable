@@ -142,6 +142,16 @@ brand colours):
   a handful of rows uses it; the paging happens in the database where the
   list comes from there.
 - Empty tables say what is missing and what to do, never just "nimic".
+- One week grid (`weekGrid` in `admin/WeekGrid.kt`) wherever the dashboard
+  shows a week: Gestionare orar's "Săptămână" view and the group, room and
+  professor pages. An hour axis from 08:00 to 20:00 (stretched when a class
+  falls outside), a column per weekday, each class a block placed by its
+  times with the 4 px subject bar and tint, its type as text, room, time
+  and an "Impară" or "Pară" mark. Overlapping classes share the day in
+  sub-columns. Subject colours go by the subjects' ids in sorted order, so
+  a subject keeps its colour between pages. Office hours are neutral
+  blocks. Toate / Impare / Pare are links that fade the other weeks'
+  classes. On a phone the grid scrolls sideways inside its card.
 - Dark theme from the dark column of the colour table. It follows the
   system until the admin picks one with the switch; the choice is a cookie,
   so the server renders the right theme and nothing flashes.

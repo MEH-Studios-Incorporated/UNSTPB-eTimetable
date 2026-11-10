@@ -27,6 +27,7 @@ import net.mehstudios.etimetable.model.Room
 import net.mehstudios.etimetable.model.Subject
 import net.mehstudios.etimetable.model.WeeklySlot
 import net.mehstudios.etimetable.schedule.FacultyTimeZone
+import net.mehstudios.etimetable.schedule.TeachingCalendar
 import net.mehstudios.etimetable.server.ApiProblem
 import net.mehstudios.etimetable.server.Services
 import net.mehstudios.etimetable.server.timetable.TimetableSheet
@@ -501,7 +502,23 @@ private fun HTML.professorPage(admin: Admin, dataset: Dataset, professor: Profes
             +"Activități"
             span("count") { +activities.size.toString() }
         }
-        activityTable(dataset, activities, showSubject = true, showProfessor = false)
+        val colours = subjectColours(dataset)
+        val query = Parameters.build { form[WeekFilter.PARAM]?.let { append(WeekFilter.PARAM, it) } }
+        val back = linkTo(path, query, emptyMap())
+        weekGrid(
+            activities.map { a ->
+                classEntry(
+                    dataset,
+                    colours,
+                    a,
+                    activityHref(dataset, a, back),
+                    who = audience(dataset, a),
+                )
+            } + professor.officeHours.mapIndexed { i, hour -> officeEntry(dataset, professor, hour, i, "Consultații") },
+            TeachingCalendar(dataset.semester),
+            path,
+            query,
+        )
         if (activities.isEmpty()) {
             form(action = "$path/delete", method = FormMethod.post) {
                 style = "margin-top: 16px"
@@ -559,7 +576,7 @@ private fun Route.activityRoutes(services: Services) {
                 AuditCategory.TIMETABLE,
                 "a adăugat activitatea ${activityLabel(next, activity)}",
             )
-            call.respondRedirect("${backFor(dataset, form, activity)}?${msg("Activitatea a fost adăugată.")}")
+            call.respondRedirect(withParam(backFor(dataset, form, activity), msg("Activitatea a fost adăugată.")))
         } catch (e: AdminFormError) {
             call.respondHtml(HttpStatusCode.UnprocessableEntity) { activityPage(admin, dataset, null, form, e.message) }
         }
@@ -583,7 +600,7 @@ private fun Route.activityRoutes(services: Services) {
                 AuditCategory.TIMETABLE,
                 "a modificat activitatea ${activityLabel(next, activity)}",
             )
-            call.respondRedirect("${backFor(dataset, form, activity)}?${msg("Activitatea a fost salvată.")}")
+            call.respondRedirect(withParam(backFor(dataset, form, activity), msg("Activitatea a fost salvată.")))
         } catch (e: AdminFormError) {
             call.respondHtml(HttpStatusCode.UnprocessableEntity) { activityPage(admin, dataset, old, form, e.message) }
         }
@@ -595,14 +612,25 @@ private fun Route.activityRoutes(services: Services) {
         val form = call.receiveParameters()
         services.save(dataset.copy(activities = dataset.activities.filterNot { it.id == old.id }))
         services.audit.record(admin, AuditCategory.TIMETABLE, "a șters activitatea ${activityLabel(dataset, old)}")
-        call.respondRedirect("${backFor(dataset, form, old)}?${msg("Activitatea a fost ștearsă.")}")
+        call.respondRedirect(withParam(backFor(dataset, form, old), msg("Activitatea a fost ștearsă.")))
     }
 }
 
-/** Where to go after a save: the page the form was opened from, or the subject's page. */
+/**
+ * Where to go after a save: the page the form was opened from, or the subject's page. The
+ * page may have a query of its own, such as the week view of Gestionare orar with the class
+ * selected, so the message is added with [withParam].
+ */
 private fun backFor(dataset: Dataset, form: Parameters, activity: Activity): String =
     form["back"]?.takeIf { it.startsWith("/admin/") && !it.contains("//") }
         ?: "${dataset.base()}/subjects/${activity.subjectId.encodeURLParameter()}"
+
+/** [url] with [param] added to its query, before any fragment. */
+internal fun withParam(url: String, param: String): String {
+    val hash = url.indexOf('#').takeIf { it >= 0 } ?: url.length
+    val base = url.substring(0, hash)
+    return base + (if ('?' in base) "&" else "?") + param + url.substring(hash)
+}
 
 /** Reads the activity form with the importer's rules; a new room code adds the room. */
 private fun activityFrom(dataset: Dataset, id: String, form: Parameters): Pair<Activity, Dataset> {
@@ -673,16 +701,8 @@ private fun Dataset.withRoom(text: String): Pair<Dataset, String?> {
 }
 
 private fun HTML.activityPage(admin: Admin, dataset: Dataset, activity: Activity?, form: Parameters, error: String?) {
-    val subjectId = form["subject"] ?: activity?.subjectId
-    val subject = dataset.subjectsById[subjectId.orEmpty()]
+    val subject = dataset.subjectsById[(form["subject"] ?: activity?.subjectId).orEmpty()]
     val back = form["back"] ?: subject?.let { "${dataset.base()}/subjects/${it.id.encodeURLParameter()}" }
-    val action = if (activity ==
-        null
-    ) {
-        "${dataset.base()}/activities"
-    } else {
-        "${dataset.base()}/activities/${activity.id.encodeURLParameter()}"
-    }
     adminPage(
         if (activity == null) "Activitate nouă" else "Editează activitatea",
         admin,
@@ -698,124 +718,146 @@ private fun HTML.activityPage(admin: Admin, dataset: Dataset, activity: Activity
         },
     ) {
         notice(error, error = true)
-        form(action = action, method = FormMethod.post, classes = "card") {
-            if (back != null) hiddenInput(name = "back") { value = back }
-            div("cols") {
-                style = "gap: 0 16px"
-                field("subject", "Materia") {
-                    select {
-                        id = "subject"
-                        name = "subject"
-                        required = true
+        activityForm(dataset, activity, form, back)
+    }
+}
+
+/**
+ * The activity form and, for an existing activity, its delete button. Both return to [back]
+ * after saving; [cancel] is where "Renunță" goes. Fields not in [form] come from [activity].
+ */
+internal fun FlowContent.activityForm(
+    dataset: Dataset,
+    activity: Activity?,
+    form: Parameters,
+    back: String?,
+    cancel: String? = back,
+) {
+    val subjectId = form["subject"] ?: activity?.subjectId
+    val action = if (activity ==
+        null
+    ) {
+        "${dataset.base()}/activities"
+    } else {
+        "${dataset.base()}/activities/${activity.id.encodeURLParameter()}"
+    }
+    form(action = action, method = FormMethod.post, classes = "card") {
+        if (back != null) hiddenInput(name = "back") { value = back }
+        div("cols") {
+            style = "gap: 0 16px"
+            field("subject", "Materia") {
+                select {
+                    id = "subject"
+                    name = "subject"
+                    required = true
+                    option {
+                        value = ""
+                        +"Alege"
+                    }
+                    dataset.subjects.sortedWith(
+                        compareBy({
+                            it.programmeId
+                        }, { it.year }, { TimetableSheet.fold(it.name.ro) }),
+                    ).forEach { s ->
                         option {
-                            value = ""
-                            +"Alege"
-                        }
-                        dataset.subjects.sortedWith(
-                            compareBy({
-                                it.programmeId
-                            }, { it.year }, { TimetableSheet.fold(it.name.ro) }),
-                        ).forEach { s ->
-                            option {
-                                value = s.id
-                                selected = s.id == subjectId
-                                +"${s.name.ro} (${dataset.programmes.firstOrNull {
-                                    it.id == s.programmeId
-                                }?.code} ${s.year})"
-                            }
+                            value = s.id
+                            selected = s.id == subjectId
+                            +"${s.name.ro} (${dataset.programmes.firstOrNull {
+                                it.id == s.programmeId
+                            }?.code} ${s.year})"
                         }
                     }
                 }
-                field("type", "Tipul") {
-                    select {
-                        id = "type"
-                        name = "type"
-                        TYPE_NAMES.forEach { (type, label) ->
-                            option {
-                                value = type.name
-                                selected = type.name == (form["type"] ?: activity?.type?.name ?: ActivityType.LAB.name)
-                                +label
-                            }
+            }
+            field("type", "Tipul") {
+                select {
+                    id = "type"
+                    name = "type"
+                    TYPE_NAMES.forEach { (type, label) ->
+                        option {
+                            value = type.name
+                            selected = type.name == (form["type"] ?: activity?.type?.name ?: ActivityType.LAB.name)
+                            +label
                         }
                     }
                 }
-                field("day", "Ziua") {
-                    select {
-                        id = "day"
-                        name = "day"
-                        (1..6).forEach { day ->
-                            option {
-                                value = day.toString()
-                                selected = day.toString() == (form["day"] ?: activity?.slot?.isoDay?.toString() ?: "1")
-                                +DAY_NAMES[day - 1]
-                            }
+            }
+            field("day", "Ziua") {
+                select {
+                    id = "day"
+                    name = "day"
+                    (1..6).forEach { day ->
+                        option {
+                            value = day.toString()
+                            selected = day.toString() == (form["day"] ?: activity?.slot?.isoDay?.toString() ?: "1")
+                            +DAY_NAMES[day - 1]
                         }
                     }
                 }
-                div("pair") {
-                    field("start", "De la") {
-                        timeInput(name = "start") {
-                            id = "start"
-                            required = true
-                            value = form["start"] ?: activity?.slot?.start?.toString() ?: "08:00"
-                        }
-                    }
-                    field("end", "Până la") {
-                        timeInput(name = "end") {
-                            id = "end"
-                            required = true
-                            value = form["end"] ?: activity?.slot?.end?.toString() ?: "10:00"
-                        }
-                    }
-                }
-                field("weeks", "Săptămâni") {
-                    textInput(name = "weeks") {
-                        id = "weeks"
-                        value = form["weeks"] ?: activity?.slot?.weeks?.let(TimetableSheet::weeksText) ?: "toate"
-                        attributes["list"] = "weeks-list"
-                    }
-                    dataList {
-                        id = "weeks-list"
-                        listOf("toate", "pare", "impare").forEach { option { value = it } }
-                    }
-                    p("hint") { +"toate, pare, impare sau numerele lor, de exemplu 1-7, 9" }
-                }
-                field("professor", "Profesor sau asistent") {
-                    professorSelect(dataset, form["professor"] ?: activity?.professorId, "professor")
-                }
-                field("room", "Sala") {
-                    roomInput(dataset, "room", form["room"] ?: dataset.roomsById[activity?.roomId]?.code.orEmpty())
-                }
-                field("audience", "Grupe") {
-                    textInput(name = "audience") {
-                        id = "audience"
+            }
+            div("pair") {
+                field("start", "De la") {
+                    timeInput(name = "start") {
+                        id = "start"
                         required = true
-                        value = form["audience"] ?: activity?.audience?.let { audienceText(dataset, it) }
-                            ?: form["group"].orEmpty()
-                        placeholder = "1521A 1522A sau 1521A/A"
+                        value = form["start"] ?: activity?.slot?.start?.toString() ?: "08:00"
                     }
-                    p("hint") { +"Grupele sau semigrupele, despărțite prin spațiu." }
+                }
+                field("end", "Până la") {
+                    timeInput(name = "end") {
+                        id = "end"
+                        required = true
+                        value = form["end"] ?: activity?.slot?.end?.toString() ?: "10:00"
+                    }
                 }
             }
-            label("check") {
-                checkBoxInput(name = "erasmus") {
-                    checked =
-                        (form["erasmus"] == "on") ||
-                        (form["erasmus"] == null && activity?.openToErasmus == true)
+            field("weeks", "Săptămâni") {
+                textInput(name = "weeks") {
+                    id = "weeks"
+                    value = form["weeks"] ?: activity?.slot?.weeks?.let(TimetableSheet::weeksText) ?: "toate"
+                    attributes["list"] = "weeks-list"
                 }
-                +"Deschisă studenților Erasmus"
+                dataList {
+                    id = "weeks-list"
+                    listOf("toate", "pare", "impare").forEach { option { value = it } }
+                }
+                p("hint") { +"toate, pare, impare sau numerele lor, de exemplu 1-7, 9" }
             }
-            div("form-actions") {
-                button { +(if (activity == null) "Adaugă activitatea" else "Salvează") }
-                if (back != null) a(href = back, classes = "btn secondary") { +"Renunță" }
+            field("professor", "Profesor sau asistent") {
+                professorSelect(dataset, form["professor"] ?: activity?.professorId, "professor")
+            }
+            field("room", "Sala") {
+                roomInput(dataset, "room", form["room"] ?: dataset.roomsById[activity?.roomId]?.code.orEmpty())
+            }
+            field("audience", "Grupe") {
+                textInput(name = "audience") {
+                    id = "audience"
+                    required = true
+                    value = form["audience"] ?: activity?.audience?.let { audienceText(dataset, it) }
+                        ?: form["group"].orEmpty()
+                    placeholder = "1521A 1522A sau 1521A/A"
+                }
+                p("hint") { +"Grupele sau semigrupele, despărțite prin spațiu." }
             }
         }
-        if (activity != null) {
-            form(action = "$action/delete", method = FormMethod.post) {
-                onSubmit = "return confirm('Ștergi activitatea? Dispare din orarul tuturor grupelor ei.')"
-                if (back != null) hiddenInput(name = "back") { value = back }
-                button(classes = "danger") { +"Șterge activitatea" }
+        label("check") {
+            checkBoxInput(name = "erasmus") {
+                checked =
+                    (form["erasmus"] == "on") ||
+                    (form["erasmus"] == null && activity?.openToErasmus == true)
             }
+            +"Deschisă studenților Erasmus"
+        }
+        div("form-actions") {
+            button { +(if (activity == null) "Adaugă activitatea" else "Salvează") }
+            if (cancel != null) a(href = cancel, classes = "btn secondary") { +"Renunță" }
+        }
+    }
+    if (activity != null) {
+        form(action = "$action/delete", method = FormMethod.post) {
+            onSubmit = "return confirm('Ștergi activitatea? Dispare din orarul tuturor grupelor ei.')"
+            if (back != null) hiddenInput(name = "back") { value = back }
+            button(classes = "danger") { +"Șterge activitatea" }
         }
     }
 }
@@ -1126,46 +1168,30 @@ private fun Route.roomRoutes(services: Services) {
                 },
             ) {
                 p("hint") { +"Golurile din săptămână sunt orele în care sala e liberă după orar." }
-                div("scroll") {
-                    div("week") {
-                        (1..5).forEach { day ->
-                            div("day") {
-                                h3 { +DAY_NAMES[day - 1] }
-                                activities.filter { it.slot.isoDay == day }.sortedBy { it.slot.start }.forEach { a ->
-                                    a(
-                                        href = "${dataset.base()}/activities/${a.id.encodeURLParameter()}",
-                                        classes = "slot ${slotKind(a.type)}".trim(),
-                                    ) {
-                                        span("time") {
-                                            +"${a.slot.start} - ${a.slot.end} · ${TYPE_NAMES.getValue(a.type)}"
-                                        }
-                                        strong { +(dataset.subjectsById[a.subjectId]?.name?.ro ?: a.subjectId) }
-                                        +listOfNotNull(
-                                            audienceText(dataset, a.audience),
-                                            weeksLabel(a.slot.weeks),
-                                        ).joinToString(" · ")
-                                    }
-                                }
-                                office.filter { it.second.slot.isoDay == day }.forEach { (p, hour) ->
-                                    div("slot office") {
-                                        span("time") { +"${hour.slot.start} - ${hour.slot.end} · Consultații" }
-                                        strong { +p.displayName.trim() }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+                val colours = subjectColours(dataset)
+                val path = "${dataset.base()}/rooms/${room.id.encodeURLParameter()}"
+                val back = linkTo(path, call.request.queryParameters, emptyMap())
+                weekGrid(
+                    activities.map { a ->
+                        classEntry(
+                            dataset,
+                            colours,
+                            a,
+                            activityHref(dataset, a, back),
+                            showRoom = false,
+                            who = listOfNotNull(
+                                audience(dataset, a),
+                                dataset.professorsById[a.professorId]?.displayName?.trim(),
+                            ).joinToString(" · "),
+                        )
+                    } + office.mapIndexed { i, (p, hour) -> officeEntry(dataset, p, hour, i) },
+                    TeachingCalendar(dataset.semester),
+                    path,
+                    call.request.queryParameters,
+                )
             }
         }
     }
-}
-
-internal fun slotKind(type: ActivityType) = when (type) {
-    ActivityType.COURSE -> ""
-    ActivityType.SEMINAR -> "seminar"
-    ActivityType.LAB -> "lab"
-    ActivityType.PROJECT -> "project"
 }
 
 // ---- students ---------------------------------------------------------------------------

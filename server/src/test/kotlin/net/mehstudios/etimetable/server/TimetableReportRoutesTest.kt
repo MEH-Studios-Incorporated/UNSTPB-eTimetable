@@ -241,12 +241,14 @@ class TimetableReportRoutesTest {
         val browser = browser()
         browser.adminLogin("editor@faima.test")
         val overview = browser.get("/admin").bodyAsText()
-        assertTrue("1 sesizare de orar" in overview)
+        assertTrue("Probleme de orar deschise" in overview)
+        assertTrue("/admin/reports?selected=$id" in overview)
         val detail = browser.get("/admin/reports/$id").bodyAsText()
         assertTrue("Ana Pop" in detail)
         assertTrue("ana@stud.upb.ro" in detail)
-        assertTrue("Editează activitatea" in detail)
-        assertTrue("back=%2Fadmin%2Freports%2F$id" in detail, detail)
+        assertTrue("Corectează clasa" in detail)
+        assertTrue("back=%2Fadmin%2Freports%3Fselected%3D$id" in detail, detail)
+        assertTrue("Clasa nu a fost modificată de la raportare." in detail)
         val csrf = browser.csrf(id)
         assertEquals(HttpStatusCode.Forbidden, browser.review(id, "fixed", "invalid").status)
         val crossSite = browser.submitForm(
@@ -278,6 +280,9 @@ class TimetableReportRoutesTest {
         assertTrue("Activitatea a fost salvată." in browser.get(saved.headers[HttpHeaders.Location]!!).bodyAsText())
         val dataset = assertNotNull(services.datasets.current()).dataset
         assertEquals("EC104", dataset.roomsById[dataset.activitiesById[lab]?.roomId]?.code)
+        val changed = browser.get("/admin/reports/$id").bodyAsText()
+        assertTrue("Clasa s-a schimbat de atunci:" in changed)
+        assertTrue("→ EC104" in changed)
         assertEquals(HttpStatusCode.Found, browser.review(id, "fixed", csrf).status)
         val report = assertNotNull(services.reports.find(id))
         assertEquals(ReportStatus.FIXED, report.status)
@@ -289,6 +294,10 @@ class TimetableReportRoutesTest {
         assertEquals(ReportStatus.FIXED, services.reports.find(id)?.status)
         assertFalse("Managementul calității" in browser.get("/admin/reports").bodyAsText())
         assertTrue("Managementul calității" in browser.get("/admin/reports?status=closed").bodyAsText())
+        val csv = browser.get("/admin/reports.csv?status=closed")
+        assertTrue("attachment" in csv.headers[HttpHeaders.ContentDisposition].orEmpty())
+        assertTrue("Managementul calității" in csv.bodyAsText())
+        assertTrue("\"fixed\"" in csv.bodyAsText())
     }
 
     @Test
@@ -351,7 +360,7 @@ class TimetableReportRoutesTest {
         browser.adminLogin()
         val first = browser.get("/admin/reports?size=50").bodyAsText()
         val second = browser.get("/admin/reports?size=50&page=2").bodyAsText()
-        val reportLink = Regex("href=\"/admin/reports/([0-9a-f-]{36})\"")
+        val reportLink = Regex("href=\"/admin/reports\\?[^\"]*selected=([0-9a-f-]{36})\"")
         val firstIds = reportLink.findAll(first).map { it.groupValues[1] }.toSet()
         val secondIds = reportLink.findAll(second).map { it.groupValues[1] }.toSet()
         assertEquals(50, firstIds.size)
