@@ -6,11 +6,22 @@ aplicație. Panoul de administrare este la adresa serverului urmată de
 
 ## Prezentare
 
-Prima pagină după conectare arată săptămâna de azi (numărul și paritatea),
-câte activități, grupe, materii, profesori și conturi de studenți are
-semestrul curent și ce mai e de făcut: activități fără profesor sau fără
-sală, săli sau profesori cu două activități în același timp, profesori fără
-email. Fiecare rând trimite unde se rezolvă.
+Prima pagină după conectare arată:
+
+- săptămâna de azi (numărul, paritatea, zilele ei, a câta din semestru și
+  când începe următoarea vacanță) și semestrul curent, cu numărul de clase,
+  grupe și conturi de studenți și ultima modificare a orarului;
+- **Acum în facultate**: clasele care se țin acum, cu sala și cadrul
+  didactic (o clasă fără sală apare cu roșu); când nu e nicio clasă, cele
+  care urmează azi;
+- problemele de orar deschise, cele mai noi primele;
+- **De făcut**: clase fără profesor sau fără sală, săli sau profesori cu
+  două clase în același timp, profesori fără email; fiecare rând trimite
+  unde se rezolvă;
+- evenimentele următoare;
+- pentru administratori, ultimele modificări din jurnal și un rezumat de
+  securitate: ultimele autentificări, sesiunile tale, câte conturi au
+  autentificarea în doi pași și câte parole greșite au fost în ultima zi.
 
 Bara de sus arată săptămâna de predare, ca în aplicație, și semestrul
 curent. Butonul **Temă** trece panoul între tema luminoasă și cea
@@ -206,6 +217,20 @@ telefon săptămâna se derulează în lateral, iar formularul apare deasupra ei
 
 Pagina unei grupe, a unei săli și a unui profesor arată aceeași săptămână;
 la sală și la profesor apar și consultațiile, ca blocuri gri.
+
+## Probleme de orar
+
+Studenții raportează o problemă din aplicație, de pe pagina unei clase.
+Pagina **Probleme de orar** are filele Deschise și Închise, o căutare după
+materie, student sau text și, când sunt rapoarte din mai multe semestre,
+un filtru de semestru. **Exportă CSV** descarcă lista filtrată.
+
+Un clic pe un rând deschide alături clasa așa cum o vedea studentul când a
+raportat, ce s-a schimbat de atunci la ea (ora, săptămânile, sala,
+profesorul), ce a scris studentul și dacă mai există alte rapoarte deschise
+pentru aceeași clasă. **Corectează clasa** deschide editorul clasei și
+întoarce aici după salvare; apoi **Marchează corectată**. **Respinge**
+închide problema fără schimbări.
 
 ## Publicarea anunțurilor
 

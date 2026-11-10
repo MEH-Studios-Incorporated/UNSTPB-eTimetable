@@ -203,6 +203,8 @@ button.link { padding: 0; border: 0; background: none; color: inherit; font-weig
  * listed here, one line each, so features do not edit the same block of CSS.
  */
 private val FEATURE_STYLES: List<String> = listOf(
+    REPORT_STYLES,
+    OVERVIEW_STYLES,
     WEEK_GRID_STYLES,
 )
 

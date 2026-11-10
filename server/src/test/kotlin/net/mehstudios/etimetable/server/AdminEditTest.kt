@@ -259,6 +259,14 @@ class AdminEditTest {
     }
 
     @Test
+    fun sidebarShortcutsKeepTheirFilters() = withSemester { _, browser ->
+        val schedule = browser.get("/admin/schedule?incomplete=on&day=2")
+        assertEquals("/admin/semesters/2026-1/schedule?incomplete=on&day=2", schedule.headers[HttpHeaders.Location])
+        val professors = browser.get("/admin/professors?no_email=on")
+        assertEquals("/admin/semesters/2026-1/professors?no_email=on", professors.headers[HttpHeaders.Location])
+    }
+
+    @Test
     fun dashboardErrorsArePagesNotJson() = withSemester { _, browser ->
         val missing = browser.get("/admin/semesters/2026-1/subjects/nu-exista")
         assertEquals(HttpStatusCode.NotFound, missing.status)
