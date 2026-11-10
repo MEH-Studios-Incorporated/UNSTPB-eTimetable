@@ -14,6 +14,7 @@ import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.ParametersBuilder
 import io.ktor.http.contentType
@@ -31,6 +32,7 @@ import net.mehstudios.etimetable.model.WeekRule
 import net.mehstudios.etimetable.server.admin.AdminRole
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -253,6 +255,30 @@ class AdminEditTest {
         assertTrue("1-3 din 3" in found)
         // a LIKE wildcard in the search is taken literally
         assertTrue("Niciun student găsit" in browser.get("/admin/students?q=%25").bodyAsText())
+    }
+
+    @Test
+    fun dashboardErrorsArePagesNotJson() = withSemester { _, browser ->
+        val missing = browser.get("/admin/semesters/2026-1/subjects/nu-exista")
+        assertEquals(HttpStatusCode.NotFound, missing.status)
+        assertTrue("Pagina nu există" in missing.bodyAsText())
+        assertTrue("text/html" in missing.headers[HttpHeaders.ContentType].orEmpty())
+        // the API keeps its JSON errors
+        assertTrue("text/html" !in browser.get("/api/v1/me").headers[HttpHeaders.ContentType].orEmpty())
+    }
+
+    @Test
+    fun theRoomsPageHasRoomsAndBuildingsInPages() = withSemester { services, browser ->
+        val dataset = services.datasets.current()!!.dataset
+        val rooms = browser.get("/admin/semesters/2026-1/rooms").bodyAsText()
+        assertTrue("din ${dataset.rooms.size}" in rooms || dataset.rooms.size <= 10)
+        val building = dataset.buildings.first()
+        val buildings = browser.get("/admin/semesters/2026-1/rooms?view=buildings").bodyAsText()
+        assertTrue("/admin/semesters/2026-1/buildings/${building.id}" in buildings)
+        val edit = browser.get("/admin/semesters/2026-1/buildings/${building.id}").bodyAsText()
+        assertTrue("Corpul ${building.code}" in edit)
+        val filtered = browser.get("/admin/semesters/2026-1/rooms?building=${building.id}").bodyAsText()
+        dataset.rooms.filter { it.buildingId != building.id }.forEach { assertFalse(">${it.code}</a>" in filtered) }
     }
 
     @Test

@@ -893,7 +893,10 @@ private fun Route.roomRoutes(services: Services) {
     page("/semesters/{id}/rooms", services) { admin ->
         val dataset = semesterOrNull(services) ?: return@page call.respond(HttpStatusCode.NotFound)
         val (msg, err) = message()
-        val use = dataset.activities.groupingBy { it.roomId }.eachCount()
+        val buildings = call.parameters["view"] == "buildings"
+        val query = call.parameters["q"].orEmpty().trim()
+        val folded = TimetableSheet.fold(query)
+        val path = "${dataset.base()}/rooms"
         call.respondHtml {
             adminPage(
                 "Săli",
@@ -906,38 +909,137 @@ private fun Route.roomRoutes(services: Services) {
             ) {
                 notice(msg)
                 notice(err, error = true)
-                div("cols buildings") {
-                    dataset.buildings.sortedBy { it.code }.forEach { building ->
-                        val rooms = dataset.rooms.filter { it.buildingId == building.id }.sortedBy { it.code }
-                        div("card") {
-                            form(
-                                action = "${dataset.base()}/buildings/${building.id.encodeURLParameter()}",
-                                method = FormMethod.post,
-                                classes = "building",
-                            ) {
-                                strong { +building.code }
-                                textInput(name = "name") {
-                                    value = building.name
-                                    attributes["aria-label"] = "Numele corpului ${building.code}"
+                if (buildings) {
+                    val rows = dataset.buildings
+                        .filter {
+                            folded.isEmpty() ||
+                                TimetableSheet.fold("${it.code} ${it.name} ${it.address.orEmpty()}").contains(folded)
+                        }
+                        .sortedBy { TimetableSheet.fold(it.code) }
+                    val paging = call.parameters.paging(rows.size)
+                    tableCard(
+                        filters = {
+                            roomTabs(dataset, path, buildings = true)
+                            form(action = path, method = FormMethod.get, classes = "filters") {
+                                hiddenInput(name = "view") { value = "buildings" }
+                                searchInput(name = "q") {
+                                    value = query
+                                    placeholder = "Caută după cod, nume sau adresă"
+                                    attributes["aria-label"] = "Caută corpuri"
                                 }
-                                textInput(name = "address") {
-                                    value = building.address.orEmpty()
-                                    placeholder = "Adresa"
-                                    attributes["aria-label"] = "Adresa corpului ${building.code}"
-                                }
-                                button(classes = "secondary") { +"Salvează" }
+                                button(classes = "secondary") { +"Caută" }
                             }
-                            div("chips") {
-                                rooms.forEach { room ->
-                                    a(href = "${dataset.base()}/rooms/${room.id.encodeURLParameter()}") {
-                                        +room.code
-                                        span("hint") { +" ${use[room.id] ?: 0}" }
+                        },
+                        footer = { pager(paging, path, call.request.queryParameters) },
+                    ) {
+                        if (rows.isEmpty()) {
+                            emptyState("Niciun corp", "Corpurile apar după importul orarului, din codurile sălilor.")
+                        } else {
+                            buildingTable(dataset, paging.slice(rows))
+                        }
+                    }
+                } else {
+                    val building = call.parameters["building"].orEmpty()
+                    val rows = dataset.rooms
+                        .filter { building.isEmpty() || it.buildingId == building }
+                        .filter {
+                            folded.isEmpty() ||
+                                TimetableSheet.fold(
+                                    "${it.code} ${dataset.buildingsById[it.buildingId]?.name.orEmpty()}",
+                                )
+                                    .contains(folded)
+                        }
+                        .sortedWith(compareBy({ TimetableSheet.fold(it.buildingId) }, { TimetableSheet.fold(it.code) }))
+                    val paging = call.parameters.paging(rows.size)
+                    tableCard(
+                        filters = {
+                            roomTabs(dataset, path, buildings = false)
+                            form(action = path, method = FormMethod.get, classes = "filters") {
+                                searchInput(name = "q") {
+                                    value = query
+                                    placeholder = "Caută o sală"
+                                    attributes["aria-label"] = "Caută săli"
+                                }
+                                select {
+                                    name = "building"
+                                    attributes["aria-label"] = "Corp"
+                                    option {
+                                        value = ""
+                                        +"Toate corpurile"
+                                    }
+                                    dataset.buildings.sortedBy { it.code }.forEach { b ->
+                                        option {
+                                            value = b.id
+                                            selected = b.id == building
+                                            +b.code
+                                        }
                                     }
                                 }
+                                button(classes = "secondary") { +"Filtrează" }
                             }
+                        },
+                        footer = { pager(paging, path, call.request.queryParameters) },
+                    ) {
+                        if (rows.isEmpty()) {
+                            emptyState(
+                                "Nicio sală",
+                                if (dataset.rooms.isEmpty()) {
+                                    "Sălile apar după importul orarului."
+                                } else {
+                                    "Schimbă căutarea sau corpul."
+                                },
+                            )
+                        } else {
+                            roomTable(dataset, paging.slice(rows))
                         }
                     }
                 }
+            }
+        }
+    }
+
+    page("/semesters/{id}/buildings/{building}", services) { admin ->
+        val dataset = semesterOrNull(services) ?: return@page call.respond(HttpStatusCode.NotFound)
+        val building = dataset.buildingsById[call.parameters["building"].orEmpty()]
+            ?: return@page call.respond(HttpStatusCode.NotFound)
+        val rooms = dataset.rooms.filter { it.buildingId == building.id }.sortedBy { TimetableSheet.fold(it.code) }
+        call.respondHtml {
+            adminPage(
+                "Corpul ${building.code}",
+                admin,
+                Section.ROOMS,
+                context = { a(href = "${dataset.base()}/rooms?view=buildings") { +"Corpuri" } },
+            ) {
+                form(
+                    action = "${dataset.base()}/buildings/${building.id.encodeURLParameter()}",
+                    method = FormMethod.post,
+                    classes = "card",
+                ) {
+                    field("name", "Nume") {
+                        textInput(name = "name") {
+                            id = "name"
+                            required = true
+                            value = building.name
+                        }
+                    }
+                    field("address", "Adresă") {
+                        textInput(name = "address") {
+                            id = "address"
+                            value = building.address.orEmpty()
+                            placeholder = "Splaiul Independenței 313"
+                        }
+                        p("hint") { +"Studenții o văd pe pagina sălii, cu un link spre hartă." }
+                    }
+                    div("form-actions") {
+                        button { +"Salvează" }
+                        a(href = "${dataset.base()}/rooms?view=buildings", classes = "btn secondary") { +"Înapoi" }
+                    }
+                }
+                h2 {
+                    +"Săli"
+                    span("count") { +rooms.size.toString() }
+                }
+                tableCard { roomTable(dataset, rooms) }
             }
         }
     }
@@ -947,11 +1049,11 @@ private fun Route.roomRoutes(services: Services) {
         val id = call.parameters["building"].orEmpty()
         val form = call.receiveParameters()
         val name = form["name"].orEmpty().trim()
-        val list = "${dataset.base()}/rooms"
+        val list = "${dataset.base()}/rooms?view=buildings"
         if (id !in dataset.buildingsById ||
             name.isEmpty()
         ) {
-            return@action call.respondRedirect("$list?${err("Numele corpului este obligatoriu.")}")
+            return@action call.respondRedirect("$list&${err("Numele corpului este obligatoriu.")}")
         }
         services.save(
             dataset.copy(
@@ -966,7 +1068,7 @@ private fun Route.roomRoutes(services: Services) {
                 },
             ),
         )
-        call.respondRedirect("$list?${msg("Corpul a fost salvat.")}")
+        call.respondRedirect("$list&${msg("Corpul a fost salvat.")}")
     }
 
     page("/semesters/{id}/rooms/{room}", services) { admin ->
@@ -1258,5 +1360,98 @@ private fun FlowContent.professorTable(dataset: Dataset, rows: List<Professor>) 
                 }
             }
         }
+    }
+}
+
+private fun FlowContent.roomTabs(dataset: Dataset, path: String, buildings: Boolean) {
+    nav("tabs") {
+        attributes["aria-label"] = "Vizualizare"
+        a(href = path, classes = if (buildings) null else "active") {
+            +"Săli"
+            span("n") { +dataset.rooms.size.toString() }
+        }
+        a(href = "$path?view=buildings", classes = if (buildings) "active" else null) {
+            +"Corpuri"
+            span("n") { +dataset.buildings.size.toString() }
+        }
+    }
+}
+
+private fun FlowContent.roomTable(dataset: Dataset, rows: List<Room>) {
+    val use = dataset.activities.groupBy { it.roomId }
+    table {
+        thead {
+            tr {
+                th { +"Sală" }
+                th { +"Corp" }
+                th(classes = "num") { +"Locuri" }
+                th(classes = "num") { +"Activități" }
+                th(classes = "num") { +"Ore pe săptămână" }
+            }
+        }
+        tbody {
+            rows.forEach { room ->
+                val activities = use[room.id].orEmpty()
+                tr {
+                    td { a(href = "${dataset.base()}/rooms/${room.id.encodeURLParameter()}") { +room.code } }
+                    td {
+                        val building = dataset.buildingsById[room.buildingId]
+                        +(building?.code ?: room.buildingId)
+                        if (building != null && building.name != building.code) div("hint") { +building.name }
+                    }
+                    td("num") { +(room.capacity?.toString() ?: "-") }
+                    td("num") { +activities.size.toString() }
+                    td("num") { +weeklyHours(activities) }
+                }
+            }
+        }
+    }
+}
+
+private fun FlowContent.buildingTable(dataset: Dataset, rows: List<Building>) {
+    val rooms = dataset.rooms.groupingBy { it.buildingId }.eachCount()
+    table {
+        thead {
+            tr {
+                th { +"Corp" }
+                th { +"Adresă" }
+                th(classes = "num") { +"Săli" }
+            }
+        }
+        tbody {
+            rows.forEach { b ->
+                tr {
+                    td {
+                        a(href = "${dataset.base()}/buildings/${b.id.encodeURLParameter()}") { +b.code }
+                        if (b.name != b.code) div("hint") { +b.name }
+                    }
+                    td { if (b.address != null) +b.address.orEmpty() else span("tag") { +"lipsește" } }
+                    td("num") {
+                        a(href = "${dataset.base()}/rooms?building=${b.id.encodeURLParameter()}") {
+                            +(rooms[b.id] ?: 0).toString()
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** Hours a room is taught in a week, counting an odd- or even-week class as half. */
+private fun weeklyHours(activities: List<Activity>): String {
+    val minutes = activities.sumOf { a ->
+        val length = (a.slot.end.toSecondOfDay() - a.slot.start.toSecondOfDay()) / 60.0
+        when (a.slot.weeks) {
+            net.mehstudios.etimetable.model.WeekRule.Odd, net.mehstudios.etimetable.model.WeekRule.Even -> length / 2
+            else -> length
+        }
+    }
+    val hours = minutes / 60
+    return if (hours % 1.0 ==
+        0.0
+    ) {
+        hours.toInt().toString()
+    } else {
+        "%.1f".format(java.util.Locale.ROOT, hours).replace('.', ',')
     }
 }

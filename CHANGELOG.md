@@ -107,7 +107,14 @@ Each section is also the text of the matching GitHub release.
 - Long lists in the dashboard come in pages of 10, 25 or 50 rows, with
   "11-20 din 243" and links to every page. The student list no longer
   stops at 200 accounts, and searching it treats `%` and `_` as plain
-  characters. Empty lists say what to do next.
+  characters. Empty lists say what to do next. Gestionare orar shows 25
+  classes per page and its search covers every page.
+- Săli in the dashboard is a table of rooms (building, seats, classes and
+  hours taught per week) with a search and a building filter, and a second
+  tab for buildings; a building's name and address are edited on its own
+  page instead of in 33 cards.
+- A dashboard error, a missing page or a page for administrators only now
+  shows a short page in Romanian instead of JSON or a blank screen.
 - The app stays in portrait when the phone is turned.
 - Password fields on Android have a show or hide control. The password and
   confirmation fields are controlled separately when creating an account.

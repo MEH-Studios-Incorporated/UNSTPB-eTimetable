@@ -16,6 +16,7 @@ import net.mehstudios.etimetable.server.admin.applyScheduleChange
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
 import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 
@@ -40,9 +41,13 @@ class ScheduleRoutesTest {
         val url = "/admin/semesters/2026-1/schedule"
         val schedulePage = browser.get(url).bodyAsText()
         assertTrue("Gestionare orar" in schedulePage)
-        assertTrue("data-search" in schedulePage)
-        assertTrue("input.addEventListener('input', filter)" in schedulePage)
-        assertTrue("Microeconomie" in browser.get("$url?q=1541E").bodyAsText())
+        val total = services.datasets.current()!!.dataset.activities.size
+        assertTrue("1-${minOf(25, total)} din $total" in schedulePage)
+        assertTrue("form=\"schedule-bulk\"" in schedulePage)
+        // the search runs on the server, over every page
+        val found = browser.get("$url?q=1541E").bodyAsText()
+        assertTrue("Microeconomie" in found)
+        assertFalse("din $total" in found)
         val version = services.datasets.version("2026-1")!!
         val before = services.datasets.current()!!.dataset
         val selected = before.activities.take(2)
@@ -106,17 +111,30 @@ class ScheduleRoutesTest {
         )
         val url = "/admin/semesters/2026-1/schedule"
         fun listed(page: String) = dataset.activities.filter { "name=\"activity\" value=\"${it.id}\"" in page }
+
+        // every page of a filter, 50 rows at a time
+        suspend fun listedAll(query: String): List<net.mehstudios.etimetable.model.Activity> {
+            val rows = mutableListOf<net.mehstudios.etimetable.model.Activity>()
+            var page = 1
+            while (true) {
+                val body = browser.get("$url?size=50&page=$page&$query").bodyAsText()
+                rows += listed(body)
+                if ("Pagina următoare" !in body) return rows
+                page++
+            }
+        }
         val all = browser.get(url).bodyAsText()
-        assertEquals(dataset.activities.toSet(), listed(all).toSet())
-        // The filter form must submit normally; only the text search runs in the page.
+        assertEquals(dataset.activities.toSet(), listedAll("").toSet())
+        assertEquals(dataset.activities.size, listedAll("").size)
+        // The filter form must submit normally.
         assertTrue("preventDefault" !in all)
         val day = dataset.activities.last().slot.isoDay
         assertTrue(dataset.activities.any { it.slot.isoDay != day })
         val onDay = dataset.activities.filter { it.slot.isoDay == day }
-        assertEquals(onDay.toSet(), listed(browser.get("$url?day=$day").bodyAsText()).toSet())
+        assertEquals(onDay.toSet(), listedAll("day=$day").toSet())
         val incomplete = dataset.activities.filter { it.roomId == null || it.professorId == null }
         assertTrue(incomplete.isNotEmpty() && incomplete.size < dataset.activities.size)
-        assertEquals(incomplete.toSet(), listed(browser.get("$url?incomplete=on").bodyAsText()).toSet())
+        assertEquals(incomplete.toSet(), listedAll("incomplete=on").toSet())
     }
 
     @Test
