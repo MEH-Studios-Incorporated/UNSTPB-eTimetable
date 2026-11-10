@@ -33,16 +33,6 @@ jos se vede ce rânduri sunt afișate, de exemplu "11-20 din 243", câte
 rânduri să arate o pagină (10, 25 sau 50) și linkurile spre celelalte
 pagini. Căutarea și filtrele se păstrează când schimbi pagina.
 
-Bara de sus arată săptămâna de predare, ca în aplicație, și semestrul
-curent. Butonul **Temă** trece panoul între tema luminoasă și cea
-întunecată; până îl apeși, panoul urmează setarea calculatorului. În meniu,
-lângă **Probleme de orar**, apare câte probleme așteaptă verificarea.
-
-Listele lungi (materii, profesori, studenți, probleme de orar) au pagini:
-jos se vede ce rânduri sunt afișate, de exemplu "11-20 din 243", câte
-rânduri să arate o pagină (10, 25 sau 50) și linkurile spre celelalte
-pagini. Căutarea și filtrele se păstrează când schimbi pagina.
-
 Adresa serverului fără `/admin` este pagina publică a aplicației, pentru
 studenți: de unde se descarcă și ce face. Are un link spre panou.
 
