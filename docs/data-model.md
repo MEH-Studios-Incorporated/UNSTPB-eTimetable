@@ -176,7 +176,7 @@ formats, with Wednesday 28 October 2026 in week 5, as on the mockups.
 | `GET /api/v1/events` | Events that end less than 60 days ago, earliest first. `ETag` for caching. |
 | `GET /api/v1/images/<hash>.jpg` | An event's picture, `Cache-Control: public, max-age=31536000, immutable`. |
 | `POST /api/v1/auth/signup`, `/login`, `/logout` | Session token. |
-| `GET`, `PUT /api/v1/me` | The student's profile. Erasmus picks are checked for overlaps. |
+| `GET`, `PUT /api/v1/me` | The student's profile. Erasmus picks are checked for overlaps. `PUT` answers with the profile as stored: classes an import removed since the last save are dropped from it, and an old group that an import removed is kept until the student picks another. |
 | `DELETE /api/v1/me` | Deletes the account and everything stored for it. |
 | `POST /api/v1/timetable-reports` | Signed-in student submits `semesterId`, `activityId`, `description`; returns `201` with the report `id`. |
 | `PUT`, `DELETE /api/v1/me/push-tokens/<token>` | Register or remove a device. |
