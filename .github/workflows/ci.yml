@@ -36,8 +36,9 @@ jobs:
           latest=$(sed -n 's/^## \(v[0-9][^ ]*\).*/\1/p' CHANGELOG.md | head -n 1)
           if [ -n "$latest" ]; then tools/release-notes.sh "$latest" >/dev/null; fi
 
-  jvm:
-    name: android and server
+  # Android and the server run as two jobs side by side, each with one
+  # Gradle invocation, so the daemon and configuration are set up once.
+  android:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -46,18 +47,42 @@ jobs:
           distribution: temurin
           java-version: 21
       - uses: gradle/actions/setup-gradle@v6
-      - name: Lint and test
-        run: ./gradlew ktlintCheck :shared:verifySqlDelightMigration :shared:allTests :server:test :androidApp:lintDebug :androidApp:assembleDebug
-      # the release workflow's steps, signed with a throwaway key
-      - name: Release dry run
+      # setup-gradle does not keep Kotlin/Native and its LLVM download
+      - uses: actions/cache@v6
+        with:
+          path: ~/.konan
+          key: konan-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('gradle/libs.versions.toml') }}
+      # lint, the debug build and the release workflow's build, signed with a
+      # throwaway key
+      - name: Lint, debug build and release dry run
         run: |
           keytool -genkeypair -keystore "$RUNNER_TEMP/ci.jks" -storepass throwaway -keypass throwaway \
             -alias ci -keyalg RSA -keysize 2048 -validity 1 -dname CN=CI -noprompt
           ETT_KEYSTORE_FILE="$RUNNER_TEMP/ci.jks" ETT_KEYSTORE_PASSWORD=throwaway \
           ETT_KEY_ALIAS=ci ETT_KEY_PASSWORD=throwaway \
-            ./gradlew -PappVersion=0.0.1 :androidApp:assembleRelease :server:installDist
+            ./gradlew -PappVersion=0.0.1 ktlintCheck :androidApp:lintDebug :androidApp:assembleDebug \
+            :androidApp:assembleRelease
           apksigner=$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -n 1)
           "$apksigner" verify androidApp/build/outputs/apk/release/androidApp-release.apk
+
+  server:
+    name: shared and server
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: gradle/actions/setup-gradle@v6
+      - uses: actions/cache@v6
+        with:
+          path: ~/.konan
+          key: konan-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('gradle/libs.versions.toml') }}
+      - name: Test and build the release server
+        run: |
+          ./gradlew -PappVersion=0.0.1 :shared:verifySqlDelightMigration :shared:allTests \
+            :server:test :server:installDist
       - name: Server and database start with docker compose
         env:
           ETT_IMAGE: etimetable-server:ci
@@ -82,6 +107,12 @@ jobs:
           distribution: temurin
           java-version: 21
       - uses: gradle/actions/setup-gradle@v6
+      # Kotlin/Native, its LLVM download and the compiler caches it builds on
+      # the first link
+      - uses: actions/cache@v6
+        with:
+          path: ~/.konan
+          key: konan-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('gradle/libs.versions.toml') }}
       - name: Shared tests on the simulator
         run: ./gradlew :shared:iosSimulatorArm64Test
       - name: Build the app for the simulator
@@ -95,13 +126,13 @@ jobs:
   # The required check. A skipped job counts as passed for GitHub, so this
   # job runs always and fails unless every job above succeeded.
   build:
-    needs: [checks, jvm, ios]
+    needs: [checks, android, server, ios]
     if: always()
     runs-on: ubuntu-latest
     steps:
       - name: All jobs passed
         env:
-          RESULTS: ${{ needs.checks.result }} ${{ needs.jvm.result }} ${{ needs.ios.result }}
+          RESULTS: ${{ needs.checks.result }} ${{ needs.android.result }} ${{ needs.server.result }} ${{ needs.ios.result }}
         run: |
           echo "$RESULTS"
-          test "$RESULTS" = "success success success"
+          test "$RESULTS" = "success success success success"
