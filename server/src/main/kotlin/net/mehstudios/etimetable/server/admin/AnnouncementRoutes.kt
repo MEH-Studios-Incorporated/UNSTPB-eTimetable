@@ -27,8 +27,20 @@ private const val MAX_AUTHOR = 100
 
 internal fun Route.announcementRoutes(services: Services) {
     page("/announcements", services) { admin ->
-        val paging = call.parameters.paging(services.announcements.count())
-        val announcements = services.announcements.list(paging.offset, paging.size)
+        val showDrafts = call.parameters["view"] == "drafts"
+        val publishedCount = services.announcements.count()
+        val draftCount = services.composeDrafts.count(DraftKind.ANNOUNCEMENT)
+        val paging = call.parameters.paging(if (showDrafts) draftCount else publishedCount)
+        val announcements = if (showDrafts) emptyList() else services.announcements.list(paging.offset, paging.size)
+        val drafts = if (showDrafts) {
+            services.composeDrafts.list(
+                DraftKind.ANNOUNCEMENT,
+                paging.offset,
+                paging.size,
+            )
+        } else {
+            emptyList()
+        }
         val here = call.request.uri
         call.respondHtml {
             adminPage(
@@ -40,8 +52,34 @@ internal fun Route.announcementRoutes(services: Services) {
             ) {
                 notice(call.parameters["msg"])
                 notice(call.parameters["err"], error = true)
-                tableCard(footer = { pager(paging, LIST, call.request.queryParameters) }) {
-                    if (announcements.isEmpty()) {
+                tableCard(
+                    filters = {
+                        nav("tabs") {
+                            attributes["aria-label"] = "Ce se arată"
+                            a(href = LIST, classes = if (showDrafts) null else "active") {
+                                +"Publicate"
+                                span("n") { +publishedCount.toString() }
+                            }
+                            draftsTab(LIST, draftCount, showDrafts)
+                        }
+                    },
+                    footer = { pager(paging, LIST, call.request.queryParameters) },
+                ) {
+                    if (showDrafts) {
+                        if (drafts.isEmpty()) {
+                            emptyState(
+                                "Nicio ciornă",
+                                "Salvează ciorna din pagina unui anunț nou, ca să-l termini mai târziu, tu sau un coleg.",
+                            )
+                        } else {
+                            draftTable(drafts, LIST, listOf("Titlu")) { d ->
+                                td("excerpt") {
+                                    draftTitle(LIST, d)
+                                    div("hint clip") { +markdownPreview(d.form["body"].orEmpty(), 160) }
+                                }
+                            }
+                        }
+                    } else if (announcements.isEmpty()) {
                         emptyState(
                             "Niciun anunț publicat",
                             "Anunțurile apar în fila Anunțuri a aplicației și ajung la toți studenții.",
@@ -54,17 +92,49 @@ internal fun Route.announcementRoutes(services: Services) {
         }
     }
     page("/announcements/new", services) { admin ->
-        call.respondHtml { composeAnnouncement(admin, null, Draft.empty()) }
+        val saved = call.parameters["draft"]?.let {
+            services.draft(it, DraftKind.ANNOUNCEMENT) ?: return@page draftGone(LIST)
+        }
+        call.respondHtml {
+            composeAnnouncement(
+                admin,
+                null,
+                saved?.let(Draft::of) ?: Draft.empty(),
+                saved,
+                call.parameters["msg"],
+                call.parameters["err"],
+            )
+        }
     }
     action("/announcements", services) { admin ->
         val draft = Draft.from(call.receiveParameters())
+        val saved = services.draft(draft.draftId, DraftKind.ANNOUNCEMENT)
+        if (draft.saveDraft) {
+            val problem = draftProblem(draft.fields())
+                ?: return@action saveDraft(
+                    services,
+                    admin,
+                    DraftKind.ANNOUNCEMENT,
+                    LIST,
+                    saved?.id,
+                    draft.fields(),
+                    null,
+                    null,
+                )
+            return@action call.respondHtml { composeAnnouncement(admin, null, draft, saved, err = problem) }
+        }
         if (draft.preview || draft.error != null) {
-            return@action call.respondHtml { composeAnnouncement(admin, null, draft) }
+            return@action call.respondHtml { composeAnnouncement(admin, null, draft, saved) }
         }
         val announcement = with(draft) {
             services.announcements.publish(title, body, author, pinned = pinned)
         }
-        services.audit.record(admin, AuditCategory.ANNOUNCEMENTS, "a publicat anunțul ${announcement.title}")
+        val fromDraft = saved?.let { services.composeDrafts.delete(it.id, DraftKind.ANNOUNCEMENT) } != null
+        services.audit.record(
+            admin,
+            AuditCategory.ANNOUNCEMENTS,
+            "a publicat anunțul ${announcement.title}" + if (fromDraft) " dintr-o ciornă" else "",
+        )
         // every message would fail, so the admin hears why instead of phones staying silent
         val drift = services.push.clockDrift()
         if (drift != null) {
@@ -77,7 +147,7 @@ internal fun Route.announcementRoutes(services: Services) {
         val announcement =
             services.announcements.byId(call.parameters["id"].orEmpty())
                 ?: return@page call.respond(HttpStatusCode.NotFound)
-        call.respondHtml { composeAnnouncement(admin, announcement, Draft.of(announcement)) }
+        call.respondHtml { composeAnnouncement(admin, announcement, Draft.of(announcement), null) }
     }
     action("/announcements/{id}", services) { admin ->
         val announcement =
@@ -85,7 +155,7 @@ internal fun Route.announcementRoutes(services: Services) {
                 ?: return@action call.respond(HttpStatusCode.NotFound)
         val draft = Draft.from(call.receiveParameters())
         if (draft.preview || draft.error != null) {
-            return@action call.respondHtml { composeAnnouncement(admin, announcement, draft) }
+            return@action call.respondHtml { composeAnnouncement(admin, announcement, draft, null) }
         }
         services.announcements.update(announcement.id, draft.title, draft.body, draft.author, draft.pinned)
         services.audit.record(admin, AuditCategory.ANNOUNCEMENTS, "a modificat anunțul ${draft.title}")
@@ -113,6 +183,7 @@ internal fun Route.announcementRoutes(services: Services) {
         services.announcements.delete(id)
         call.respondRedirect("$LIST?msg=${"Anunțul a fost șters.".encodeURLParameter()}")
     }
+    draftDeleteRoute(services, DraftKind.ANNOUNCEMENT, "/announcements")
 }
 
 /** The list page the person came from, so pinning keeps their page; never another site. */
@@ -171,7 +242,15 @@ private class Draft(
     val preview: Boolean,
     /** False for a page opened fresh, where nothing was sent yet and nothing is wrong. */
     val sent: Boolean = true,
+    /** The saved draft this form continues, as the form sent it back. */
+    val draftId: String? = null,
+    /** "Salvează ciorna" was pressed. */
+    val saveDraft: Boolean = false,
 ) {
+    /** What a saved draft keeps. */
+    fun fields(): Map<String, String> = mapOf("title" to title, "body" to body, "author" to author) +
+        if (pinned) mapOf("pinned" to "on") else emptyMap()
+
     val error: String? get() = when {
         !sent -> null
         title.length > MAX_TITLE || body.length > MAX_BODY || author.length > MAX_AUTHOR ->
@@ -187,6 +266,17 @@ private class Draft(
             form["author"].orEmpty().trim(),
             form["pinned"] == "on",
             preview = form["preview"] != null,
+            draftId = form["draft"],
+            saveDraft = form["save"] == "draft",
+        )
+
+        fun of(d: ComposeDraft) = Draft(
+            d.form["title"].orEmpty(),
+            d.form["body"].orEmpty(),
+            d.form["author"].orEmpty(),
+            d.form["pinned"] == "on",
+            preview = false,
+            sent = false,
         )
 
         fun of(a: Announcement) = Draft(a.title, a.body, a.author, a.pinned, preview = false, sent = false)
@@ -196,7 +286,14 @@ private class Draft(
 }
 
 /** The compose page for a new announcement, or for [existing] when editing one. */
-private fun HTML.composeAnnouncement(admin: Admin, existing: Announcement?, draft: Draft) {
+private fun HTML.composeAnnouncement(
+    admin: Admin,
+    existing: Announcement?,
+    draft: Draft,
+    saved: ComposeDraft?,
+    msg: String? = null,
+    err: String? = null,
+) {
     val action = if (existing == null) LIST else "$LIST/${existing.id}"
     adminPage(
         if (existing == null) "Anunț nou" else "Editează anunțul",
@@ -205,23 +302,32 @@ private fun HTML.composeAnnouncement(admin: Admin, existing: Announcement?, draf
         context = {
             a(href = LIST) { +"Anunțuri" }
             if (existing != null) +" · publicat ${shortTime(existing.publishedAt)}"
+            if (saved != null) draftContext(saved)
         },
-        actions = existing?.let {
-            {
-                form(action = "$LIST/${it.id}/delete", method = FormMethod.post, classes = "inline") {
-                    onSubmit = "return confirm('Ștergi anunțul? Dispare și din aplicații.')"
-                    button(classes = "danger") { +"Șterge" }
+        actions = when {
+            existing != null -> {
+                {
+                    form(action = "$LIST/${existing.id}/delete", method = FormMethod.post, classes = "inline") {
+                        onSubmit = "return confirm('Ștergi anunțul? Dispare și din aplicații.')"
+                        button(classes = "danger") { +"Șterge" }
+                    }
                 }
             }
+            saved != null -> {
+                { deleteDraftForm(LIST, saved, "Șterge ciorna") }
+            }
+            else -> null
         },
     ) {
-        if (draft.error != null && !draft.preview) notice(draft.error, error = true)
+        notice(msg)
+        notice(err ?: draft.error?.takeUnless { draft.preview }, error = true)
         composeLayout(
             form = {
                 form(action = action, method = FormMethod.post, classes = "card") {
                     attributes["data-compose"] = ""
+                    draftIdField(saved)
                     div("fields") { announcementFields(draft) }
-                    composeActions(if (existing == null) "Publică" else "Salvează", LIST)
+                    composeActions(if (existing == null) "Publică" else "Salvează", LIST, saveDraft = existing == null)
                 }
             },
             phone = {

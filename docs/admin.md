@@ -343,3 +343,28 @@ puțin important. Editarea nu trimite notificări.
 Aplicația arată evenimentele care urmează și, la **Trecute**, pe cele
 terminate în ultimele 60 de zile. Un eveniment se poate edita sau șterge;
 imaginea lui se șterge împreună cu el.
+
+## Ciorne
+
+Pe pagina unui anunț nou sau a unui eveniment nou, **Salvează ciorna**
+păstrează formularul așa cum e, fără să-l publice. Ajunge un titlu sau un
+text; restul (data, imaginea, semnătura) poate lipsi până la publicare.
+Pagina rămâne deschisă pe aceeași ciornă, cu mesajul "Ciorna a fost
+salvată" și, sus, ora salvării și cine a salvat-o. Adresa paginii se poate deschide oricând mai
+târziu: formularul și telefonul arată ciorna. Un nou **Salvează ciorna**
+schimbă aceeași ciornă. Imaginea unui eveniment rămâne cu ciorna cât timp
+ciorna există. Dacă o imagine nouă nu se poate folosi, ciorna se salvează cu
+imaginea de dinainte și pagina spune de ce.
+
+**Anunțuri** și **Evenimente** au fila **Ciorne**, cu numărul lor: titlul
+(sau "(fără titlu)"), pentru evenimente și miniatura și data, cine a scris
+ciorna și ultima modificare. Ciornele se văd din toate conturile panoului,
+editori și administratori, așa că un coleg poate termina ciorna altcuiva.
+**Continuă** deschide ciorna; **Șterge** o șterge, după o confirmare.
+
+**Publică** pe o ciornă publică anunțul sau evenimentul și șterge ciorna. Un
+eveniment trimite notificare doar dacă **Trimite notificare pe telefoane**
+este bifat; ciorna păstrează bifa așa cum ai lăsat-o. Ciornele nu ajung în
+aplicații. Salvarea unei ciorne noi, publicarea dintr-o ciornă și ștergerea
+unei ciorne apar în **Jurnal**. Editarea unui anunț sau eveniment deja
+publicat nu are ciornă: **Salvează** schimbă direct ce văd studenții.

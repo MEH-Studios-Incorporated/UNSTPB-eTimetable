@@ -117,7 +117,17 @@ Event
   at most 1600 px on its long side (which drops the camera's metadata,
   location included) and stores it in PostgreSQL by its hash, so a new
   picture is a new address and an old one can be cached for good. A picture
-  no event uses is deleted.
+  no event or draft uses is deleted.
+
+Compose draft
+: id, kind (announcement or event), the compose form's fields as JSON (an
+  event's date and times are kept as typed, so a half-filled form survives),
+  for an event the hash of its picture in the same picture table, who
+  created it and who last changed it (emails, copied), creation and last
+  change times. A draft needs only a title or a body. Every dashboard
+  account sees and can continue every draft; publishing one deletes it. The
+  apps and the public API never read drafts, and the cleanup of unused
+  pictures skips a picture a draft holds.
 
 Timetable report
 : id, student id, semester id, activity id, description, class snapshot,

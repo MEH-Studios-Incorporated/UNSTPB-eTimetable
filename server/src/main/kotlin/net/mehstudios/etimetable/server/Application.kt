@@ -37,6 +37,7 @@ import net.mehstudios.etimetable.server.admin.AdminAccounts
 import net.mehstudios.etimetable.server.admin.AdminCookie
 import net.mehstudios.etimetable.server.admin.ApiTokens
 import net.mehstudios.etimetable.server.admin.AuditLog
+import net.mehstudios.etimetable.server.admin.ComposeDrafts
 import net.mehstudios.etimetable.server.admin.ImportDrafts
 import net.mehstudios.etimetable.server.admin.adminApiRoutes
 import net.mehstudios.etimetable.server.admin.adminRoutes
@@ -120,6 +121,7 @@ class Services(
     val admins = AdminAccounts(db)
     val audit = AuditLog(db)
     val importDrafts = ImportDrafts(db)
+    val composeDrafts = ComposeDrafts(db)
     val apiTokens = ApiTokens(db)
     val reports = TimetableReports(db)
     val pushTokens = PushTokens(db)

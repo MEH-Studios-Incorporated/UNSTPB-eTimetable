@@ -6,6 +6,13 @@ Each section is also the text of the matching GitHub release.
 
 ### Added
 
+- Drafts for new announcements and events: "Salvează ciorna" on the compose
+  page keeps the form as it is (a title or a text is enough; an event keeps
+  its picture too) and returns to the same page. Announcements and Events
+  get a "Ciorne" tab with every draft, who wrote it and when it last
+  changed, with Continuă and Șterge, so a colleague can finish a draft.
+  Publishing from a draft deletes it. Drafts never reach the apps.
+
 - A "Săptămână" view in Gestionare orar: the week of a group, half-group,
   room or professor on an hour grid, each class a block in its subject's
   colour with its type, room and time. Classes at the same time sit side by
