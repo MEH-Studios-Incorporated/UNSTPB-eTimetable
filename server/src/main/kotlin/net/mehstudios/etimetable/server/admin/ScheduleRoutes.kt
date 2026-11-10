@@ -30,6 +30,7 @@ internal fun Route.scheduleRoutes(services: Services) {
         // Read the revision before the dataset, so a concurrent edit cannot be silently overwritten.
         val version = services.datasets.version(id) ?: return@page call.respond(HttpStatusCode.NotFound)
         val dataset = services.datasets.dataset(id) ?: return@page call.respond(HttpStatusCode.NotFound)
+        if (call.parameters["view"] == "week") return@page scheduleWeek(admin, dataset)
         val q = TimetableSheet.fold(call.parameters["q"].orEmpty())
         val day = call.parameters["day"]?.toIntOrNull()
         val incomplete = call.parameters["incomplete"] == "on"
@@ -54,6 +55,7 @@ internal fun Route.scheduleRoutes(services: Services) {
             ) {
                 notice(call.parameters["msg"])
                 notice(call.parameters["err"], error = true)
+                scheduleTabs(path, week = false)
                 tableCard(
                     filters = {
                         form(action = path, method = FormMethod.get, classes = "filters") {
@@ -338,7 +340,7 @@ internal fun applyScheduleChange(dataset: Dataset, form: Parameters): Dataset {
 
 private fun activityCount(n: Int) = "$n ${plural(n, "activitate", "activități")}"
 
-private fun audience(dataset: Dataset, a: Activity): String = (
+internal fun audience(dataset: Dataset, a: Activity): String = (
     a.audience.seriesIds.map { id -> "Seria ${dataset.series.firstOrNull { it.id == id }?.name ?: id}" } +
         a.audience.groupIds.map { dataset.groupsById[it]?.code ?: it } + a.audience.halfGroupIds
     ).joinToString(" ")

@@ -30,10 +30,6 @@ private val MONTH_NAMES = listOf(
 )
 private val SHORT_MONTHS = listOf("ian", "feb", "mar", "apr", "mai", "iun", "iul", "aug", "sep", "oct", "nov", "dec")
 
-/** The eight subject colours of docs/design.md, by a stable order of subject ids. */
-private val SUBJECT_COLOURS =
-    listOf("#4C6A92", "#2F7F7A", "#6F7F2F", "#B07A1F", "#A84B3A", "#7A4C7F", "#4B4F9E", "#3F7A4F")
-
 /** The start page: the week, what is happening now, what needs doing, and what changed. */
 internal suspend fun RoutingContext.overview(services: Services, admin: Admin) {
     val dataset = services.datasets.current()?.dataset
@@ -433,10 +429,6 @@ private fun UL.todoItem(kind: String, title: String, note: String, href: String?
         if (href != null) a(href = href) { body() } else div { body() }
     }
 }
-
-private fun subjectColours(dataset: Dataset): Map<String, String> = dataset.subjects.map {
-    it.id
-}.sorted().mapIndexed { i, id -> id to SUBJECT_COLOURS[i % SUBJECT_COLOURS.size] }.toMap()
 
 private fun audienceOf(dataset: Dataset, a: Activity): String = (
     a.audience.seriesIds + a.audience.groupIds.map { dataset.groupsById[it]?.code ?: it } + a.audience.halfGroupIds
