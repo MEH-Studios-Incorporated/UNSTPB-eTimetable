@@ -21,6 +21,7 @@ services:
       ETT_ADMIN_PASSWORD: ${ETT_ADMIN_PASSWORD:-}
       ETT_ANDROID_URL: ${ETT_ANDROID_URL:-}
       ETT_IOS_URL: ${ETT_IOS_URL:-}
+      ETT_FCM_SERVICE_ACCOUNT: ${ETT_FCM_SERVICE_ACCOUNT:-}
     ports:
       - "${ETT_PUBLIC_PORT:-8080}:8080"
     depends_on:

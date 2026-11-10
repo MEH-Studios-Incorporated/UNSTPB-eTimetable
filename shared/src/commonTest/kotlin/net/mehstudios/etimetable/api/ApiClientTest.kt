@@ -51,6 +51,29 @@ class ApiClientTest {
     }
 
     @Test
+    fun registersAndRemovesThePushToken() = runTest {
+        val calls = mutableListOf<String>()
+        val engine = MockEngine { request ->
+            val body = (request.body as? io.ktor.http.content.TextContent)?.text.orEmpty()
+            calls += "${request.method.value} ${request.url.encodedPath} $body"
+            assertEquals("Bearer session", request.headers[HttpHeaders.Authorization])
+            respond("", HttpStatusCode.NoContent)
+        }
+        val client = ApiClient(engine, "http://server.test")
+
+        client.registerPushToken("session", "abc:DEF/1", PushPlatform.ANDROID)
+        client.removePushToken("session", "abc:DEF/1")
+
+        assertEquals(
+            listOf(
+                """PUT /api/v1/me/push-tokens/abc:DEF%2F1 {"platform":"android"}""",
+                "DELETE /api/v1/me/push-tokens/abc:DEF%2F1 ",
+            ),
+            calls,
+        )
+    }
+
+    @Test
     fun serverErrorsAreThrown() = runTest {
         val engine = MockEngine { respond("down", HttpStatusCode.ServiceUnavailable) }
         assertFailsWith<io.ktor.client.plugins.ServerResponseException> {

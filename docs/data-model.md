@@ -72,7 +72,8 @@ Student
   group or half-group (national), picked activity ids (Erasmus), extra
   slots (an activity id, with a date when it is a one-time visit, used by
   national students to attend or recover another group's lab), preferred
-  language, push tokens with their platform.
+  language, push tokens with their platform (each tied to the session that
+  registered it, at most 10 per student, removed when the session ends).
 
 Admin
 : id, email, password hash, role (admin or editor).
@@ -131,6 +132,11 @@ formats, with Wednesday 28 October 2026 in week 5, as on the mockups.
 | `DELETE /api/v1/me` | Deletes the account and everything stored for it. |
 | `POST /api/v1/timetable-reports` | Signed-in student submits `semesterId`, `activityId`, `description`; returns `201` with the report `id`. |
 | `PUT`, `DELETE /api/v1/me/push-tokens/<token>` | Register or remove a device. |
+
+Registering a device sends its platform: `{"platform": "android"}` or
+`{"platform": "ios"}`. The token is at most 1024 characters (`400`
+otherwise). More than 10 registrations by one student in an hour get `429`
+with a `Retry-After` header.
 
 The dashboard lives under `/admin` and is not part of the API.
 

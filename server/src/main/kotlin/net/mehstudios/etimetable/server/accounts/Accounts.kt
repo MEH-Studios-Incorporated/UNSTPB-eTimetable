@@ -28,6 +28,9 @@ private val EMAIL = Regex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")
 // Verified against when the email is unknown, so both cases take the same time.
 private val DUMMY_HASH = Passwords.hash("not a real password")
 
+/** What the database keeps of a session token: its SHA-256, never the token itself. */
+fun sessionHash(token: String): ByteArray = MessageDigest.getInstance("SHA-256").digest(token.toByteArray())
+
 class Accounts(private val db: DataSource) {
     private val random = SecureRandom()
 
@@ -77,12 +80,12 @@ class Accounts(private val db: DataSource) {
     suspend fun studentFor(token: String): UUID? = db.transaction { c ->
         c.query(
             "UPDATE student_session SET last_used_at = now() WHERE token_hash = ? RETURNING student_id",
-            sha256(token),
+            sessionHash(token),
         ) { it.getObject(1, UUID::class.java) }.singleOrNull()
     }
 
     suspend fun logout(token: String) {
-        db.transaction { c -> c.update("DELETE FROM student_session WHERE token_hash = ?", sha256(token)) }
+        db.transaction { c -> c.update("DELETE FROM student_session WHERE token_hash = ?", sessionHash(token)) }
     }
 
     suspend fun profile(studentId: UUID): Profile = db.transaction { c ->
@@ -157,11 +160,9 @@ class Accounts(private val db: DataSource) {
 
     private fun newSession(c: java.sql.Connection, studentId: UUID): String {
         val token = Base64.getUrlEncoder().withoutPadding().encodeToString(ByteArray(32).also(random::nextBytes))
-        c.update("INSERT INTO student_session (token_hash, student_id) VALUES (?, ?)", sha256(token), studentId)
+        c.update("INSERT INTO student_session (token_hash, student_id) VALUES (?, ?)", sessionHash(token), studentId)
         return token
     }
-
-    private fun sha256(token: String): ByteArray = MessageDigest.getInstance("SHA-256").digest(token.toByteArray())
 
     private companion object {
         const val UNIQUE_VIOLATION = "23505"

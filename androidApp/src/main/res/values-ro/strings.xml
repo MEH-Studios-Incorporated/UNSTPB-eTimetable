@@ -158,7 +158,7 @@
     <string name="about">Despre aplicație</string>
     <string name="version">Versiunea %1$s</string>
     <string name="privacy_title">Confidențialitate</string>
-    <string name="privacy_text">Serverul păstrează emailul, un hash al parolei, numele, numărul de telefon, grupa sau orele alese și limba. Dacă semnalezi o problemă cu orarul, personalul autorizat poate vedea numele, emailul, descrierea ta și detaliile orei. Nu păstrează locația, contactele sau date despre utilizare. Ștergerea contului șterge și sesizările tale.</string>
+    <string name="privacy_text">Serverul păstrează emailul, un hash al parolei, numele, numărul de telefon, grupa sau orele alese, limba și, cât timp ești conectat, tokenul de notificări al telefonului. Anunțurile noi ajung pe telefon prin Firebase Cloud Messaging de la Google, care transmite titlul și primele rânduri. Dacă semnalezi o problemă cu orarul, personalul autorizat poate vedea numele, emailul, descrierea ta și detaliile orei. Nu păstrează locația, contactele sau date despre utilizare. Ștergerea contului șterge și sesizările tale.</string>
     <string name="faima_site">Site-ul FAIMA</string>
     <string name="meh_site">mehstudios.net</string>
     <string name="copyright_rights">© 2026. Toate drepturile rezervate.</string>
@@ -207,8 +207,26 @@
     <string name="report_stale_class">Ora sau semestrul nu mai este actual. Revino și actualizează orarul înainte să trimiți sesizarea.</string>
     <string name="report_invalid">Descrie problema folosind între 10 și 2000 de caractere.</string>
     <string name="report_sign_in">Sesiunea a expirat. Deconectează-te și autentifică-te din nou înainte să trimiți sesizarea.</string>
+    <string name="push_channel">Anunțurile facultății</string>
+    <string name="push_channel_hint">Anunțurile noi de la FAIMA, imediat ce sunt publicate.</string>
+    <string name="push_ask_title">Primește anunțurile facultății</string>
+    <string name="push_ask_text">
+        Când FAIMA publică un anunț, de exemplu o sală schimbată sau o dată nouă de examen,
+        îl primești pe telefon ca notificare. Atingând-o, se deschide anunțul.
+    </string>
+    <string name="push_ask_later">
+        Poți schimba asta oricând din setările telefonului pentru eTimetable.
+    </string>
+    <string name="push_allow">Permite notificările</string>
+    <string name="push_not_now">Nu acum</string>
+    <string name="popup_new_announcement">Anunț nou</string>
+    <string name="popup_new_announcements">Anunțuri noi</string>
+    <plurals name="popup_to_read">
+        <item quantity="one">%d anunț de citit</item>
+        <item quantity="few">%d anunțuri de citit</item>
+        <item quantity="other">%d de anunțuri de citit</item>
+    </plurals>
     <string name="find_teacher">Profesori</string>
-    <string name="nav_announcements">Anunțuri</string>
     <string name="prof_search">Caută după profesor, email sau materie</string>
     <string name="prof_active_only">La curs sau consultații acum</string>
     <string name="prof_search_empty">Niciun profesor nu corespunde filtrelor.</string>
