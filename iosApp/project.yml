@@ -22,6 +22,10 @@ targets:
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_CFBundleDisplayName: eTimetable
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        # portrait only; an iPad app has to take the full screen to refuse sideways
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: UIInterfaceOrientationPortrait
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown"
+        INFOPLIST_KEY_UIRequiresFullScreen: YES
         SWIFT_VERSION: "5.0"
         # the Gradle step below runs outside the sandbox
         ENABLE_USER_SCRIPT_SANDBOXING: NO

@@ -19,9 +19,12 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Etimetable"
         android:usesCleartextTraffic="${usesCleartextTraffic}">
+        <!-- portrait only on phones; Android 16 ignores this on tablets and unfolded foldables -->
         <activity
             android:name=".MainActivity"
-            android:exported="true">
+            android:exported="true"
+            android:screenOrientation="portrait"
+            tools:ignore="LockedOrientationActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

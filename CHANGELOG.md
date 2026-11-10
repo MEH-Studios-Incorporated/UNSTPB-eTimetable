@@ -75,6 +75,7 @@ Each section is also the text of the matching GitHub release.
 
 ### Changed
 
+- The app stays in portrait when the phone is turned.
 - Password fields on Android have a show or hide control. The password and
   confirmation fields are controlled separately when creating an account.
 - The dashboard has a sidebar, page headers with their actions, groups
