@@ -130,7 +130,8 @@ internal fun Route.scheduleRoutes(services: Services) {
                                             }
                                             div("hint") { +TYPE_NAMES.getValue(a.type) }
                                         }
-                                        td {
+                                        td("tnum") {
+                                            style = "white-space: nowrap"
                                             +"${DAY_NAMES[a.slot.isoDay - 1]} ${a.slot.start} - ${a.slot.end}"
                                             div("hint") { +TimetableSheet.weeksText(a.slot.weeks) }
                                         }
