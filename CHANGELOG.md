@@ -131,6 +131,15 @@ Each section is also the text of the matching GitHub release.
   per week and office, and filters those without an email or without
   classes. Materii shows the classes of each type, the teachers and the
   hours per week. Pages use the whole width of the screen.
+- The dashboard's start page shows the classes running right now (or the
+  next ones today) with their rooms and teachers, the open timetable
+  problems, a to-do list from the data, the next events and, for
+  administrators, the latest changes and a security summary. The tiles of
+  bare numbers are gone.
+- Problems reported by students open in a panel next to the list: the
+  class as the student saw it, what changed in it since, what they wrote,
+  other open reports about the same class, and the actions. The list can
+  be searched, filtered by semester and exported as CSV.
 - A dashboard error, a missing page or a page for administrators only now
   shows a short page in Romanian instead of JSON or a blank screen.
 - The app stays in portrait when the phone is turned.
