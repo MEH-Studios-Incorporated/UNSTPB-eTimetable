@@ -231,6 +231,45 @@ class AdminSecurityTest {
     }
 
     @Test
+    fun twoStepCanBeRequiredForEveryAccount() = withDashboard { services ->
+        val admin = browser()
+        admin.login()
+        // nobody requires what they do not use themselves
+        val early = admin.submitForm("/admin/admins/two-step-policy", parameters { append("required", "true") })
+        assertTrue("err=" in early.location().orEmpty())
+        assertFalse(services.admins.twoStepRequired())
+
+        val setup = admin.get("/admin/account/two-step").bodyAsText()
+        val secretText = Regex("name=\"secret\" value=\"([A-Z2-7]+)\"").find(setup)!!.groupValues[1]
+        admin.submitForm(
+            "/admin/account/two-step",
+            parameters {
+                append("secret", secretText)
+                append("code", Totp.code(base32(secretText), Totp.step(Clock.System.now().epochSeconds)))
+            },
+        )
+        val on = admin.submitForm("/admin/admins/two-step-policy", parameters { append("required", "true") })
+        assertTrue("msg=" in on.location().orEmpty())
+        assertTrue(services.admins.twoStepRequired())
+
+        services.admins.create("editor@faima.test", "parola-de-test", AdminRole.EDITOR)
+        val editor = browser()
+        assertEquals("/admin", editor.login("editor@faima.test", "parola-de-test").location())
+        // every page leads to the setup until it is done; the account pages stay open
+        assertEquals("/admin/account/two-step", editor.get("/admin").location())
+        assertEquals("/admin/account/two-step", editor.get("/admin/announcements").location())
+        assertTrue("cer autentificarea în doi pași" in editor.get("/admin/account/two-step").bodyAsText())
+        assertEquals(HttpStatusCode.OK, editor.get("/admin/account").status)
+
+        // and the admin cannot turn their own off while it is required
+        val off = admin.submitForm("/admin/account/two-step/off", parameters { append("password", "parola-admin") })
+        assertTrue("err=" in off.location().orEmpty())
+        assertTrue(
+            "a cerut autentificarea în doi pași pentru toate conturile" in admin.get("/admin/audit").bodyAsText(),
+        )
+    }
+
+    @Test
     fun totpMatchesTheRfcTestVector() {
         // RFC 6238 appendix B, SHA-1, T = 59 s: 94287082, of which an app shows the last six digits
         val secret = "12345678901234567890".toByteArray()

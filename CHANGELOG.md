@@ -6,6 +6,10 @@ Each section is also the text of the matching GitHub release.
 
 ### Added
 
+- Administrators can require two-step sign-in for every dashboard account.
+  An account without it goes straight to its setup after the password and
+  cannot open anything else until it is done. Only an administrator who
+  uses it can turn this on.
 - The timetable import reads Excel files (.xlsx) as well as CSV: the
   first sheet, with times and dates as they show in Excel. Programs that
   send the timetable with a token can send either too.

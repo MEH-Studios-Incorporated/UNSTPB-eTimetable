@@ -70,6 +70,12 @@ Din linkul **Contul meu** de jos din meniu fiecare:
 O sesiune durează 12 ore. Cinci parole sau coduri greșite în 15 minute
 blochează contul 15 minute.
 
+Pe pagina **Administratori**, un administrator care folosește el însuși
+autentificarea în doi pași o poate cere pentru toate conturile. Atunci un
+cont fără ea ajunge, după parolă, la pagina unde o pornește și nu poate
+deschide altceva până nu termină; cine o are nu o mai poate opri. Pagina
+arată câte conturi active nu au pornit-o încă.
+
 ### Jurnal
 
 Pagina **Jurnal** (doar pentru administratori) arată cine a schimbat ce și

@@ -102,6 +102,9 @@ private fun Route.ownAccountRoutes(services: Services) {
         val (msg, err) = message()
         call.respondHtml {
             adminPage("Contul meu", admin, null, context = { +admin.email }) {
+                if (admin.needsTwoStep && !admin.mustChangePassword) {
+                    notice("Administratorii cer autentificarea în doi pași pentru toate conturile. Pornește-o mai jos.")
+                }
                 if (admin.mustChangePassword) {
                     notice("Alege o parolă nouă înainte de a continua. Parola de acum a fost dată de un administrator.")
                 }
@@ -349,6 +352,11 @@ private fun FlowContent.loginTable(logins: List<LoginAttempt>) {
 private fun HTML.twoStepSetupPage(admin: Admin, secret: ByteArray, error: String?) {
     val uri = Totp.uri(secret, admin.email)
     adminPage("Autentificare în doi pași", admin, null, context = { a(href = "/admin/account") { +"Contul meu" } }) {
+        if (admin.needsTwoStep) {
+            notice(
+                "Administratorii cer autentificarea în doi pași pentru toate conturile. Pornește-o ca să poți continua.",
+            )
+        }
         notice(error, error = true)
         div("cols") {
             div("card") {

@@ -86,6 +86,10 @@ Admin
   sign-in attempt is kept 180 days for the lock and the account page; ten
   recovery codes are stored hashed.
 
+Dashboard setting
+: a key and a value, with who changed it and when. The only one so far is
+  `require_two_step`.
+
 Audit log
 : time, admin (the email is copied, so entries outlive the account),
   category (accounts, timetable, announcements, events, reports, students)
