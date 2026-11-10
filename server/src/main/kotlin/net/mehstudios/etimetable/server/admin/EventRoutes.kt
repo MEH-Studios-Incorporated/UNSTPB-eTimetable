@@ -66,11 +66,28 @@ private fun timeSpan(start: LocalDateTime, end: LocalDateTime?, place: String?):
 
 internal fun Route.eventRoutes(services: Services) {
     page("/events", services) { admin ->
-        val past = call.parameters["when"] == "past"
+        val showDrafts = call.parameters["view"] == "drafts"
+        val past = !showDrafts && call.parameters["when"] == "past"
         val upcomingCount = services.events.count(past = false)
         val pastCount = services.events.count(past = true)
-        val paging = call.parameters.paging(if (past) pastCount else upcomingCount)
-        val events = services.events.list(past, paging.offset, paging.size)
+        val draftCount = services.composeDrafts.count(DraftKind.EVENT)
+        val paging = call.parameters.paging(
+            when {
+                showDrafts -> draftCount
+                past -> pastCount
+                else -> upcomingCount
+            },
+        )
+        val events = if (showDrafts) emptyList() else services.events.list(past, paging.offset, paging.size)
+        val drafts = if (showDrafts) {
+            services.composeDrafts.list(
+                DraftKind.EVENT,
+                paging.offset,
+                paging.size,
+            )
+        } else {
+            emptyList()
+        }
         call.respondHtml {
             adminPage(
                 "Evenimente",
@@ -85,7 +102,7 @@ internal fun Route.eventRoutes(services: Services) {
                     filters = {
                         nav("tabs") {
                             attributes["aria-label"] = "Când"
-                            a(href = LIST, classes = if (past) null else "active") {
+                            a(href = LIST, classes = if (past || showDrafts) null else "active") {
                                 +"Următoare"
                                 span("n") { +upcomingCount.toString() }
                             }
@@ -93,11 +110,22 @@ internal fun Route.eventRoutes(services: Services) {
                                 +"Trecute"
                                 span("n") { +pastCount.toString() }
                             }
+                            draftsTab(LIST, draftCount, showDrafts)
                         }
                     },
                     footer = { pager(paging, LIST, call.request.queryParameters) },
                 ) {
-                    if (events.isEmpty()) {
+                    if (showDrafts) {
+                        if (drafts.isEmpty()) {
+                            emptyState(
+                                "Nicio ciornă",
+                                "Salvează ciorna din pagina unui eveniment nou, ca să-l termini mai târziu, " +
+                                    "tu sau un coleg.",
+                            )
+                        } else {
+                            eventDraftTable(drafts)
+                        }
+                    } else if (events.isEmpty()) {
                         if (past) {
                             emptyState(
                                 "Niciun eveniment trecut",
@@ -123,15 +151,51 @@ internal fun Route.eventRoutes(services: Services) {
         }
     }
     page("/events/new", services) { admin ->
-        call.respondHtml { composeEvent(admin, null, EventDraft.empty()) }
+        val saved = call.parameters["draft"]?.let {
+            services.draft(it, DraftKind.EVENT) ?: return@page draftGone(LIST)
+        }
+        val draft = saved?.let {
+            val size = it.imageHash?.let { hash -> services.events.imageSize(hash) }
+            EventDraft.of(it, size?.let { (w, h) -> w.toFloat() / h })
+        }
+        call.respondHtml {
+            composeEvent(
+                admin,
+                null,
+                draft ?: EventDraft.empty(),
+                saved,
+                call.parameters["msg"],
+                call.parameters["err"],
+            )
+        }
     }
     action("/events", services) { admin ->
         val draft = receiveDraft(services, existing = null)
+        val saved = services.draft(draft.value("draft"), DraftKind.EVENT)
+        if (draft.value("save") == "draft") {
+            val kept = draft.kept()
+            val problem = draftProblem(kept) ?: return@action saveDraft(
+                services,
+                admin,
+                DraftKind.EVENT,
+                LIST,
+                saved?.id,
+                kept,
+                draft.imageHash,
+                draft.imageError,
+            )
+            return@action call.respondHtml { composeEvent(admin, null, draft, saved, err = problem) }
+        }
         if (draft.preview || draft.error != null) {
-            return@action call.respondHtml { composeEvent(admin, null, draft) }
+            return@action call.respondHtml { composeEvent(admin, null, draft, saved) }
         }
         val event = services.events.publish(draft.fields!!, draft.imageHash!!)
-        services.audit.record(admin, AuditCategory.EVENTS, "a publicat evenimentul ${event.title}")
+        val fromDraft = saved?.let { services.composeDrafts.delete(it.id, DraftKind.EVENT) } != null
+        services.audit.record(
+            admin,
+            AuditCategory.EVENTS,
+            "a publicat evenimentul ${event.title}" + if (fromDraft) " dintr-o ciornă" else "",
+        )
         if (draft.notify) {
             // every message would fail, so the admin hears why instead of phones staying silent
             val drift = services.push.clockDrift()
@@ -145,14 +209,14 @@ internal fun Route.eventRoutes(services: Services) {
     page("/events/{id}", services) { admin ->
         val event = services.events.byId(call.parameters["id"].orEmpty())
             ?: return@page call.respond(HttpStatusCode.NotFound)
-        call.respondHtml { composeEvent(admin, event, EventDraft.of(event)) }
+        call.respondHtml { composeEvent(admin, event, EventDraft.of(event), null) }
     }
     action("/events/{id}", services) { admin ->
         val event = services.events.byId(call.parameters["id"].orEmpty())
             ?: return@action call.respond(HttpStatusCode.NotFound)
         val draft = receiveDraft(services, existing = event)
         if (draft.preview || draft.error != null) {
-            return@action call.respondHtml { composeEvent(admin, event, draft) }
+            return@action call.respondHtml { composeEvent(admin, event, draft, null) }
         }
         services.events.update(event.id, draft.fields!!, draft.imageHash!!)
         services.audit.record(admin, AuditCategory.EVENTS, "a modificat evenimentul ${draft.fields!!.title}")
@@ -165,6 +229,27 @@ internal fun Route.eventRoutes(services: Services) {
         }
         services.events.delete(id)
         call.respondRedirect("$LIST?msg=${"Evenimentul a fost șters.".encodeURLParameter()}")
+    }
+    draftDeleteRoute(services, DraftKind.EVENT, "/events")
+}
+
+private fun FlowContent.eventDraftTable(drafts: List<ComposeDraft>) {
+    draftTable(drafts, LIST, listOf("Eveniment", "Când")) { d ->
+        val draft = EventDraft.of(d, null)
+        td {
+            div("list-thumb") {
+                if (d.imageHash != null) {
+                    img(src = EventRepository.imagePath(d.imageHash), alt = "") { attributes["loading"] = "lazy" }
+                } else {
+                    div("no-pic") { unsafe { +svgIcon(ICON_PICTURE, 20) } }
+                }
+                div {
+                    draftTitle(LIST, d)
+                    draft.value("place").takeIf { it.isNotBlank() }?.let { div("hint") { +it } }
+                }
+            }
+        }
+        td("tnum") { +(draft.timeLine(withPlace = false) ?: "-") }
     }
 }
 
@@ -217,10 +302,15 @@ private class EventDraft(
     val notify: Boolean,
     val preview: Boolean,
     val error: String?,
+    /** A new picture that could not be kept; a draft is saved without it. */
+    val imageError: String? = null,
 ) {
     val fields: EventFields? get() = if (error == null) parse(form).getOrNull() else null
 
     fun value(name: String) = form[name].orEmpty()
+
+    /** What a saved draft keeps: the fields that are filled in, the picture apart. */
+    fun kept(): Map<String, String> = form.filterKeys { it in DRAFT_FIELDS }.filterValues { it.isNotEmpty() }
 
     /** The date line from whatever the form holds so far, or null until it has a day and a start. */
     fun timeLine(withPlace: Boolean): String? {
@@ -234,7 +324,19 @@ private class EventDraft(
     }
 
     companion object {
+        private val DRAFT_FIELDS =
+            setOf("title", "body", "place", "link", "start_date", "start_time", "end_date", "end_time", "notify")
+
         fun empty() = EventDraft(emptyMap(), null, null, notify = true, preview = false, error = null)
+
+        fun of(d: ComposeDraft, imageRatio: Float?) = EventDraft(
+            d.form,
+            d.imageHash,
+            imageRatio,
+            notify = d.form["notify"] == "on",
+            preview = false,
+            error = null,
+        )
 
         fun of(e: Event): EventDraft {
             val start = e.startsAt.toLocalDateTime(FacultyTimeZone)
@@ -336,11 +438,19 @@ private suspend fun RoutingContext.receiveDraft(services: Services, existing: Ev
         notify = existing == null && form["notify"] == "on",
         preview = preview,
         error = error,
+        imageError = imageError,
     )
 }
 
 /** The compose page for a new event, or for [existing] when editing one. */
-private fun HTML.composeEvent(admin: Admin, existing: Event?, draft: EventDraft) {
+private fun HTML.composeEvent(
+    admin: Admin,
+    existing: Event?,
+    draft: EventDraft,
+    saved: ComposeDraft?,
+    msg: String? = null,
+    err: String? = null,
+) {
     val isNew = existing == null
     adminPage(
         if (isNew) "Eveniment nou" else "Editează evenimentul",
@@ -349,17 +459,25 @@ private fun HTML.composeEvent(admin: Admin, existing: Event?, draft: EventDraft)
         context = {
             a(href = LIST) { +"Evenimente" }
             if (existing != null) +" · ${whenAndWhere(existing)}"
+            if (saved != null) draftContext(saved)
         },
-        actions = existing?.let {
-            {
-                form(action = "$LIST/${it.id}/delete", method = FormMethod.post, classes = "inline") {
-                    onSubmit = "return confirm('Ștergi evenimentul? Dispare și din aplicații.')"
-                    button(classes = "danger") { +"Șterge" }
+        actions = when {
+            existing != null -> {
+                {
+                    form(action = "$LIST/${existing.id}/delete", method = FormMethod.post, classes = "inline") {
+                        onSubmit = "return confirm('Ștergi evenimentul? Dispare și din aplicații.')"
+                        button(classes = "danger") { +"Șterge" }
+                    }
                 }
             }
+            saved != null -> {
+                { deleteDraftForm(LIST, saved, "Șterge ciorna") }
+            }
+            else -> null
         },
     ) {
-        if (draft.error != null && !draft.preview) notice(draft.error, error = true)
+        notice(msg)
+        notice(err ?: draft.error?.takeUnless { draft.preview }, error = true)
         composeLayout(
             form = {
                 form(
@@ -369,8 +487,9 @@ private fun HTML.composeEvent(admin: Admin, existing: Event?, draft: EventDraft)
                     classes = "card",
                 ) {
                     attributes["data-compose"] = ""
+                    draftIdField(saved)
                     div("fields") { eventFields(draft, isNew) }
-                    composeActions(if (isNew) "Publică" else "Salvează", LIST)
+                    composeActions(if (isNew) "Publică" else "Salvează", LIST, saveDraft = isNew)
                 }
             },
             phone = {

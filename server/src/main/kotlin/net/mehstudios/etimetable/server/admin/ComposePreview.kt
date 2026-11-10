@@ -41,10 +41,21 @@ internal fun FlowContent.composeLayout(form: FlowContent.() -> Unit, phone: Flow
     }
 }
 
-/** The bar under a compose form: the main button, the preview without JavaScript, and a way out. */
-internal fun FlowContent.composeActions(submit: String, cancel: String) {
+/**
+ * The bar under a compose form: the main button, "Salvează ciorna" when [saveDraft], the
+ * preview without JavaScript, and a way out.
+ */
+internal fun FlowContent.composeActions(submit: String, cancel: String, saveDraft: Boolean = false) {
     div("compose-actions") {
         button { +submit }
+        if (saveDraft) {
+            button(classes = "secondary") {
+                name = "save"
+                value = "draft"
+                attributes["formnovalidate"] = "formnovalidate"
+                +"Salvează ciorna"
+            }
+        }
         button(classes = "secondary") {
             name = "preview"
             value = "1"

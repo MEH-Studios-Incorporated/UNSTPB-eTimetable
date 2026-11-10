@@ -80,7 +80,8 @@ class EventRepository(private val db: DataSource, private val clock: Clock = Clo
 
     /**
      * Keeps an uploaded picture before its event is saved, so the dashboard's preview can show
-     * it and the form can send it back by [StoredImage.hash]. One no event uses goes after a day.
+     * it and the form can send it back by [StoredImage.hash]. One no event or draft uses goes
+     * after a day.
      */
     suspend fun stage(image: StoredImage): String {
         db.transaction { c ->
@@ -158,20 +159,25 @@ class EventRepository(private val db: DataSource, private val clock: Clock = Clo
         }
     }
 
-    /** Pictures uploaded for a preview that was never published. */
+    /** Pictures uploaded for a preview that was never published nor saved in a draft. */
     private fun dropAbandoned(c: Connection) {
         c.update(
             """
             DELETE FROM event_image i WHERE i.created_at < now() - interval '1 day'
             AND NOT EXISTS (SELECT 1 FROM event e WHERE e.image_hash = i.hash)
+            AND NOT EXISTS (SELECT 1 FROM compose_draft d WHERE d.image_hash = i.hash)
             """.trimIndent(),
         )
     }
 
-    /** A picture no event shows any more goes, so the database does not keep old photos. */
+    /** A picture no event or draft shows any more goes, so the database does not keep old photos. */
     private fun dropUnused(c: Connection, hash: String) {
         c.update(
-            "DELETE FROM event_image WHERE hash = ? AND NOT EXISTS (SELECT 1 FROM event WHERE image_hash = ?)",
+            """
+            DELETE FROM event_image WHERE hash = ? AND NOT EXISTS (SELECT 1 FROM event WHERE image_hash = ?)
+            AND NOT EXISTS (SELECT 1 FROM compose_draft WHERE image_hash = ?)
+            """.trimIndent(),
+            hash,
             hash,
             hash,
         )
