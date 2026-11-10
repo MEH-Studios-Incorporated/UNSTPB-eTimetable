@@ -18,6 +18,7 @@ import io.ktor.server.routing.RoutingContext
 import io.ktor.utils.io.toByteArray
 import kotlinx.html.*
 import net.mehstudios.etimetable.model.Dataset
+import net.mehstudios.etimetable.schedule.TeachingCalendar
 import net.mehstudios.etimetable.server.Services
 import net.mehstudios.etimetable.server.timetable.ColumnMatch
 import net.mehstudios.etimetable.server.timetable.Csv
@@ -118,12 +119,67 @@ internal fun Route.importRoutes(services: Services) {
         val dataset = services.datasets.dataset(draft.semesterId) ?: return@page call.respond(HttpStatusCode.NotFound)
         val rows = Csv.parse(draft.text)
         val check = checkImport(dataset, rows, draft.mapping)
+        val impact = impactOf(services, dataset, check)
+        val isCurrent = services.datasets.current()?.semesterId == draft.semesterId
+        call.respondHtml {
+            wizardPage(admin, dataset, draft, rows, step = 3) {
+                notice(call.parameters["msg"])
+                notice(call.parameters["err"], error = true)
+                previewStep(admin, dataset, draft, check, impact, version, call.request.queryParameters, isCurrent)
+            }
+        }
+    }
+
+    page("/semesters/{id}/import/{draft}/rows/{line}", services) { admin ->
+        val (dataset, draft) = draftOrRedirect(services, admin) ?: return@page
+        val base = "/admin/semesters/${draft.semesterId}/import/${draft.id}"
+        val rows = Csv.parse(draft.text)
+        val line = call.parameters["line"]?.toIntOrNull()?.takeIf { it in 2..rows.size }
+            ?: return@page call.respondRedirect("$base/preview")
+        val check = checkImport(dataset, rows, draft.mapping)
         call.respondHtml {
             wizardPage(admin, dataset, draft, rows, step = 3) {
                 notice(call.parameters["err"], error = true)
-                previewStep(admin, draft, check, version, call.parameters)
+                rowForm(draft, rows, line, check.errors.filter { it.line == line })
             }
         }
+    }
+
+    action("/semesters/{id}/import/{draft}/rows/{line}", services) { admin ->
+        val (dataset, draft) = draftOrRedirect(services, admin) ?: return@action
+        val base = "/admin/semesters/${draft.semesterId}/import/${draft.id}"
+        val rows = Csv.parse(draft.text)
+        val line = call.parameters["line"]?.toIntOrNull()?.takeIf { it in 2..rows.size }
+            ?: return@action call.respondRedirect(
+                "$base/preview?err=${"Rândul nu mai este în fișier.".encodeURLParameter()}",
+            )
+        val form = call.receiveParameters()
+        val cells = rows[line - 1].toMutableList()
+        if (draft.mapping.keys.all { form["cell_$it"].isNullOrBlank() }) {
+            val err = "Un rând gol nu se poate salva; lasă cel puțin o celulă completată.".encodeURLParameter()
+            return@action call.respondRedirect("$base/rows/$line?err=$err")
+        }
+        draft.mapping.forEach { (column, index) ->
+            val value = form["cell_$column"] ?: return@forEach
+            while (cells.size <= index) cells += ""
+            // the form has one line per cell; a line break would split the row
+            cells[index] = value.replace(Regex("[\r\n]+"), " ").trim()
+        }
+        val text = Csv.replaceRow(draft.text, line - 1, cells)
+        if (text.toByteArray().size > MAX_SHEET_BYTES) {
+            val err = "Fișierul ar depăși 5 MB; rândul nu a fost salvat.".encodeURLParameter()
+            return@action call.respondRedirect("$base/rows/$line?err=$err")
+        }
+        services.importDrafts.saveText(draft.id, text)
+        val left = checkImport(dataset, Csv.parse(text), draft.mapping).errors.count { it.line != null }
+        val msg = if (left == 0) {
+            "Rândul $line a fost corectat. Fișierul nu mai are erori."
+        } else {
+            val more = if (left == 1) "este un rând" else "sunt $left ${plural(left, "rând", "rânduri")}"
+            "Rândul $line a fost salvat. Mai $more cu erori."
+        }
+        val filter = if (left == 0) "" else "filter=errors&"
+        call.respondRedirect("$base/preview?${filter}msg=${msg.encodeURLParameter()}")
     }
 
     page("/semesters/{id}/import/{draft}/confirm", services) { admin ->
@@ -135,10 +191,11 @@ internal fun Route.importRoutes(services: Services) {
         if (!check.canSave) return@page call.respondRedirect("$base/preview")
         val stale = services.datasets.version(draft.semesterId) != version
         val isCurrent = services.datasets.current()?.semesterId == draft.semesterId
+        val impact = impactOf(services, dataset, check)
         call.respondHtml {
             wizardPage(admin, dataset, draft, rows, step = 4) {
                 notice(call.parameters["err"], error = true)
-                confirmStep(dataset, draft, check, version, stale, isCurrent)
+                confirmStep(dataset, draft, check, impact.students, version, stale, isCurrent)
             }
         }
     }
@@ -186,6 +243,16 @@ internal fun Route.importRoutes(services: Services) {
         val msg = "Importul a fost anulat; orarul a rămas cum era.".encodeURLParameter()
         call.respondRedirect("/admin/semesters/$semesterId?msg=$msg")
     }
+}
+
+/** What the preview needs besides the table: the groups touched, the new timetable and who is affected. */
+private class ImportImpact(val groups: List<TouchedGroup>, val new: Dataset?, val students: AffectedStudents)
+
+private suspend fun impactOf(services: Services, dataset: Dataset, check: ImportCheck): ImportImpact {
+    val new = check.result.partial ?: return ImportImpact(emptyList(), null, AffectedStudents.NONE)
+    if (check.diff.changes.isEmpty()) return ImportImpact(emptyList(), new, AffectedStudents.NONE)
+    val students = affectedStudents(dataset, new, check.diff, services.accounts.timetableChoices())
+    return ImportImpact(touchedGroups(dataset, new, check.diff), new, students)
 }
 
 /** The semester and the draft in the path; a draft that is gone sends the admin back to the upload. */
@@ -474,10 +541,13 @@ private val FILTERS = listOf(
 
 private fun FlowContent.previewStep(
     admin: Admin,
+    dataset: Dataset,
     draft: ImportDraft,
     check: ImportCheck,
+    impact: ImportImpact,
     version: Long,
     query: Parameters,
+    isCurrent: Boolean,
 ) {
     val base = "/admin/semesters/${draft.semesterId}/import/${draft.id}"
     val lineErrors = check.errors.filter { it.line != null }
@@ -510,34 +580,38 @@ private fun FlowContent.previewStep(
     val path = "$base/preview"
     val paging = query.paging(shown.size, PREVIEW_PAGE_SIZE)
     div("import-layout") {
-        div("table-card diff") {
-            nav("diff-filters") {
-                attributes["aria-label"] = "Filtru după modificare"
-                FILTERS.forEach { (key, label, dot) ->
-                    a(
-                        href = linkTo(path, query, mapOf("filter" to key.takeIf { it != "all" }, "page" to null)),
-                        classes = if (key == filter) "active" else null,
-                    ) {
-                        if (key == filter) attributes["aria-current"] = "true"
-                        span("label") {
-                            span("dot $dot".trim())
-                            +label
+        div("import-main") {
+            div("table-card diff") {
+                nav("diff-filters") {
+                    attributes["aria-label"] = "Filtru după modificare"
+                    FILTERS.forEach { (key, label, dot) ->
+                        a(
+                            href = linkTo(path, query, mapOf("filter" to key.takeIf { it != "all" }, "page" to null)),
+                            classes = if (key == filter) "active" else null,
+                        ) {
+                            if (key == filter) attributes["aria-current"] = "true"
+                            span("label") {
+                                span("dot $dot".trim())
+                                +label
+                            }
+                            span("count tnum") { +counts.getValue(key).toString() }
                         }
-                        span("count tnum") { +counts.getValue(key).toString() }
                     }
                 }
+                if (shown.isEmpty()) {
+                    emptyState(
+                        if (filter == "all") "Fișierul nu schimbă nimic" else "Nimic în această categorie",
+                        if (filter == "all") "Orarul importat este la fel cu cel de acum." else null,
+                    )
+                } else {
+                    div("scroll") { diffTable(paging.slice(shown), base) }
+                    pager(paging, path, query)
+                }
             }
-            if (shown.isEmpty()) {
-                emptyState(
-                    if (filter == "all") "Fișierul nu schimbă nimic" else "Nimic în această categorie",
-                    if (filter == "all") "Orarul importat este la fel cu cel de acum." else null,
-                )
-            } else {
-                div("scroll") { diffTable(paging.slice(shown)) }
-                pager(paging, path, query)
-            }
+            groupWeek(dataset, check, impact, path, query)
         }
         div("import-side") {
+            affectedCard(impact.students, isCurrent)
             div("card") {
                 h2 { +"Înainte să confirmi" }
                 ul("todo") {
@@ -546,8 +620,8 @@ private fun FlowContent.previewStep(
                             span("mark bad")
                             div {
                                 +"${lineErrors.size} ${plural(lineErrors.size, "rând are erori", "rânduri au erori")}. "
-                                +"Corectează-le în fișier și încarcă-l din nou; "
-                                +"până atunci importul nu se poate confirma."
+                                +"Corectează-le aici, cu linkul de pe fiecare rând, sau în fișier, pe care îl încarci "
+                                +"din nou; până atunci importul nu se poate confirma."
                             }
                         }
                     }
@@ -557,7 +631,12 @@ private fun FlowContent.previewStep(
                             span("mark")
                             div {
                                 +"$removed ${plural(removed, "activitate dispare", "activități dispar")} din orar. "
-                                +"Studenții Erasmus care le aveau alese vor trebui să aleagă altele."
+                                val losing = impact.students.losing
+                                if (losing > 0) {
+                                    +"Studenți care pierd o activitate aleasă (Erasmus sau adăugată în plus): $losing."
+                                } else {
+                                    +"Niciun student nu pierde o activitate aleasă (Erasmus sau adăugată în plus)."
+                                }
                             }
                         }
                     }
@@ -599,7 +678,127 @@ private fun FlowContent.previewStep(
     }
 }
 
-private fun FlowContent.diffTable(rows: List<PreviewRow>) {
+/** The week of one group the import touches, after the import, with each change marked. */
+private fun FlowContent.groupWeek(
+    dataset: Dataset,
+    check: ImportCheck,
+    impact: ImportImpact,
+    path: String,
+    query: Parameters,
+) {
+    val new = impact.new ?: return
+    val chosen = impact.groups.firstOrNull { it.id == query["group"] } ?: impact.groups.firstOrNull() ?: return
+    val unreadable = check.errors.mapNotNull { it.activityId }.toSet()
+    val entries = groupWeekAfterImport(dataset, new, check.diff, chosen.id, unreadable)
+    div("import-week") {
+        id = "pe-grupa"
+        weekGrid(entries, TeachingCalendar(dataset.semester), path, query) {
+            h2 { +"Pe orarul grupei" }
+            form(action = "$path#pe-grupa", method = FormMethod.get, classes = "wg-pick") {
+                query.entries().filter { it.key !in setOf("group", "msg", "err") }.forEach { (k, vs) ->
+                    vs.forEach { v -> hiddenInput(name = k) { value = v } }
+                }
+                label {
+                    htmlFor = "import-group"
+                    +"Grupa"
+                }
+                select {
+                    id = "import-group"
+                    name = "group"
+                    attributes["data-autosubmit"] = ""
+                    impact.groups.forEach { g ->
+                        option {
+                            value = g.id
+                            selected = g == chosen
+                            +"${g.code} · ${g.changes} ${plural(g.changes, "modificare", "modificări")}"
+                        }
+                    }
+                }
+                noScript { button(classes = "secondary small") { +"Arată" } }
+            }
+        }
+    }
+}
+
+/** How many student accounts the import touches and why, without names. */
+private fun FlowContent.affectedCard(students: AffectedStudents, isCurrent: Boolean) {
+    div("card affected") {
+        h2 { +"Studenți afectați" }
+        if (students.total == 0) {
+            p { +"Niciun cont de student nu are în orar activitățile care se schimbă." }
+        } else {
+            p("total") {
+                span("n tnum") { +students.total.toString() }
+                +" ${plural(students.total, "cont de student", "conturi de studenți")} cu orarul schimbat"
+            }
+            ul("todo") {
+                affectedLine(
+                    students.national,
+                    "din grupele sau semigrupele cu activități adăugate, modificate sau eliminate",
+                )
+                affectedLine(students.erasmus, "Erasmus, care au ales o activitate modificată sau eliminată")
+                affectedLine(
+                    students.slots,
+                    "cu o activitate eliminată printre cele adăugate în plus sau la care au renunțat",
+                )
+            }
+        }
+        p("hint") {
+            +"Numărăm după grupa și alegerile salvate în aplicație; un student poate fi în mai multe rânduri. "
+            if (!isCurrent) +"Semestrul nu este curent, așa că alegerile sunt cele pentru semestrul de acum."
+        }
+    }
+}
+
+private fun UL.affectedLine(n: Int, why: String) {
+    if (n == 0) return
+    li {
+        span("mark")
+        div {
+            span("tnum") { +n.toString() }
+            +" $why"
+        }
+    }
+}
+
+/** A line of the file that could not be read, its cells as the columns were matched, to correct. */
+private fun FlowContent.rowForm(
+    draft: ImportDraft,
+    rows: List<List<String>>,
+    line: Int,
+    errors: List<TimetableSheet.RowError>,
+) {
+    val base = "/admin/semesters/${draft.semesterId}/import/${draft.id}"
+    val header = rows.first()
+    val row = rows[line - 1]
+    form(action = "$base/rows/$line", method = FormMethod.post, classes = "card row-fix") {
+        h2 { +"Corectează rândul $line" }
+        errors.forEach { div("notice error") { +it.toString() } }
+        p("hint") {
+            +"Schimbările se păstrează doar în fișierul acestui import, ${draft.fileName}. "
+            +"Coloanele care nu se importă rămân cum sunt."
+        }
+        div("cols") {
+            TimetableSheet.COLUMNS.filter { it in draft.mapping }.forEach { column ->
+                val index = draft.mapping.getValue(column)
+                val name = header.getOrElse(index) { "" }.ifBlank { "fără nume" }
+                val what = ColumnMatch.DESCRIPTIONS[column] ?: column
+                field("cell_$column", "$what (coloana ${columnLetter(index)}, $name)") {
+                    textInput(name = "cell_$column") {
+                        id = "cell_$column"
+                        value = row.getOrElse(index) { "" }
+                    }
+                }
+            }
+        }
+        div("form-actions") {
+            button { +"Salvează rândul" }
+            a(href = "$base/preview?filter=errors", classes = "btn secondary") { +"Înapoi la previzualizare" }
+        }
+    }
+}
+
+private fun FlowContent.diffTable(rows: List<PreviewRow>, base: String) {
     table {
         thead {
             tr {
@@ -620,7 +819,11 @@ private fun FlowContent.diffTable(rows: List<PreviewRow>) {
                         td {
                             colSpan = "4"
                             attributes["role"] = "alert"
-                            +"Rândul ${row.error.line}: ${row.error.message}"
+                            +"Rândul ${row.error.line}: ${row.error.message} "
+                            a(href = "$base/rows/${row.error.line}", classes = "fix") {
+                                attributes["aria-label"] = "Corectează rândul ${row.error.line}"
+                                +"Corectează"
+                            }
                         }
                     }
                     is PreviewRow.Change -> changeRow(row.change)
@@ -670,6 +873,7 @@ private fun FlowContent.confirmStep(
     dataset: Dataset,
     draft: ImportDraft,
     check: ImportCheck,
+    students: AffectedStudents,
     version: Long,
     stale: Boolean,
     isCurrent: Boolean,
@@ -708,6 +912,25 @@ private fun FlowContent.confirmStep(
                     val n = check.diff.unchanged
                     +"$n ${plural(n, "activitate neschimbată", "activități neschimbate")}"
                 }
+            }
+            li {
+                span("mark")
+                div {
+                    val n = students.total
+                    +"$n ${plural(n, "cont de student", "conturi de studenți")} cu orarul schimbat"
+                }
+            }
+        }
+        if (students.losing > 0 && removed > 0) {
+            p {
+                val n = students.losing
+                val one = removed == 1
+                val pronoun = if (one) "o" else "le"
+                +(if (one) "Activitatea eliminată dispare" else "Activitățile eliminate dispar")
+                +" și din alegerile Erasmus sau activitățile adăugate în plus ale "
+                +(if (n == 1) "unui student" else "celor $n ${plural(n, "student", "studenți")}")
+                +" care $pronoun ${if (n == 1) "avea" else "aveau"}. "
+                +"Aplicația nu $pronoun mai arată, așa că trebuie alese altele."
             }
         }
         p("hint") {
@@ -780,5 +1003,15 @@ form.confirm label.check { margin-top: 16px; }
 .diff td.when { white-space: nowrap; }
 pre.usage { background: var(--alt); border: 1px solid var(--border); border-radius: 6px; padding: 12px 14px; margin: 12px 0 0;
   overflow-x: auto; font: 13px/1.5 ui-monospace, Menlo, Consolas, monospace; }
+.import-main { min-width: 0; }
+.import-week { margin-top: 16px; scroll-margin-top: 16px; }
+.import-week .wg-bar h2 { font-size: 16px; line-height: 22px; margin: 0; }
+.affected .total { margin: 0 0 10px; }
+.affected .total .n { font-size: 22px; line-height: 28px; font-weight: 600; }
+.affected ul.todo { margin: 0 0 10px; }
+.affected .hint { margin: 0; }
+.diff tr.error-row a.fix { font-weight: 600; white-space: nowrap; }
+form.row-fix h2 { font-size: 16px; margin: 0 0 12px; }
+form.row-fix .notice { margin: 0 0 12px; }
 @media (max-width: 1100px) { .import-layout { grid-template-columns: 1fr; } }
 """

@@ -79,6 +79,11 @@ class ImportDrafts(private val db: DataSource) {
         }
     }
 
+    /** Replaces the file's text after a row was corrected in the preview; the file name stays. */
+    suspend fun saveText(id: UUID, text: String) {
+        db.transaction { c -> c.update("UPDATE import_draft SET file_text = ? WHERE id = ?", text, id) }
+    }
+
     suspend fun delete(id: UUID) {
         db.transaction { c -> c.update("DELETE FROM import_draft WHERE id = ?", id) }
     }
