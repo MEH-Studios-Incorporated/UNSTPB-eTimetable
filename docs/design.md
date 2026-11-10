@@ -147,9 +147,17 @@ brand colours):
   so the server renders the right theme and nothing flashes.
 - Motion: 150 ms for hover and focus, 180 ms for a page's content rising
   into place. `prefers-reduced-motion` turns all of it off.
-- JavaScript is optional: `admin/static/admin.js` adds the theme switch and
-  applies the rows-per-page choice as soon as it changes. Without it every
-  page still works through plain links and forms.
+- JavaScript is optional: `admin/static/admin.js` adds the theme switch,
+  applies the rows-per-page choice as soon as it changes and keeps the
+  phone preview on the compose pages in step with the form (the Markdown
+  body through `POST /admin/preview/markdown`, about 300 ms after the last
+  key; a chosen picture at once, from the file on the computer). Without it
+  every page still works through plain links and forms.
+- The compose pages for announcements and events put the form on the left
+  and a 320 px phone on the right (under the form on narrow screens). The
+  phone uses the app's own tokens in either theme, whatever the
+  dashboard's theme, and its Card / Pagină and Luminos / Întunecat
+  switches are radio buttons read by CSS.
 
 ## Platform behaviour
 
