@@ -77,7 +77,7 @@ fun HTML.adminPage(
         meta(name = "robots", content = "noindex")
         title("$pageTitle · eTimetable")
         link(rel = "icon", href = "/admin/static/faima-seal.png")
-        style { unsafe { +(BASE_STYLES + ADMIN_STYLES) } }
+        style { unsafe { +(BASE_STYLES + ADMIN_STYLES + FEATURE_STYLES.joinToString("\n")) } }
         script(src = "/admin/static/admin.js") { defer = true }
     }
     body(if (admin == null) "plain" else "shell") {
@@ -197,6 +197,12 @@ h1, h2, h3 { font-weight: 600; letter-spacing: -0.01em; }
 .btn.danger, button.danger { background: var(--surface); color: var(--now); border-color: var(--border); }
 button.link { padding: 0; border: 0; background: none; color: inherit; font-weight: 500; }
 """
+
+/**
+ * Styles that belong to one feature live next to its routes as a constant and are
+ * listed here, one line each, so features do not edit the same block of CSS.
+ */
+private val FEATURE_STYLES: List<String> = listOf()
 
 private val ADMIN_STYLES = """
 :root { --side: #292929; --side-line: #292929; --side-hover: #3A3A3A; --ok: #2F7A4B; --error-soft: #FBEAE9;
