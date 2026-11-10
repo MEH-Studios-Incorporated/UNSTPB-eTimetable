@@ -254,7 +254,7 @@ private fun FieldName(name: String) {
     Text(name, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 }
 
-/** A teacher as a row that opens their schedule, or a note when the timetable names nobody. */
+/** A professor as a row that opens their schedule, or a note when the timetable names nobody. */
 @Composable
 private fun Person(role: String, professor: Professor?, open: (Professor) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {

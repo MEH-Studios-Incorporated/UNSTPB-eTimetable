@@ -90,7 +90,7 @@ fun ProfessorsScreen(
     Column(Modifier.fillMaxSize()) {
         BrandBar { actions() }
         Text(
-            stringResource(R.string.find_teacher),
+            stringResource(R.string.tab_professors),
             style = MaterialTheme.typography.headlineSmall,
             modifier = Modifier.padding(16.dp),
         )

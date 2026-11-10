@@ -87,6 +87,39 @@ class ScheduleRoutesTest {
     }
 
     @Test
+    fun dayAndIncompleteFiltersReachTheServer() = testApplication {
+        val services = Services(TestPostgres.freshDatabase())
+        val dataset = sampleDataset()
+        services.datasets.replace(dataset, true)
+        services.admins.bootstrap("admin@faima.test", "parola-admin")
+        application { module(services) }
+        val browser = createClient {
+            install(HttpCookies)
+            followRedirects = false
+        }
+        browser.submitForm(
+            "/admin/login",
+            parameters {
+                append("email", "admin@faima.test")
+                append("password", "parola-admin")
+            },
+        )
+        val url = "/admin/semesters/2026-1/schedule"
+        fun listed(page: String) = dataset.activities.filter { "name=\"activity\" value=\"${it.id}\"" in page }
+        val all = browser.get(url).bodyAsText()
+        assertEquals(dataset.activities.toSet(), listed(all).toSet())
+        // The filter form must submit normally; only the text search runs in the page.
+        assertTrue("preventDefault" !in all)
+        val day = dataset.activities.last().slot.isoDay
+        assertTrue(dataset.activities.any { it.slot.isoDay != day })
+        val onDay = dataset.activities.filter { it.slot.isoDay == day }
+        assertEquals(onDay.toSet(), listed(browser.get("$url?day=$day").bodyAsText()).toSet())
+        val incomplete = dataset.activities.filter { it.roomId == null || it.professorId == null }
+        assertTrue(incomplete.isNotEmpty() && incomplete.size < dataset.activities.size)
+        assertEquals(incomplete.toSet(), listed(browser.get("$url?incomplete=on").bodyAsText()).toSet())
+    }
+
+    @Test
     fun unknownSelectionsAndCrossMidnightMovesAreRejected() {
         val dataset = sampleDataset()
         assertFailsWith<IllegalArgumentException> {

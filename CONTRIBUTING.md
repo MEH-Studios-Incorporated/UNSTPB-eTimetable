@@ -83,6 +83,35 @@ the forward. A different
 server address is passed as `-PapiBaseUrl=https://...`; release versions
 come from the tag as `-PappVersion=1.2.3`.
 
+## Checking a change by hand
+
+With `tools/dev-server.sh` running and the debug app installed, these are
+the checks worth repeating when a change touches the area. Do them in
+Romanian and in English.
+
+- Gestionare orar in the dashboard: search by subject, professor, room and
+  group (a group also finds its series courses). Filter by a weekday and
+  by classes without a room or professor, then clear the filters. Select
+  classes, change the room or shift by 30 minutes, check the preview,
+  cancel once and check nothing changed, then confirm and sync the phone.
+  A preview confirmed after another tab saved an edit must ask for a
+  reload. A shift past midnight is refused; a new double booking shows a
+  warning before confirming.
+- Professors tab: search by name typed without diacritics, by email and
+  by subject. A professor's page shows the office, email or the missing
+  labels, office hours and the week. The "now" filter can be empty outside
+  teaching hours. With the network off after a sync, everything still
+  opens.
+- Announcements: publish a post with bold text, a list and an https link,
+  sync, open it and check the formatting and that it is marked read.
+  Search, the unread filter and "Mark all as read". Pin one and check it
+  sits on top. Delete one and check it goes from the phone. With more than
+  20 posts, page through the dashboard list and edit an older post.
+- Timetable reports: report a class from its details, see it in the
+  dashboard, try a second report on the same class (refused), then mark it
+  fixed or dismiss it. Offline, the form stays filled and says the report
+  was not sent.
+
 ## Reporting a problem
 
 Use the bug report form in the issues. Give the app version, the phone and

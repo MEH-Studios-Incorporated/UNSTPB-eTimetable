@@ -44,6 +44,7 @@ import net.mehstudios.etimetable.schedule.TeachingCalendar
 import net.mehstudios.etimetable.schedule.baseActivities
 import net.mehstudios.etimetable.schedule.facultyNow
 import net.mehstudios.etimetable.server.Services
+import net.mehstudios.etimetable.server.announcements.ANNOUNCEMENT_PAGE_SIZE
 import net.mehstudios.etimetable.server.timetable.TimetableSheet
 import java.util.UUID
 import kotlin.time.Clock
@@ -154,7 +155,7 @@ private suspend fun RoutingContext.overview(services: Services, admin: Admin) {
             if (openReports > 0) {
                 p("notice") {
                     a(href = "/admin/reports") {
-                        val label = if (openReports == 1) "sesizare de orar" else "sesizări de orar"
+                        val label = plural(openReports, "sesizare de orar", "sesizări de orar")
                         +"$openReports $label așteaptă verificarea."
                     }
                 }
@@ -297,7 +298,7 @@ private fun UL.item(kind: String, text: String, linkText: String?, href: String?
 }
 
 /** Romanian counts: 1 activitate, 2 activități, 20 de activități. */
-private fun plural(n: Int, one: String, many: String) = when {
+internal fun plural(n: Int, one: String, many: String) = when {
     n == 1 -> one
     n % 100 in 1..19 -> many
     else -> "de $many"
@@ -656,7 +657,8 @@ private fun FlowContent.groupsBySeries(dataset: Dataset) {
 
 private fun Route.announcementRoutes(services: Services) {
     page("/announcements", services) { admin ->
-        val announcements = services.announcements.page(before = call.parameters["before"], limit = 20)
+        val before = call.parameters["before"]
+        val announcements = services.announcements.page(before = before, limit = ANNOUNCEMENT_PAGE_SIZE + 1)
         call.respondHtml {
             announcementsPage(
                 admin,
@@ -669,7 +671,7 @@ private fun Route.announcementRoutes(services: Services) {
     action("/announcements", services) { admin ->
         val draft = Draft.from(call.receiveParameters())
         if (draft.preview || draft.error != null) {
-            val announcements = services.announcements.page(before = null, limit = 20)
+            val announcements = services.announcements.page(before = null, limit = ANNOUNCEMENT_PAGE_SIZE + 1)
             return@action call.respondHtml {
                 announcementsPage(
                     admin,
@@ -742,7 +744,9 @@ private class Draft(
     }
 }
 
-private fun HTML.announcementsPage(admin: Admin, announcements: List<Announcement>, draft: Draft?, msg: String?) {
+/** [fetched] holds one announcement more than a page when an older page exists. */
+private fun HTML.announcementsPage(admin: Admin, fetched: List<Announcement>, draft: Draft?, msg: String?) {
+    val announcements = fetched.take(ANNOUNCEMENT_PAGE_SIZE)
     adminPage(
         "Anunțuri",
         admin,
@@ -771,7 +775,7 @@ private fun HTML.announcementsPage(admin: Admin, announcements: List<Announcemen
                     }
                 }
                 p("meta") { +"${a.author} · ${dateTime(a)}" }
-                p { +a.body.take(240) }
+                p { +markdownPreview(a.body, 240) }
                 div("form-actions") {
                     a(href = "/admin/announcements/${a.id}", classes = "btn secondary") { +"Editează" }
                     form(action = "/admin/announcements/${a.id}/pin", method = FormMethod.post, classes = "inline") {
@@ -785,9 +789,7 @@ private fun HTML.announcementsPage(admin: Admin, announcements: List<Announcemen
                 }
             }
         }
-        if (announcements.size ==
-            20
-        ) {
+        if (fetched.size > ANNOUNCEMENT_PAGE_SIZE) {
             a(
                 href = "/admin/announcements?before=${announcements.last().id.encodeURLParameter()}",
                 classes = "btn secondary",

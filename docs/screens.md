@@ -85,12 +85,12 @@ Every choice can be changed later from the profile. Nothing is checked.
 
 ## Professors
 
-Android has a Teachers tab. Search matches a teacher's name without
+Android has a Professors tab. Search matches a professor's name without
 diacritics, email or subject name. A switch shows only people scheduled
-to teach or hold office hours now. Each result opens the teacher's page.
+to teach or hold office hours now. Each result opens the professor's page.
 The current or next activity includes the room and available building
 address. The page also shows the office, email and missing-contact labels.
-Locations are inferred from the timetable, not tracked from the teacher.
+Locations are inferred from the timetable, not tracked from the professor.
 
 - A searchable list with each professor's current status in one line:
   teaching (subject, room, until when), office hours (room, until when),
@@ -196,10 +196,11 @@ UNSTPB and FAIMA logos and the Multimedia Entertainment Hub credit.
 
 ## Admin dashboard (web, part of the server)
 
-The Gestionare orar section searches subject names, teachers, rooms and
+The Gestionare orar section searches subject names, professors, rooms and
 groups across the current semester. It can filter by day or show classes
-without a room or teacher. Staff select up to 200 activities, choose a room
-or teacher and/or shift the times by minutes, then preview and confirm.
+without a room or professor. Staff select up to 200 activities, then choose
+a new room, a new professor, a shift of the times in minutes, or any mix of
+the three, and preview before confirming.
 The preview lists the resulting slots and any new booking conflicts.
 Moves across midnight are refused. A changed semester revision requires
 staff to reload instead of overwriting another editor's work.
@@ -209,7 +210,7 @@ A dark sidebar with the sections, each page with a title, a context line and
 its main actions on the right: an overview (today's week, counts, a list of
 what still needs doing), semesters with their calendar, CSV import and
 export, groups by series and each group's week; subjects (search, filters,
-rename, every activity, one teacher for all of a subject's labs or
+rename, every activity, one professor for all of a subject's labs or
 seminars); single activities (add, edit, delete, with the importer's rules
 for days, times and weeks; a new room adds itself); professors (contact,
 office, office hours one per line, their activities); rooms by building

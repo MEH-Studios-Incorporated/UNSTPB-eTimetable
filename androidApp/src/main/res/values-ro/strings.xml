@@ -207,8 +207,7 @@
     <string name="report_stale_class">Ora sau semestrul nu mai este actual. Revino și actualizează orarul înainte să trimiți sesizarea.</string>
     <string name="report_invalid">Descrie problema folosind între 10 și 2000 de caractere.</string>
     <string name="report_sign_in">Sesiunea a expirat. Deconectează-te și autentifică-te din nou înainte să trimiți sesizarea.</string>
-    <string name="find_teacher">Profesori</string>
-    <string name="nav_announcements">Anunțuri</string>
+    <string name="tab_professors">Profesori</string>
     <string name="prof_search">Caută după profesor, email sau materie</string>
     <string name="prof_active_only">La curs sau consultații acum</string>
     <string name="prof_search_empty">Niciun profesor nu corespunde filtrelor.</string>

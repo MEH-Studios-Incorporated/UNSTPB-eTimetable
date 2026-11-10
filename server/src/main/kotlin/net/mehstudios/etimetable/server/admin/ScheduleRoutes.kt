@@ -72,8 +72,11 @@ internal fun Route.scheduleRoutes(services: Services) {
                     +"Adaugă activitate"
                 }
                 p("hint") {
-                    this.id = "schedule-count"
-                    +"$visibleCount activități. Bifează rândurile de modificat și verifică previzualizarea."
+                    span {
+                        this.id = "schedule-count"
+                        +"${activityCount(visibleCount)}."
+                    }
+                    +" Bifează rândurile de modificat și verifică previzualizarea."
                 }
                 form(action = "/admin/semesters/${id.encodeURLParameter()}/schedule", method = FormMethod.post) {
                     hiddenInput(name = "version") { value = version.toString() }
@@ -196,7 +199,13 @@ internal fun Route.scheduleRoutes(services: Services) {
                                 max = "720"
                             }
                         }
-                        button { +"Previzualizează modificările" }
+                        div("form-actions") {
+                            button { +"Previzualizează modificările" }
+                            span("hint") {
+                                this.id = "schedule-selected"
+                                attributes["aria-live"] = "polite"
+                            }
+                        }
                     }
                 }
                 script {
@@ -204,10 +213,20 @@ internal fun Route.scheduleRoutes(services: Services) {
                         +"""
                         (() => {
                           const input = document.getElementById('schedule-search');
-                          const form = document.getElementById('schedule-filters');
                           const rows = Array.from(document.querySelectorAll('tr[data-search]'));
                           const count = document.getElementById('schedule-count');
+                          const selectedCount = document.getElementById('schedule-selected');
                           const fold = value => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+                          // Same rule as plural() on the server: 1 activitate, 2 activități, 20 de activități.
+                          const activities = n => n === 1 ? '1 activitate'
+                            : (n % 100 >= 1 && n % 100 <= 19) ? n + ' activități' : n + ' de activități';
+                          const selection = () => {
+                            const ticked = rows.filter(row => row.querySelector('input[name=activity]').checked);
+                            const hidden = ticked.filter(row => row.hidden).length;
+                            selectedCount.textContent = ticked.length === 0 ? ''
+                              : (ticked.length === 1 ? '1 selectată' : ticked.length + ' selectate')
+                                + (hidden > 0 ? ', dintre care ' + hidden + ' ascunse de căutare' : '');
+                          };
                           const filter = () => {
                             const query = fold(input.value);
                             let visible = 0;
@@ -215,7 +234,8 @@ internal fun Route.scheduleRoutes(services: Services) {
                               row.hidden = !row.dataset.search.includes(query);
                               if (!row.hidden) visible += 1;
                             });
-                            count.firstChild.textContent = visible + ' activități. ';
+                            count.textContent = activities(visible) + '.';
+                            selection();
                             const url = new URL(window.location.href);
                             if (input.value.trim()) url.searchParams.set('q', input.value.trim());
                             else url.searchParams.delete('q');
@@ -223,10 +243,7 @@ internal fun Route.scheduleRoutes(services: Services) {
                           };
                           input.addEventListener('input', filter);
                           input.addEventListener('search', filter);
-                          form.addEventListener('submit', event => {
-                            event.preventDefault();
-                            filter();
-                          });
+                          rows.forEach(row => row.querySelector('input[name=activity]').addEventListener('change', selection));
                           filter();
                         })();
                         """.trimIndent()
@@ -254,7 +271,8 @@ internal fun Route.scheduleRoutes(services: Services) {
             val warnings = TimetableSheet.doubleBookings(next).filterNot { it in existingWarnings }
             call.respondHtml {
                 adminPage("Verifică modificările", admin, Section.SCHEDULE) {
-                    p { +"${selected.size} activități vor fi modificate. Grupele și săptămânile rămân aceleași." }
+                    val verb = if (selected.size == 1) "va fi modificată" else "vor fi modificate"
+                    p { +"${activityCount(selected.size)} $verb. Grupele și săptămânile rămân aceleași." }
                     next.activities.filter { it.id in selected }.forEach { a ->
                         p("card") {
                             +listOfNotNull(
@@ -328,6 +346,8 @@ internal fun applyScheduleChange(dataset: Dataset, form: Parameters): Dataset {
         },
     )
 }
+
+private fun activityCount(n: Int) = "$n ${plural(n, "activitate", "activități")}"
 
 private fun audience(dataset: Dataset, a: Activity): String = (
     a.audience.seriesIds.map { id -> "Seria ${dataset.series.firstOrNull { it.id == id }?.name ?: id}" } +
