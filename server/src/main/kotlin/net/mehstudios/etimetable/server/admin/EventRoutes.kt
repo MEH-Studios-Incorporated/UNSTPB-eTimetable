@@ -255,10 +255,7 @@ private fun FlowContent.eventGrid(events: List<Event>, past: Boolean) {
     div("event-grid") {
         events.forEach { e ->
             div(if (past) "event-card past" else "event-card") {
-                img(src = e.image, alt = "") {
-                    attributes["loading"] = "lazy"
-                    style = "aspect-ratio: ${e.imageRatio}"
-                }
+                img(src = e.image, alt = "") { attributes["loading"] = "lazy" }
                 div("text") {
                     strong { +e.title }
                     span("meta") { +whenAndWhere(e) }
@@ -315,8 +312,8 @@ private fun FlowContent.eventForm(action: String, draft: EventDraft?, submit: St
                     if (draft?.imageHash == null) required = true
                 }
                 p("hint") {
-                    +"JPEG sau PNG, cel mult 8 MB. Se micșorează la 1600 px; o imagine lată (de exemplu 16:9) "
-                    +"arată cel mai bine pe card."
+                    +"JPEG sau PNG, cel mult 8 MB. Se micșorează la 1600 px. Cardul o taie la 16:9, "
+                    +"pagina evenimentului o arată mai mare; ține textul unui afiș spre mijloc."
                 }
             }
             div("cols") {
@@ -418,7 +415,7 @@ private fun FlowContent.preview(draft: EventDraft) {
             return@div
         }
         div("event-card") {
-            img(src = sample.image, alt = "") { style = "aspect-ratio: ${sample.imageRatio}" }
+            img(src = sample.image, alt = "")
             div("text") {
                 strong { +sample.title }
                 span("meta") { +whenAndWhere(sample) }

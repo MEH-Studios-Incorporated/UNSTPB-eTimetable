@@ -130,7 +130,6 @@
     <string name="theme_dark">Întunecată</string>
     <string name="page_professor">Profesor</string>
     <string name="tab_events">Evenimente</string>
-    <string name="page_event">Eveniment</string>
     <string name="events_none">Niciun eveniment programat.</string>
     <string name="events_past">Trecute</string>
     <string name="event_open_link">Deschide linkul</string>

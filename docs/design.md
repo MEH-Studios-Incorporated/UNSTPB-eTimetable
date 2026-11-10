@@ -16,7 +16,8 @@ Two of FAIMA's own colours are used on purpose: its near-black `#292929`
 is the text colour in the light theme, and its yellow `#F5C753` marks
 changes to the timetable. Nothing else of the website's look is copied.
 
-Things we do not do: gradients, glows, glass effects, emoji, oversized
+Things we do not do: gradients (except the event page's fade into the
+background), glows, glass effects, emoji, oversized
 greeting headlines, stat tiles that repeat what the timetable already
 shows, cards inside cards, and illustrations as filler.
 
@@ -79,11 +80,16 @@ Sentence case everywhere, including buttons and tabs.
 - Separation by hairline borders and spacing. Shadows only on sheets and
   menus that float over content.
 - Touch targets at least 48 x 48 dp (Android) and 44 x 44 pt (iOS).
-- Event cards: the picture full width on top, clipped by the card's 8 px
-  corners, between 4:5 and 2.4:1 (cropped from the centre beyond that), on
-  `surfaceAlt` while it loads; under it the title in Title and one Caption
-  line in `textMuted`. No text or gradient over the picture: the faculty's
-  posters carry their own. Past events at 70 % opacity.
+- Event cards: all the same size, the picture full width on top cut to
+  16:9 from the centre, clipped by the card's 8 px corners, on `surfaceAlt`
+  while it loads; under it the title in Title and one Caption line in
+  `textMuted`, one line each. No text over the picture on a card. Past
+  events at 70 % opacity.
+- The event page is the one place a picture goes behind content: it fills
+  the top (1:1 to 3:4), stays clear for its upper half and fades to the
+  `background` colour at its foot, where the title starts. This is a fade
+  into the page, not a decorative gradient; it works the same in both
+  themes.
 
 ## Motion
 

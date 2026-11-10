@@ -248,10 +248,11 @@ a.slot:hover { border-color: var(--primary); }
 .announcement .body p:first-child { margin-top: 0; }
 .event-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; align-items: start; }
 .event-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
-.event-card img { display: block; width: 100%; height: auto; max-height: 260px; object-fit: cover; background: var(--alt); }
+.event-card img { display: block; width: 100%; aspect-ratio: 16 / 9; height: auto; object-fit: cover; background: var(--alt); }
 .event-card .text { padding: 12px 14px 14px; }
-.event-card strong { display: block; font-size: 16px; line-height: 22px; }
-.event-card .meta { display: block; color: var(--muted); font-size: 13px; margin-top: 2px; }
+.event-card strong, .event-card .meta { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.event-card strong { font-size: 16px; line-height: 22px; }
+.event-card .meta { color: var(--muted); font-size: 13px; margin-top: 2px; }
 .event-card .form-actions { margin-top: 12px; }
 .event-card.past img { opacity: 0.6; }
 .preview .event-card { max-width: 360px; margin-bottom: 14px; }

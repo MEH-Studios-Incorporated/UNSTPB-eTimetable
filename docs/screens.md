@@ -127,16 +127,17 @@ item unread again; changing its pin alone does not.
 
 ## Events
 
-- Cards, the coming events first: the picture on top, the title under it,
-  then one line with the day, the time and the place ("Joi, 19 noiembrie,
-  10:00 - 14:00 · Aula BN"). A wide picture is cut to at most 2.4:1, a
-  poster shows whole up to 4:5, so its title is not cut off. Until the
-  picture loads, the card keeps its size on a plain surface.
+- Cards, the coming events first, all the same size: the picture cut to
+  16:9 on top, the title under it on one line, then one line with the day,
+  the time and the place ("Joi, 19 noiembrie, 10:00 - 14:00 · Aula BN").
+  Until the picture loads, the card keeps its size on a plain surface.
 - Below them, "Trecute": events that ended in the last 60 days, the latest
   first, slightly dimmed.
-- Tapping a card opens the event: the whole picture, the title, the day and
-  time, the place, the description with Markdown, and "Deschide linkul"
-  when there is a link.
+- Tapping a card opens the event: the picture fills the top of the page
+  (square for a photo, up to 3:4 for a poster) and fades into the
+  background, where the title starts; the back button floats over it. Then
+  the day and time, the place, the description with Markdown, and
+  "Deschide linkul" when there is a link.
 - A notification for a new event opens it; it has its own channel,
   "Evenimentele facultății". Events have no read state and no badge.
 

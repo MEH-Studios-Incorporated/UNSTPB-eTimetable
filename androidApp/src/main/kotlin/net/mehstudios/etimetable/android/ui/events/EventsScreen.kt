@@ -6,11 +6,13 @@ package net.mehstudios.etimetable.android.ui.events
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -24,30 +26,31 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import kotlinx.datetime.toLocalDateTime
 import net.mehstudios.etimetable.android.R
 import net.mehstudios.etimetable.android.data.imageUrl
+import net.mehstudios.etimetable.android.ui.components.BackButton
 import net.mehstudios.etimetable.android.ui.components.BrandBar
 import net.mehstudios.etimetable.android.ui.components.MarkdownText
-import net.mehstudios.etimetable.android.ui.components.PageBar
 import net.mehstudios.etimetable.android.ui.components.longLabel
 import net.mehstudios.etimetable.android.ui.theme.ButtonShape
 import net.mehstudios.etimetable.model.Event
 import net.mehstudios.etimetable.schedule.FacultyTimeZone
 import kotlin.time.Instant
 
-/**
- * The card's picture shape: a poster up to 4:5 shows whole (its title is often at the top),
- * anything taller or wider than 2.4:1 is cut, so one card never fills the screen.
- */
-private const val MIN_RATIO = 0.8f
-private const val MAX_RATIO = 2.4f
+/** Every card has the same picture shape, so the list reads as one grid; the page shows more. */
+private const val CARD_RATIO = 16f / 9
+
+/** The backdrop on the event's page: square for a photo, taller for a poster. */
+private const val HERO_MIN_RATIO = 0.75f
+private const val HERO_MAX_RATIO = 1f
 
 /** "Joi, 20 noiembrie, 10:00 - 12:00 · Aula BN", in the app's language. */
 fun Event.whenAndWhere(withPlace: Boolean = true): String {
@@ -119,13 +122,21 @@ private fun EventCard(event: Event, past: Boolean, onClick: () -> Unit) {
         modifier = Modifier.fillMaxWidth().alpha(if (past) 0.7f else 1f),
     ) {
         Column {
-            Picture(event, Modifier.fillMaxWidth().aspectRatio(event.imageRatio.coerceIn(MIN_RATIO, MAX_RATIO)))
+            Picture(event, Modifier.fillMaxWidth().aspectRatio(CARD_RATIO))
+            // one line each, so every card has the same height; the page has the rest
             Column(Modifier.padding(start = 14.dp, end = 14.dp, top = 12.dp, bottom = 14.dp)) {
-                Text(event.title, style = MaterialTheme.typography.titleMedium, maxLines = 2)
+                Text(
+                    event.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
                 Text(
                     event.whenAndWhere(),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.padding(top = 2.dp),
                 )
             }
@@ -144,24 +155,36 @@ private fun Picture(event: Event, modifier: Modifier) {
     )
 }
 
-/** One event in full: the whole picture, when and where, the description and the link. */
+/**
+ * One event in full. The picture fills the top of the page and fades into the background,
+ * where the title starts; the back button floats over the picture.
+ */
 @Composable
 fun EventScreen(event: Event, onBack: () -> Unit) {
     val uri = LocalUriHandler.current
-    Column(Modifier.fillMaxSize()) {
-        PageBar(stringResource(R.string.page_event), onBack)
-        Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(bottom = 32.dp)) {
-            // the whole picture here, a poster too: nothing is cut off
-            Picture(
-                event,
-                Modifier.padding(horizontal = 16.dp).fillMaxWidth().clip(RoundedCornerShape(8.dp))
-                    .aspectRatio(event.imageRatio),
-            )
+    val page = MaterialTheme.colorScheme.background
+    Box(Modifier.fillMaxSize()) {
+        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = 32.dp)) {
+            Box(Modifier.fillMaxWidth().aspectRatio(event.imageRatio.coerceIn(HERO_MIN_RATIO, HERO_MAX_RATIO))) {
+                Picture(event, Modifier.fillMaxSize())
+                // clear at the top, the page colour at the bottom, so the title reads on it
+                Box(
+                    Modifier.fillMaxSize().background(
+                        Brush.verticalGradient(
+                            0f to page.copy(alpha = 0f),
+                            0.45f to page.copy(alpha = 0f),
+                            0.8f to page.copy(alpha = 0.75f),
+                            1f to page,
+                        ),
+                    ),
+                )
+            }
             Column(
-                Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp),
+                // the title rises into the faded part of the picture
+                Modifier.offset(y = (-72).dp).padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Text(event.title, style = MaterialTheme.typography.headlineSmall)
+                Text(event.title, style = MaterialTheme.typography.headlineMedium)
                 Text(event.whenAndWhere(withPlace = false), style = MaterialTheme.typography.titleSmall)
                 event.place?.let {
                     Text(
@@ -180,5 +203,6 @@ fun EventScreen(event: Event, onBack: () -> Unit) {
                 }
             }
         }
+        Box(Modifier.padding(12.dp)) { BackButton(onBack) }
     }
 }

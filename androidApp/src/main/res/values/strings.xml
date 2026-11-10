@@ -129,7 +129,6 @@
     <string name="theme_dark">Dark</string>
     <string name="page_professor">Professor</string>
     <string name="tab_events">Events</string>
-    <string name="page_event">Event</string>
     <string name="events_none">No events coming up.</string>
     <string name="events_past">Past</string>
     <string name="event_open_link">Open the link</string>

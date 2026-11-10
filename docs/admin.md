@@ -166,8 +166,9 @@ imagine și titlul dedesubt. Formularul cere:
 - titlul, care apare sub imagine;
 - imaginea, JPEG sau PNG de cel mult 8 MB. Serverul o micșorează la cel mult
   1600 px și o salvează ca JPEG, fără datele camerei (inclusiv locul unde a
-  fost făcută fotografia). O imagine lată (16:9) arată cel mai bine; un afiș
-  vertical apare întreg până la proporția 4:5, mai înalt de atât se taie;
+  fost făcută fotografia). Pe card, toate imaginile sunt tăiate la 16:9,
+  ca lista să arate uniform; pagina evenimentului arată imaginea mai mare,
+  pe fundal. Pentru un afiș, ține textul spre mijloc;
 - data și ora de început; ora de sfârșit și, pentru un eveniment de mai multe
   zile, data de sfârșit, ambele opționale;
 - locul, o descriere cu Markdown ca la anunțuri și un link (înscriere,
