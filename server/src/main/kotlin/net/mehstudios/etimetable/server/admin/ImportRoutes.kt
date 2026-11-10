@@ -22,13 +22,15 @@ import net.mehstudios.etimetable.schedule.TeachingCalendar
 import net.mehstudios.etimetable.server.Services
 import net.mehstudios.etimetable.server.timetable.ColumnMatch
 import net.mehstudios.etimetable.server.timetable.Csv
+import net.mehstudios.etimetable.server.timetable.SheetFile
+import net.mehstudios.etimetable.server.timetable.SheetFileError
 import net.mehstudios.etimetable.server.timetable.TimetableSheet
 
 /** The largest timetable file the dashboard and the API accept. */
 internal const val MAX_SHEET_BYTES = 5 * 1024 * 1024
 
 private val STEPS = listOf(
-    "Încarcă" to "Fișier CSV",
+    "Încarcă" to "CSV sau Excel",
     "Coloane" to "Potrivirea coloanelor",
     "Previzualizare" to "Ce se schimbă în orar",
     "Confirmă" to "Nimic nu e salvat încă",
@@ -51,25 +53,31 @@ internal fun Route.importRoutes(services: Services) {
     action("/semesters/{id}/import", services) { admin ->
         val semesterId = call.parameters["id"].orEmpty()
         services.datasets.dataset(semesterId) ?: return@action call.respond(HttpStatusCode.NotFound)
-        var text: String? = null
+        var bytes: ByteArray? = null
         var fileName = "orar.csv"
         call.receiveMultipart(formFieldLimit = MAX_SHEET_BYTES.toLong()).forEachPart { part ->
             if (part is PartData.FileItem && part.name == "sheet") {
-                text = part.provider().toByteArray().decodeToString()
+                bytes = part.provider().toByteArray()
                 part.originalFileName?.takeIf { it.isNotBlank() }?.let { fileName = it.take(200) }
             }
             part.dispose()
         }
-        val rows = Csv.parse(text.orEmpty())
+        val text = try {
+            SheetFile.text(bytes ?: ByteArray(0))
+        } catch (e: SheetFileError) {
+            val err = e.message.orEmpty().encodeURLParameter()
+            return@action call.respondRedirect("/admin/semesters/$semesterId/import?err=$err")
+        }
+        val rows = Csv.parse(text)
         if (rows.isEmpty()) {
-            val err = "Fișierul este gol sau nu este un CSV.".encodeURLParameter()
+            val err = "Fișierul este gol sau nu este un CSV sau un Excel (.xlsx).".encodeURLParameter()
             return@action call.respondRedirect("/admin/semesters/$semesterId/import?err=$err")
         }
         val id = services.importDrafts.create(
             semesterId,
             admin.id,
             fileName,
-            text.orEmpty(),
+            text,
             ColumnMatch.detect(rows.first()),
         )
         call.respondRedirect("/admin/semesters/$semesterId/import/$id/columns")
@@ -291,12 +299,13 @@ private fun HTML.uploadPage(admin: Admin, dataset: Dataset, err: String?) {
             field("sheet", "Fișierul cu orarul") {
                 fileInput(name = "sheet") {
                     id = "sheet"
-                    accept = ".csv,text/csv"
+                    accept = ".csv,text/csv,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                     required = true
                 }
             }
             p("hint") {
-                +"Un fișier CSV cu un rând pe activitate, în formatul din ghidul de administrare. "
+                +"Un fișier CSV sau Excel (.xlsx, prima foaie) cu un rând pe activitate, "
+                +"în formatul din ghidul de administrare. "
                 +"Cel mai simplu: descarcă orarul actual, modifică-l și încarcă-l înapoi. "
                 +"Înainte de salvare vezi coloanele găsite și tot ce se schimbă în orar."
             }
