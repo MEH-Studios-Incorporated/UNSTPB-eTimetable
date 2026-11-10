@@ -187,8 +187,15 @@ What is built so far:
   `SENDER_ID_MISMATCH` in `error.details`, or `INVALID_ARGUMENT` naming
   the registration token) delete it. `429` and `5xx` are retried twice,
   after `Retry-After` when FCM sends one (at most 30 s), otherwise after 1 s
-  and 2 s. When Google refuses the service account, the run stops with one
-  log line and Google is not asked again for a minute.
+  and 2 s. When Google refuses the service account (400, 401 or 403 from
+  the token endpoint), the run stops with one log line and Google is not
+  asked again for a minute. A 429, a 5xx or a network error from the token
+  endpoint is retried once after 2 s; if it fails again, the run stops and
+  the next announcement asks again at once. A run stops after 10 minutes
+  in any case and logs how many phones it did not reach.
+- A malformed `ETT_FCM_SERVICE_ACCOUNT` stops the server at startup with a
+  message that names the problem (not JSON, a missing field, a private
+  key that is not RSA) and quotes nothing of the value.
 - Announcement titles and the first 180 characters pass through Google's
   servers. The privacy text in the app says so.
 
