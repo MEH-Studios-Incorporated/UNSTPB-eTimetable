@@ -70,6 +70,12 @@ Din linkul **Contul meu** de jos din meniu fiecare:
 O sesiune durează 12 ore. Cinci parole sau coduri greșite în 15 minute
 blochează contul 15 minute.
 
+Pe pagina **Administratori**, un administrator care folosește el însuși
+autentificarea în doi pași o poate cere pentru toate conturile. Atunci un
+cont fără ea ajunge, după parolă, la pagina unde o pornește și nu poate
+deschide altceva până nu termină; cine o are nu o mai poate opri. Pagina
+arată câte conturi active nu au pornit-o încă.
+
 ### Jurnal
 
 Pagina **Jurnal** (doar pentru administratori) arată cine a schimbat ce și
@@ -213,12 +219,42 @@ Din pagina semestrului ("Importă orarul") sau de la adresa
    (cifrele sunt și filtre), apoi lista lor, cu valoarea veche tăiată și
    cea nouă evidențiată. Rândurile cu erori apar în aceeași listă, cu
    numărul lor din fișier. Nimic nu se salvează încă.
+
+   Sub listă, **Pe orarul grupei** arată săptămâna unei grupe după import,
+   pe aceeași grilă ca în Gestionare orar. Lista de grupe le cuprinde doar
+   pe cele atinse de import, cu numărul de modificări; implicit e aleasă
+   grupa cu cele mai multe. Activitățile adăugate au chenar verde și
+   eticheta "Adăugată", cele modificate sunt galbene ("Modificată"), iar
+   cele eliminate rămân pe grilă estompate, cu chenar punctat roșu
+   ("Eliminată").
+
+   **Studenți afectați** spune câte conturi de studenți ating
+   modificările, fără nume sau adrese: studenții naționali a căror grupă
+   sau semigrupă (cea aleasă în aplicație) are o activitate adăugată,
+   modificată sau eliminată; studenții Erasmus care au ales o activitate
+   modificată sau eliminată; studenții care au o activitate eliminată
+   printre cele adăugate în plus sau printre cele la care au renunțat. Un
+   student poate intra în mai multe categorii, dar în total se numără o
+   singură dată. Numărătoarea folosește alegerile salvate acum în aplicație,
+   chiar dacă importul este pentru alt semestru decât cel curent.
 4. **Confirmă.** Bifezi "Am verificat diferențele" și apeși **Importă
    orarul**. Dacă între timp cineva a modificat orarul semestrului (de
    exemplu din Gestionare orar), panoul refuză și te trimite înapoi la
    previzualizare, ca să vezi diferențele față de orarul nou.
 
-Un fișier cu erori nu se poate confirma: corectează-l și încarcă-l din nou.
+Un fișier cu erori nu se poate confirma. Fiecare rând cu erori are în
+previzualizare linkul **Corectează**: se deschide un formular cu celulele
+rândului, câte una pentru fiecare coloană potrivită la pasul 2. După
+**Salvează rândul**, rândul se rescrie în fișierul importului (restul
+fișierului și numele lui rămân cum erau) și previzualizarea se calculează
+din nou. Doar cine a încărcat fișierul îl poate corecta, iar corecturile nu
+apar separat în **Jurnal**: apare importul, la confirmare. Un rând nu se
+poate goli de tot. Poți și să corectezi fișierul pe calculator și să îl
+încarci din nou.
+
+La confirmare, panoul spune și câți studenți aveau printre alegeri
+(Erasmus sau activități adăugate în plus) o activitate eliminată. După
+import aplicația nu le mai arată, iar studenții își aleg altele.
 Fișierul încărcat se păstrează 24 de ore între pași; **Renunță la import**
 îl șterge pe loc. Importul confirmat apare în **Jurnal**, cu câte activități
 s-au adăugat, modificat și eliminat.
@@ -345,3 +381,28 @@ puțin important. Editarea nu trimite notificări.
 Aplicația arată evenimentele care urmează și, la **Trecute**, pe cele
 terminate în ultimele 60 de zile. Un eveniment se poate edita sau șterge;
 imaginea lui se șterge împreună cu el.
+
+## Ciorne
+
+Pe pagina unui anunț nou sau a unui eveniment nou, **Salvează ciorna**
+păstrează formularul așa cum e, fără să-l publice. Ajunge un titlu sau un
+text; restul (data, imaginea, semnătura) poate lipsi până la publicare.
+Pagina rămâne deschisă pe aceeași ciornă, cu mesajul "Ciorna a fost
+salvată" și, sus, ora salvării și cine a salvat-o. Adresa paginii se poate deschide oricând mai
+târziu: formularul și telefonul arată ciorna. Un nou **Salvează ciorna**
+schimbă aceeași ciornă. Imaginea unui eveniment rămâne cu ciorna cât timp
+ciorna există. Dacă o imagine nouă nu se poate folosi, ciorna se salvează cu
+imaginea de dinainte și pagina spune de ce.
+
+**Anunțuri** și **Evenimente** au fila **Ciorne**, cu numărul lor: titlul
+(sau "(fără titlu)"), pentru evenimente și miniatura și data, cine a scris
+ciorna și ultima modificare. Ciornele se văd din toate conturile panoului,
+editori și administratori, așa că un coleg poate termina ciorna altcuiva.
+**Continuă** deschide ciorna; **Șterge** o șterge, după o confirmare.
+
+**Publică** pe o ciornă publică anunțul sau evenimentul și șterge ciorna. Un
+eveniment trimite notificare doar dacă **Trimite notificare pe telefoane**
+este bifat; ciorna păstrează bifa așa cum ai lăsat-o. Ciornele nu ajung în
+aplicații. Salvarea unei ciorne noi, publicarea dintr-o ciornă și ștergerea
+unei ciorne apar în **Jurnal**. Editarea unui anunț sau eveniment deja
+publicat nu are ciornă: **Salvează** schimbă direct ce văd studenții.

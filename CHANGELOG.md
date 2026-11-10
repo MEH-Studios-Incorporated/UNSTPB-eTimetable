@@ -19,6 +19,16 @@ Each section is also the text of the matching GitHub release.
   and the Announcements tab shows how many are unread.
 - The Events tab says how many events are coming and when the app last
   synced ("2 urmează · actualizat azi la 10:20").
+- Drafts for new announcements and events: "Salvează ciorna" on the compose
+  page keeps the form as it is (a title or a text is enough; an event keeps
+  its picture too) and returns to the same page. Announcements and Events
+  get a "Ciorne" tab with every draft, who wrote it and when it last
+  changed, with Continuă and Șterge, so a colleague can finish a draft.
+  Publishing from a draft deletes it. Drafts never reach the apps.
+- Administrators can require two-step sign-in for every dashboard account.
+  An account without it goes straight to its setup after the password and
+  cannot open anything else until it is done. Only an administrator who
+  uses it can turn this on.
 - The timetable import reads Excel files (.xlsx) as well as CSV: the
   first sheet, with times and dates as they show in Excel. Programs that
   send the timetable with a token can send either too.
@@ -40,6 +50,19 @@ Each section is also the text of the matching GitHub release.
   errors with their line number) and confirm. Nothing is saved before the
   confirmation, and a confirmation is refused if someone changed the
   timetable since the preview.
+- The import preview shows the week of one group after the import on the
+  hour grid, with added classes outlined in green, changed ones in yellow
+  and removed ones faded and dashed. A list picks the group among those
+  the import touches, starting with the one with most changes.
+- The import preview counts the student accounts the import touches, with
+  no names: students whose group or half-group gains, changes or loses a
+  class, Erasmus students who picked a changed or removed class, and
+  students with a removed class among their extra or dropped slots. The
+  confirm step says how many students lose a picked class.
+- A row with an error can be corrected from the import preview: "Corectează"
+  opens the row's cells as the columns were matched, and saving rewrites
+  that row in the uploaded file and shows the preview again, so a typo no
+  longer means editing the file and uploading it again.
 - API tokens for programs that send the timetable without the browser:
   administrators create them on the new "Tokenuri API" page (shown once,
   optional expiry, revocable), and a program sends the CSV to
@@ -215,6 +238,12 @@ Each section is also the text of the matching GitHub release.
   redrawing it at once.
 
 ### Fixed
+
+- After an import removed a class a student had picked, dropped or added
+  as an extra slot, or removed their group, every later save of their
+  profile was refused, even a new phone number. The server now drops the
+  classes that no longer exist from what the student already had, and
+  accepts their old group until they pick a new one.
 
 - The dashboard accepted any number of wrong passwords. Five wrong
   passwords or codes for one account within 15 minutes now lock it for 15

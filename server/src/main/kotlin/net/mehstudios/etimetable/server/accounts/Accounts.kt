@@ -164,6 +164,25 @@ class Accounts(private val db: DataSource) {
         ) { StudentCounts(it.getInt(1), it.getInt(2), it.getInt(3)) }.single()
     }
 
+    /**
+     * What each student chose that a timetable change can touch: enrollment, extra and
+     * dropped slots, without names or contact details. Students who chose nothing are left out.
+     */
+    suspend fun timetableChoices(): List<Profile> = db.transaction { c ->
+        c.query(
+            """
+            SELECT jsonb_build_object(
+                'enrollment', profile -> 'enrollment',
+                'extraSlots', coalesce(profile -> 'extraSlots', '[]'::jsonb),
+                'droppedSlots', coalesce(profile -> 'droppedSlots', '[]'::jsonb))
+            FROM student
+            WHERE jsonb_typeof(profile -> 'enrollment') = 'object'
+               OR jsonb_array_length(coalesce(profile -> 'extraSlots', '[]'::jsonb)) > 0
+               OR jsonb_array_length(coalesce(profile -> 'droppedSlots', '[]'::jsonb)) > 0
+            """.trimIndent(),
+        ) { AppJson.decodeFromString(Profile.serializer(), it.getString(1)) }
+    }
+
     suspend fun email(studentId: UUID): String? = db.transaction { c ->
         c.query("SELECT email FROM student WHERE id = ?", studentId) { it.getString(1) }.singleOrNull()
     }
