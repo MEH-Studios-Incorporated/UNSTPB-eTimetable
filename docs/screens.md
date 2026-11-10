@@ -247,8 +247,12 @@ The announcement list has 20 posts per page, with links to older posts.
 
 A dark sidebar with the sections, each page with a title, a context line and
 its main actions on the right: an overview (today's week, counts, a list of
-what still needs doing), semesters with their calendar, CSV import and
-export, groups by series and each group's week; subjects (search, filters,
+what still needs doing), semesters with their calendar, CSV export and a
+four-step import (upload, columns matched by name with a select per column
+and the first rows, a preview of the classes added, changed and removed
+with the old value struck through and the file's errors inline, then a
+confirmation with "Am verificat diferențele"), groups by series and each
+group's week; subjects (search, filters,
 rename, every activity, one professor for all of a subject's labs or
 seminars); single activities (add, edit, delete, with the importer's rules
 for days, times and weeks; a new room adds itself); professors (contact,
@@ -260,7 +264,9 @@ description and link, a preview of the card and the page, "Trimite
 notificare" ticked for a new event; the picture is kept as soon as it is
 sent, so a preview or a mistake in the form does not ask for it again);
 student accounts (administrators only: search,
-a new password that signs them out, delete); admin accounts.
+a new password that signs them out, delete); admin accounts; API tokens
+(administrators only: create with a name, scope and optional expiry, the
+token shown once, last use, revoke).
 
 Timetable reports have a sidebar entry and an open count on the overview.
 The list separates open reports from closed ones. A report shows the

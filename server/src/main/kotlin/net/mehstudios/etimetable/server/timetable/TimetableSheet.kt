@@ -36,7 +36,27 @@ object TimetableSheet {
         "type", "day", "start", "end", "weeks", "professor", "professor_email", "room", "erasmus",
     )
 
-    class ImportResult(val dataset: Dataset?, val errors: List<String>, val warnings: List<String>)
+    /** A problem in the file; [line] is null for the file as a whole, [activityId] is the row's id cell. */
+    class RowError(val line: Int?, val message: String, val activityId: String? = null) {
+        override fun toString() = if (line == null) message else "Rândul $line: $message"
+    }
+
+    /**
+     * [dataset] is set only when the file has no errors. [partial] holds the rows that could
+     * be read even when others could not, and [lines] the file line of each activity.
+     */
+    class ImportResult(
+        val dataset: Dataset?,
+        val rowErrors: List<RowError>,
+        val warnings: List<String>,
+        val partial: Dataset? = dataset,
+        val lines: Map<String, Int> = emptyMap(),
+    ) {
+        val errors: List<String> get() = rowErrors.map { it.toString() }
+    }
+
+    /** Columns a file may leave out. */
+    val OPTIONAL = setOf("id", "programme_name", "professor_email")
 
     private const val OFFICE_HOURS = "consultatii"
 
@@ -65,18 +85,20 @@ object TimetableSheet {
     private val ROOM =
         Regex("""^(?!sala\b)([A-Za-z]{1,4})\s*(\d{1,4})\s*([A-Za-z]{1,2})?(?=\s|$)\s*(.*)$""", RegexOption.IGNORE_CASE)
 
-    fun import(text: String, semester: Semester): ImportResult {
-        val rows = Csv.parse(text)
-        if (rows.isEmpty()) return ImportResult(null, listOf("Fișierul este gol."), emptyList())
+    fun import(text: String, semester: Semester): ImportResult = import(Csv.parse(text), semester)
+
+    /** [rows] as [Csv.parse] gives them, the header first. */
+    fun import(rows: List<List<String>>, semester: Semester): ImportResult {
+        if (rows.isEmpty()) return ImportResult(null, listOf(RowError(null, "Fișierul este gol.")), emptyList())
         val header = rows.first().map { fold(it) }
-        val missing = COLUMNS.filter {
-            it != "id" && it != "programme_name" && it != "professor_email" && it !in header
-        }
+        val missing = COLUMNS.filter { it !in OPTIONAL && it !in header }
         if (missing.isNotEmpty()) {
-            return ImportResult(null, listOf("Lipsesc coloanele: ${missing.joinToString(", ")}."), emptyList())
+            val message = "Lipsesc coloanele: ${missing.joinToString(", ")}."
+            return ImportResult(null, listOf(RowError(null, message)), emptyList())
         }
 
-        val errors = mutableListOf<String>()
+        val errors = mutableListOf<RowError>()
+        val lines = mutableMapOf<String, Int>()
         val programmes = linkedMapOf<String, Programme>()
         val series = linkedMapOf<String, Series>()
         val groups = linkedMapOf<String, Group>()
@@ -91,7 +113,7 @@ object TimetableSheet {
             val line = index + 2
             fun cell(name: String) = header.indexOf(name).let { if (it < 0) "" else cells.getOrElse(it) { "" }.trim() }
             fun fail(message: String) {
-                errors += "Rândul $line: $message"
+                errors += RowError(line, message, cell("id").ifEmpty { null })
             }
 
             val type = fold(cell("type"))
@@ -194,6 +216,7 @@ object TimetableSheet {
                 fail("activitatea $id apare de două ori")
                 continue
             }
+            lines[id] = line
             activities[id] =
                 Activity(
                     id,
@@ -207,7 +230,6 @@ object TimetableSheet {
                 )
         }
 
-        if (errors.isNotEmpty()) return ImportResult(null, errors, emptyList())
         val dataset = Dataset(
             semester = semester,
             programmes = programmes.values.toList(),
@@ -220,7 +242,8 @@ object TimetableSheet {
             rooms = rooms.values.toList(),
             activities = activities.values.toList(),
         )
-        return ImportResult(dataset, emptyList(), doubleBookings(dataset))
+        if (errors.isNotEmpty()) return ImportResult(null, errors, emptyList(), partial = dataset, lines = lines)
+        return ImportResult(dataset, emptyList(), doubleBookings(dataset), lines = lines)
     }
 
     fun export(dataset: Dataset): String {

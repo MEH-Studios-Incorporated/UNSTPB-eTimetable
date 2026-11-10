@@ -91,6 +91,19 @@ Audit log
   category (accounts, timetable, announcements, events, reports, students)
   and a sentence in Romanian. Entries are only ever added.
 
+Import draft
+: id, semester, admin, creation time, file name, file text and the column
+  mapping (a sheet column to its position in the file, as JSON). It holds a
+  timetable file between the steps of the import wizard and is deleted when
+  the import is confirmed or cancelled; drafts older than 24 hours are
+  deleted when a new one is made and cannot be opened.
+
+API token
+: id, name, scope (`timetable:write` is the only one), SHA-256 of the
+  token, creation time, creator (the email is copied), optional expiry,
+  last use and revocation time. The token itself (`ett_` and 43 characters)
+  is shown once and never stored.
+
 Announcement
 : id, title, body (Markdown), published at, author (an admin), optional
   pinned flag. Every student sees every announcement.
@@ -174,6 +187,50 @@ otherwise). More than 10 registrations by one student in an hour get `429`
 with a `Retry-After` header.
 
 The dashboard lives under `/admin` and is not part of the API.
+
+## Admin API (version 1)
+
+For programs that send the timetable without the browser. Every call needs
+`Authorization: Bearer <token>` with a token from the dashboard's Tokenuri
+API page (`docs/admin.md`); a missing, unknown, revoked or expired token
+gets `401` with `unauthorized`.
+
+| Method and path | What it does |
+| --- | --- |
+| `POST /api/admin/v1/semesters/<id>/timetable` | Body: the timetable CSV (`text/csv`, at most 5 MB, the format in `docs/admin.md`). Needs `timetable:write`. With `?dry_run=true` returns the difference and saves nothing; without it replaces the semester's timetable. |
+
+Columns are matched by name as in the dashboard's import (case and
+diacritics do not matter, Romanian names work). The answer is JSON:
+
+```json
+{
+  "semesterId": "2026-1",
+  "dryRun": true,
+  "saved": false,
+  "version": 12,
+  "counts": {"added": 1, "changed": 1, "removed": 1, "unchanged": 7, "errors": 0},
+  "changes": [
+    {"kind": "changed", "activityId": "micro-c", "line": 2,
+     "fields": [{"field": "room", "old": "AN015", "new": "EC210"}]}
+  ],
+  "errors": [{"line": 5, "message": "zi necunoscută \"vinerea\""}],
+  "warnings": ["sala AN015 are două activități în același timp: micro-c și calit-c"]
+}
+```
+
+`kind` is `added`, `changed` or `removed`; `line` is the file line (null
+for a removed class, or for an error about the whole file). `fields` lists
+what differs, as the dashboard shows it, under the names `subject`, `type`,
+`time`, `weeks`, `audience`, `professor`, `room` and `erasmus`; an added
+class has every field with `old` null, a removed one every field with `new`
+null. `version` is the semester's version after the call. Every save is
+recorded in the dashboard's log under the token's name.
+
+Errors: `404` with `no_semester` for an unknown semester; `409` with
+`invalid_timetable` when the file has errors (`details` has one line per
+error, nothing is saved); `409` with `timetable_changed` when the semester
+changed while the file was checked (send it again); `403` with `forbidden`
+for a token without the scope; `413` for a file over 5 MB.
 
 Report submissions return `422` for an invalid description or stale class,
 `409` with `report_already_open` for a duplicate open report, and `429`

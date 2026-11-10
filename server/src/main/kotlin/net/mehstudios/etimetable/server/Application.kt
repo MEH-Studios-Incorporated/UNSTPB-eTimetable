@@ -35,7 +35,10 @@ import net.mehstudios.etimetable.api.PushPlatform
 import net.mehstudios.etimetable.server.accounts.Accounts
 import net.mehstudios.etimetable.server.admin.AdminAccounts
 import net.mehstudios.etimetable.server.admin.AdminCookie
+import net.mehstudios.etimetable.server.admin.ApiTokens
 import net.mehstudios.etimetable.server.admin.AuditLog
+import net.mehstudios.etimetable.server.admin.ImportDrafts
+import net.mehstudios.etimetable.server.admin.adminApiRoutes
 import net.mehstudios.etimetable.server.admin.adminRoutes
 import net.mehstudios.etimetable.server.admin.respondAdminError
 import net.mehstudios.etimetable.server.announcements.AnnouncementRepository
@@ -116,6 +119,8 @@ class Services(
     val accounts = Accounts(db)
     val admins = AdminAccounts(db)
     val audit = AuditLog(db)
+    val importDrafts = ImportDrafts(db)
+    val apiTokens = ApiTokens(db)
     val reports = TimetableReports(db)
     val pushTokens = PushTokens(db)
     val push = PushNotifier(pushTokens, pushSenders, clockCheck)
@@ -184,6 +189,7 @@ fun Application.module(services: Services, secureCookies: Boolean = false, downl
     routing {
         siteRoutes(services, downloads)
         apiRoutes(services)
+        adminApiRoutes(services)
         adminRoutes(services)
     }
 }

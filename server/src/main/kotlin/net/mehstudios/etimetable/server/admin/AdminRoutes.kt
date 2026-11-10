@@ -6,14 +6,11 @@ package net.mehstudios.etimetable.server.admin
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.Parameters
-import io.ktor.http.content.PartData
-import io.ktor.http.content.forEachPart
 import io.ktor.http.encodeURLParameter
 import io.ktor.server.html.respondHtml
 import io.ktor.server.http.content.staticResources
 import io.ktor.server.request.header
 import io.ktor.server.request.path
-import io.ktor.server.request.receiveMultipart
 import io.ktor.server.request.receiveParameters
 import io.ktor.server.response.header
 import io.ktor.server.response.respond
@@ -27,7 +24,6 @@ import io.ktor.server.routing.route
 import io.ktor.server.sessions.get
 import io.ktor.server.sessions.sessions
 import io.ktor.server.sessions.set
-import io.ktor.utils.io.toByteArray
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.html.*
@@ -50,8 +46,6 @@ import kotlin.time.Clock
 
 @Serializable
 data class AdminCookie(val token: String)
-
-private const val MAX_SHEET_BYTES = 5 * 1024 * 1024
 
 internal val DAY_NAMES = listOf("Luni", "Marți", "Miercuri", "Joi", "Vineri", "Sâmbătă", "Duminică")
 private val MONTHS = listOf(
@@ -82,6 +76,8 @@ fun Route.adminRoutes(services: Services) {
         editRoutes(services)
         reportRoutes(services)
         scheduleRoutes(services)
+        importRoutes(services)
+        apiTokenRoutes(services)
     }
 }
 
@@ -449,10 +445,10 @@ private fun Route.semesterRoutes(services: Services) {
                         required = true
                     }
                     p("hint") {
-                        +"Importul înlocuiește tot orarul acestui semestru. "
-                        +"Dacă fișierul are erori, nu se salvează nimic."
+                        +"Importul înlocuiește tot orarul acestui semestru. Înainte de salvare vezi "
+                        +"coloanele găsite și ce se schimbă; nimic nu se salvează până nu confirmi."
                     }
-                    div("form-actions") { button { +"Importă" } }
+                    div("form-actions") { button { +"Încarcă și verifică" } }
                 }
 
                 if (problems.isNotEmpty()) {
@@ -499,61 +495,6 @@ private fun Route.semesterRoutes(services: Services) {
             TimetableSheet.export(dataset),
             io.ktor.http.ContentType.Text.CSV.withParameter("charset", "utf-8"),
         )
-    }
-
-    action("/semesters/{id}/import", services) { admin ->
-        val existing =
-            services.datasets.dataset(call.parameters["id"].orEmpty())
-                ?: return@action call.respond(HttpStatusCode.NotFound)
-        var sheet: String? = null
-        call.receiveMultipart(formFieldLimit = MAX_SHEET_BYTES.toLong()).forEachPart { part ->
-            if (part is PartData.FileItem &&
-                part.name == "sheet"
-            ) {
-                sheet = part.provider().toByteArray().decodeToString()
-            }
-            part.dispose()
-        }
-        val result = TimetableSheet.import(sheet.orEmpty(), existing.semester)
-        val imported = result.dataset
-        if (imported != null) services.datasets.replace(imported, makeCurrent = false)
-        if (imported != null) {
-            services.audit.record(
-                admin,
-                AuditCategory.TIMETABLE,
-                "a importat orarul semestrului ${existing.semester.id}: ${imported.activities.size} activități",
-            )
-        }
-        call.respondHtml(if (imported == null) HttpStatusCode.UnprocessableEntity else HttpStatusCode.OK) {
-            adminPage(
-                if (imported == null) "Orarul nu a fost importat" else "Orar importat",
-                admin,
-                Section.SEMESTERS,
-                context = { a(href = "/admin/semesters/${existing.semester.id}") { +existing.semester.name.ro } },
-            ) {
-                if (imported == null) {
-                    div("notice error") {
-                        +"Nu s-a salvat nimic. Corectează rândurile de mai jos și încearcă din nou."
-                        ul("problems") { result.errors.forEach { li { +it } } }
-                    }
-                } else {
-                    p("notice") {
-                        +"Am importat ${imported.activities.size} activități pentru ${imported.groups.size} grupe. "
-                        +"Aplicațiile le primesc la următoarea sincronizare."
-                    }
-                    if (result.warnings.isNotEmpty()) {
-                        h2 {
-                            +"De verificat"
-                            span("count") { +result.warnings.size.toString() }
-                        }
-                        div("card") { ul("problems") { result.warnings.forEach { li { +it } } } }
-                    }
-                }
-                a(href = "/admin/semesters/${existing.semester.id}", classes = "btn secondary") {
-                    +"Înapoi la semestru"
-                }
-            }
-        }
     }
 
     page("/semesters/{id}/groups/{group}", services) { admin ->

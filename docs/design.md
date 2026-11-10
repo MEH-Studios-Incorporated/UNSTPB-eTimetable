@@ -142,6 +142,12 @@ brand colours):
   a handful of rows uses it; the paging happens in the database where the
   list comes from there.
 - Empty tables say what is missing and what to do, never just "nimic".
+- A flow of several steps (the timetable import) shows a stepper on top:
+  numbered steps, the done ones with a green check and a link back, the
+  current one underlined in the primary colour. Changes are tagged
+  "Adăugată" (green outline), "Modificată" (yellow), "Eliminată" (red
+  dashed) and "Eroare" (red); a changed value shows the old one struck
+  through and the new one on yellow, as on the app's "Modificat" cards.
 - Dark theme from the dark column of the colour table. It follows the
   system until the admin picks one with the switch; the choice is a cookie,
   so the server renders the right theme and nothing flashes.

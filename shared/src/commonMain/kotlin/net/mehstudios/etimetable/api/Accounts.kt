@@ -48,6 +48,15 @@ object ErrorCodes {
     /** [ApiError.details] holds the ids of the two clashing activities. */
     const val CLASH = "clash"
     const val TOO_MANY_REQUESTS = "too_many_requests"
+
+    /** The admin API token lacks the scope the call needs. */
+    const val FORBIDDEN = "forbidden"
+
+    /** A timetable file with errors; [ApiError.details] holds one line per error. */
+    const val INVALID_TIMETABLE = "invalid_timetable"
+
+    /** The semester's timetable changed while an import was checked; send the file again. */
+    const val TIMETABLE_CHANGED = "timetable_changed"
     const val INTERNAL = "internal"
 }
 

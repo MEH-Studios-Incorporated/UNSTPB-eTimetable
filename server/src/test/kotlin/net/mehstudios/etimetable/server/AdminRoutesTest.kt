@@ -7,13 +7,10 @@ import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.cookies.HttpCookies
-import io.ktor.client.request.forms.formData
 import io.ktor.client.request.forms.submitForm
-import io.ktor.client.request.forms.submitFormWithBinaryData
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.statement.bodyAsText
-import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.parameters
@@ -94,20 +91,10 @@ class AdminRoutesTest {
         assertEquals(HttpStatusCode.Found, browser.createSemester().status)
 
         val sheet = TimetableSheet.export(sampleDataset())
-        val import = browser.submitFormWithBinaryData(
-            "/admin/semesters/2026-1/import",
-            formData {
-                append(
-                    "sheet",
-                    sheet.toByteArray(),
-                    Headers.build {
-                        append(HttpHeaders.ContentDisposition, "filename=\"orar.csv\"")
-                    },
-                )
-            },
-        )
-        assertEquals(HttpStatusCode.OK, import.status, import.bodyAsText())
-        assertTrue("Am importat 9 activități" in import.bodyAsText())
+        val import = browser.importThroughWizard("2026-1", sheet)
+        assertEquals(HttpStatusCode.Found, import.status)
+        val message = java.net.URLDecoder.decode(import.headers[HttpHeaders.Location].orEmpty(), "UTF-8")
+        assertTrue("9 adăugate" in message, message)
 
         // not in the app until it is made current
         assertEquals(HttpStatusCode.NotFound, browser.get("/api/v1/dataset").status)
@@ -122,27 +109,19 @@ class AdminRoutesTest {
     }
 
     @Test
-    fun importErrorsSaveNothing() = withDashboard { _, browser ->
+    fun importErrorsSaveNothing() = withDashboard { services, browser ->
         browser.login()
         browser.createSemester()
         val bad =
             "programme;year;series;audience;subject_code;subject_ro;subject_en;" +
                 "type;day;start;end;weeks;professor;room;erasmus\n" +
                 "BEM;2;A;;MKT;Marketing;;curs;vinerea;10:00;12:00;;;;\n"
-        val response = browser.submitFormWithBinaryData(
-            "/admin/semesters/2026-1/import",
-            formData {
-                append(
-                    "sheet",
-                    bad.toByteArray(),
-                    Headers.build {
-                        append(HttpHeaders.ContentDisposition, "filename=\"orar.csv\"")
-                    },
-                )
-            },
-        )
-        assertEquals(HttpStatusCode.UnprocessableEntity, response.status)
-        assertTrue("Rândul 2" in response.bodyAsText())
+        val draft = browser.uploadSheet("2026-1", bad).headers[HttpHeaders.Location]!!.removeSuffix("/columns")
+        browser.submitForm("$draft/columns", parameters { append("keep", "1") })
+        val preview = browser.get("$draft/preview").bodyAsText()
+        assertTrue("Rândul 2" in preview)
+        assertFalse("confirm?version=" in preview)
+        assertEquals(0, services.datasets.dataset("2026-1")!!.activities.size)
     }
 
     @Test
