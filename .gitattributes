@@ -1,0 +1,7 @@
+# Copyright (c) 2026 Multimedia Entertainment Hub LLC
+# SPDX-License-Identifier: LicenseRef-Proprietary
+#
+# A Windows checkout with core.autocrlf would give these CRLF, and sh then
+# fails on the carriage returns.
+*.sh text eol=lf
+gradlew text eol=lf

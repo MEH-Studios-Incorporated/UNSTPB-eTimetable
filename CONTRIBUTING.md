@@ -101,6 +101,29 @@ the forward. A different
 server address is passed as `-PapiBaseUrl=https://...`; release versions
 come from the tag as `-PappVersion=1.2.3`.
 
+### On Windows
+
+Everything except iOS builds on Windows. Use `gradlew.bat` for `./gradlew`,
+and the PowerShell versions of the two scripts that deal with local paths:
+
+```powershell
+tools\dev-server.ps1                     # tools/dev-server.sh
+tools\faima-timetable\update.ps1 [ID ...] # tools/faima-timetable/update.sh
+```
+
+If PowerShell refuses to run them, start it with
+`powershell -ExecutionPolicy Bypass -File tools\dev-server.ps1`. The SDK is
+found through `ANDROID_HOME`, `local.properties` or
+`%LOCALAPPDATA%\Android\Sdk`; the Python step needs Python 3 (`py` or
+`python` on the path). Environment variables go before the script with
+`$env:`, for example `$env:ETT_DEV_DB_DIR = 'build/dev-postgres-2'`.
+
+`tools/check-writing.sh` and `tools/release-notes.sh` are what CI runs, so
+they have no second version that could drift from them. Run them from Git
+Bash, which comes with Git for Windows: `sh tools/check-writing.sh`.
+`.gitattributes` keeps the shell scripts and `gradlew` with LF line endings
+on a Windows checkout.
+
 ## Checking a change by hand
 
 With `tools/dev-server.sh` running and the debug app installed, these are
