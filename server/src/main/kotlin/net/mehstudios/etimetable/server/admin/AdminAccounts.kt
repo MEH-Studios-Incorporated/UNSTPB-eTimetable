@@ -82,7 +82,8 @@ sealed interface LoginResult {
 }
 
 /** Thrown with a message meant for the person filling in the form, in Romanian. */
-class AdminFormError(message: String) : RuntimeException(message)
+/** A form to show again with [message]; [form] replaces what was sent when it needs extra fields. */
+class AdminFormError(message: String, val form: io.ktor.http.Parameters? = null) : RuntimeException(message)
 
 /** Dashboard passwords are longer than students': these accounts can change everything. */
 const val ADMIN_MIN_PASSWORD_LENGTH = 12

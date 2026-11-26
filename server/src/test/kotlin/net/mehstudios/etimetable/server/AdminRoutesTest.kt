@@ -102,7 +102,7 @@ class AdminRoutesTest {
         assertEquals(2, dataset.semester.breaks.size)
         assertEquals("Winter break", dataset.semester.breaks.first().name.en)
 
-        val week = browser.get("/admin/semesters/2026-1/groups/1541E").bodyAsText()
+        val week = browser.get("/admin/semesters/2026-1/schedule?view=week&group=1541E").bodyAsText()
         assertTrue("Managementul calității" in week)
     }
 

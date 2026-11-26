@@ -20,6 +20,8 @@ import net.mehstudios.etimetable.model.Audience
 import net.mehstudios.etimetable.model.Building
 import net.mehstudios.etimetable.model.Dataset
 import net.mehstudios.etimetable.model.Enrollment
+import net.mehstudios.etimetable.model.Group
+import net.mehstudios.etimetable.model.HalfGroup
 import net.mehstudios.etimetable.model.LocalizedText
 import net.mehstudios.etimetable.model.OfficeHour
 import net.mehstudios.etimetable.model.Professor
@@ -55,6 +57,7 @@ fun Route.editRoutes(services: Services) {
     activityRoutes(services)
     roomRoutes(services)
     studentRoutes(services)
+    groupRoutes(services)
 }
 
 private fun Dataset.base() = "/admin/semesters/${semester.id}"
@@ -69,6 +72,121 @@ private fun RoutingContext.message() = call.parameters["msg"] to call.parameters
 private fun msg(text: String) = "msg=${text.encodeURLParameter()}"
 
 private fun err(text: String) = "err=${text.encodeURLParameter()}"
+
+// ---- groups ------------------------------------------------------------------------------
+
+/** Group and half-group codes go into audiences and CSV cells, so no spaces, slashes or separators. */
+private val codePattern = Regex("[\\p{L}0-9-]+")
+
+private fun Route.groupRoutes(services: Services) {
+    action("/semesters/{id}/groups", services) { admin ->
+        val dataset = semesterOrNull(services) ?: return@action call.respond(HttpStatusCode.NotFound)
+        val form = call.receiveParameters()
+        val code = form["code"].orEmpty().trim()
+        val series = dataset.series.firstOrNull { it.id == form["series"] }
+        val problem = when {
+            series == null -> "Alege seria."
+            !codePattern.matches(code) -> "Codul grupei are doar litere, cifre și cratimă, de exemplu 1543E."
+            // the import matches groups by code, so two that differ only in case would split one group
+            dataset.groups.any { it.code.equals(code, ignoreCase = true) || it.id == code } ->
+                "Grupa $code există deja."
+            else -> null
+        }
+        if (problem != null) return@action call.respondRedirect("${dataset.base()}?${err(problem)}#groups")
+        services.save(dataset.copy(groups = dataset.groups + Group(code, series!!.id, code)))
+        services.audit.record(admin, AuditCategory.TIMETABLE, "a adăugat grupa $code")
+        call.respondRedirect("${dataset.base()}/groups/${code.encodeURLParameter()}?${msg("Grupa a fost adăugată.")}")
+    }
+
+    action("/semesters/{id}/groups/{group}/halves", services) { admin ->
+        val dataset = semesterOrNull(services) ?: return@action call.respond(HttpStatusCode.NotFound)
+        val group = dataset.groupsById[call.parameters["group"].orEmpty()]
+            ?: return@action call.respond(HttpStatusCode.NotFound)
+        val suffix = call.receiveParameters()["suffix"].orEmpty().trim()
+        val id = "${group.id}/$suffix"
+        val page = "${dataset.base()}/groups/${group.id.encodeURLParameter()}"
+        val problem = when {
+            !codePattern.matches(suffix) -> "Semigrupa are doar litere, cifre și cratimă, de exemplu A."
+            dataset.halfGroups.any { it.groupId == group.id && it.suffix.equals(suffix, ignoreCase = true) } ||
+                id in dataset.halfGroupsById -> "Semigrupa ${group.code}/$suffix există deja."
+            else -> null
+        }
+        if (problem != null) return@action call.respondRedirect("$page?${err(problem)}")
+        services.save(dataset.copy(halfGroups = dataset.halfGroups + HalfGroup(id, group.id, suffix)))
+        services.audit.record(admin, AuditCategory.TIMETABLE, "a adăugat semigrupa ${group.code}/$suffix")
+        call.respondRedirect("$page?${msg("Semigrupa a fost adăugată.")}")
+    }
+
+    // only the code changes: activities and students keep pointing at the group's id
+    action("/semesters/{id}/groups/{group}/rename", services) { admin ->
+        val dataset = semesterOrNull(services) ?: return@action call.respond(HttpStatusCode.NotFound)
+        val group = dataset.groupsById[call.parameters["group"].orEmpty()]
+            ?: return@action call.respond(HttpStatusCode.NotFound)
+        val code = call.receiveParameters()["code"].orEmpty().trim()
+        val page = "${dataset.base()}/groups/${group.id.encodeURLParameter()}"
+        val problem = when {
+            !codePattern.matches(code) -> "Codul grupei are doar litere, cifre și cratimă, de exemplu 1543E."
+            dataset.groups.any { it.id != group.id && (it.code.equals(code, ignoreCase = true) || it.id == code) } ->
+                "Grupa $code există deja."
+            else -> null
+        }
+        if (problem != null) return@action call.respondRedirect("$page?${err(problem)}")
+        services.save(dataset.copy(groups = dataset.groups.map { if (it.id == group.id) it.copy(code = code) else it }))
+        services.audit.record(admin, AuditCategory.TIMETABLE, "a redenumit grupa ${group.code} în $code")
+        call.respondRedirect("$page?${msg("Grupa se numește acum $code.")}")
+    }
+
+    action("/semesters/{id}/groups/{group}/delete", services) { admin ->
+        val dataset = semesterOrNull(services) ?: return@action call.respond(HttpStatusCode.NotFound)
+        val group = dataset.groupsById[call.parameters["group"].orEmpty()]
+            ?: return@action call.respond(HttpStatusCode.NotFound)
+        val halves = dataset.halfGroups.filter { it.groupId == group.id }.mapTo(mutableSetOf()) { it.id }
+        val page = "${dataset.base()}/groups/${group.id.encodeURLParameter()}"
+        inUse(services, dataset, group.id, halves)?.let { return@action call.respondRedirect("$page?${err(it)}") }
+        services.save(
+            dataset.copy(
+                groups = dataset.groups.filterNot { it.id == group.id },
+                halfGroups = dataset.halfGroups.filterNot { it.id in halves },
+            ),
+        )
+        services.audit.record(admin, AuditCategory.TIMETABLE, "a șters grupa ${group.code}")
+        call.respondRedirect("${dataset.base()}?${msg("Grupa ${group.code} a fost ștearsă.")}#groups")
+    }
+
+    // the half-group's id has a slash, so it comes in the form rather than the path
+    action("/semesters/{id}/groups/{group}/halves/delete", services) { admin ->
+        val dataset = semesterOrNull(services) ?: return@action call.respond(HttpStatusCode.NotFound)
+        val group = dataset.groupsById[call.parameters["group"].orEmpty()]
+            ?: return@action call.respond(HttpStatusCode.NotFound)
+        val half = dataset.halfGroupsById[call.receiveParameters()["half"].orEmpty()]
+            ?.takeIf { it.groupId == group.id }
+            ?: return@action call.respond(HttpStatusCode.NotFound)
+        val page = "${dataset.base()}/groups/${group.id.encodeURLParameter()}"
+        inUse(services, dataset, null, setOf(half.id))?.let { return@action call.respondRedirect("$page?${err(it)}") }
+        services.save(dataset.copy(halfGroups = dataset.halfGroups.filterNot { it.id == half.id }))
+        services.audit.record(admin, AuditCategory.TIMETABLE, "a șters semigrupa ${group.code}/${half.suffix}")
+        call.respondRedirect("$page?${msg("Semigrupa ${group.code}/${half.suffix} a fost ștearsă.")}")
+    }
+}
+
+/**
+ * Why a group or half-groups cannot be deleted yet, or null. A student whose group
+ * disappeared could not save their profile any more, and an activity would lose its students.
+ */
+private suspend fun inUse(services: Services, dataset: Dataset, groupId: String?, halves: Set<String>): String? {
+    val activities = dataset.activities.count { a ->
+        (groupId != null && groupId in a.audience.groupIds) || a.audience.halfGroupIds.any { it in halves }
+    }
+    if (activities > 0) {
+        return "Are încă $activities ${plural(activities, "activitate", "activități")}; mută-le sau șterge-le întâi."
+    }
+    val students = services.accounts.timetableChoices().count { profile ->
+        val national = profile.enrollment as? Enrollment.National
+        national != null && (national.groupId == groupId || national.halfGroupId in halves)
+    }
+    if (students > 0) return "$students ${plural(students, "student și-a ales-o", "studenți și-au ales-o")}."
+    return null
+}
 
 // ---- subjects ---------------------------------------------------------------------------
 
@@ -560,6 +678,9 @@ private val WEEK_WORDS = setOf("pare", "impare", "par", "impar", "toate", "odd",
 
 // ---- activities -------------------------------------------------------------------------
 
+/** Set on a form sent back because of a clash, so it shows the box that confirms it. */
+private const val ASK_CLASHES = "ask_clashes"
+
 private fun Route.activityRoutes(services: Services) {
     page("/semesters/{id}/activities/new", services) { admin ->
         val dataset = semesterOrNull(services) ?: return@page call.respond(HttpStatusCode.NotFound)
@@ -570,6 +691,7 @@ private fun Route.activityRoutes(services: Services) {
         val form = call.receiveParameters()
         try {
             val (activity, next) = activityFrom(dataset, "a-" + UUID.randomUUID().toString().take(8), form)
+            checkClashes(next.copy(activities = next.activities + activity), activity, form)
             services.save(next.copy(activities = next.activities + activity))
             services.audit.record(
                 admin,
@@ -578,7 +700,9 @@ private fun Route.activityRoutes(services: Services) {
             )
             call.respondRedirect(withParam(backFor(dataset, form, activity), msg("Activitatea a fost adăugată.")))
         } catch (e: AdminFormError) {
-            call.respondHtml(HttpStatusCode.UnprocessableEntity) { activityPage(admin, dataset, null, form, e.message) }
+            call.respondHtml(HttpStatusCode.UnprocessableEntity) {
+                activityPage(admin, dataset, null, e.form ?: form, e.message)
+            }
         }
     }
     page("/semesters/{id}/activities/{activity}", services) { admin ->
@@ -594,7 +718,9 @@ private fun Route.activityRoutes(services: Services) {
         val form = call.receiveParameters()
         try {
             val (activity, next) = activityFrom(dataset, old.id, form)
-            services.save(next.copy(activities = next.activities.map { if (it.id == old.id) activity else it }))
+            val changed = next.copy(activities = next.activities.map { if (it.id == old.id) activity else it })
+            checkClashes(changed, activity, form)
+            services.save(changed)
             services.audit.record(
                 admin,
                 AuditCategory.TIMETABLE,
@@ -602,7 +728,9 @@ private fun Route.activityRoutes(services: Services) {
             )
             call.respondRedirect(withParam(backFor(dataset, form, activity), msg("Activitatea a fost salvată.")))
         } catch (e: AdminFormError) {
-            call.respondHtml(HttpStatusCode.UnprocessableEntity) { activityPage(admin, dataset, old, form, e.message) }
+            call.respondHtml(HttpStatusCode.UnprocessableEntity) {
+                activityPage(admin, dataset, old, e.form ?: form, e.message)
+            }
         }
     }
     action("/semesters/{id}/activities/{activity}/delete", services) { admin ->
@@ -614,6 +742,26 @@ private fun Route.activityRoutes(services: Services) {
         services.audit.record(admin, AuditCategory.TIMETABLE, "a șters activitatea ${activityLabel(dataset, old)}")
         call.respondRedirect(withParam(backFor(dataset, form, old), msg("Activitatea a fost ștearsă.")))
     }
+}
+
+/**
+ * Stops a save that puts [activity] at the same time as another class of its room, its
+ * professor or its students, naming each, until the form comes back with `clashes_ok`.
+ * Some overlaps are on purpose (two halves sharing a room), so it asks instead of refusing.
+ */
+private fun checkClashes(dataset: Dataset, activity: Activity, form: Parameters) {
+    if (form["clashes_ok"] == "on") return
+    val clashes = clashesOf(dataset, TeachingCalendar(dataset.semester), activity)
+    if (clashes.isEmpty()) return
+    throw AdminFormError(
+        "Se suprapune cu " +
+            clashes.joinToString("; ") { (other, shared) -> "${activityLabel(dataset, other)} ($shared)" } +
+            ". Bifează \"Salvează și cu suprapunerea\" dacă este voit.",
+        Parameters.build {
+            appendAll(form)
+            set(ASK_CLASHES, "1")
+        },
+    )
 }
 
 /**
@@ -847,6 +995,13 @@ internal fun FlowContent.activityForm(
                     (form["erasmus"] == null && activity?.openToErasmus == true)
             }
             +"Deschisă studenților Erasmus"
+        }
+        if (form[ASK_CLASHES] != null) {
+            hiddenInput(name = ASK_CLASHES) { value = "1" }
+            label("check") {
+                checkBoxInput(name = "clashes_ok")
+                +"Salvează și cu suprapunerea"
+            }
         }
         div("form-actions") {
             button { +(if (activity == null) "Adaugă activitatea" else "Salvează") }

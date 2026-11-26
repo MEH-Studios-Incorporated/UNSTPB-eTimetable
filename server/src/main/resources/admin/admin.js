@@ -23,12 +23,64 @@
     });
   });
 
-  // A select that applies its form as soon as it changes, such as rows per page.
-  document.querySelectorAll("select[data-autosubmit]").forEach(function (select) {
-    select.addEventListener("change", function () {
-      select.form.submit();
-    });
+  // A select that applies its form as soon as it changes, such as rows per page. Listened for
+  // on the document, so selects swapped in by the week view below work too.
+  document.addEventListener("change", function (event) {
+    var select = event.target;
+    if (select.matches && select.matches("select[data-autosubmit]")) select.form.submit();
   });
+
+  // The week view of Gestionare orar: a class, an empty hour or "Închide" swaps the grid and
+  // its panel instead of loading the page again. The links stay plain links, so the address,
+  // Back and a new tab still work, and any failure falls back to loading the page.
+  if (document.querySelector(".wg-layout") && window.fetch && window.history.pushState) {
+    document.addEventListener("click", function (event) {
+      if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey ||
+          event.shiftKey || event.altKey) return;
+      var link = event.target.closest && event.target.closest(
+        ".wg-layout a.wg-block, .wg-layout a.wg-new, .wg-panel .head a"
+      );
+      if (!link || link.origin !== location.origin) return;
+      event.preventDefault();
+      swapWeek(link.href, true);
+    });
+    window.addEventListener("popstate", function () { swapWeek(location.href, false); });
+  }
+
+  var weekRequest = 0;
+  function swapWeek(url, push) {
+    var mine = ++weekRequest;
+    fetch(url, { credentials: "same-origin" })
+      .then(function (response) {
+        // a signed-out session ends on the sign-in page, which is not a week
+        if (!response.ok || response.url.indexOf("/schedule") < 0) throw new Error("not the week");
+        return response.text();
+      })
+      .then(function (html) {
+        if (mine !== weekRequest) return;
+        var next = new DOMParser().parseFromString(html, "text/html").querySelector(".wg-layout");
+        var current = document.querySelector(".wg-layout");
+        if (!next || !current) throw new Error("not the week");
+        var scroller = current.querySelector(".wg-scroll");
+        var left = scroller ? scroller.scrollLeft : 0;
+        // main's children fade in on load; a swapped-in week should not, or it looks like a reload
+        next.style.animation = "none";
+        current.replaceWith(next);
+        var nextScroller = next.querySelector(".wg-scroll");
+        if (nextScroller) nextScroller.scrollLeft = left;
+        if (push) history.pushState(null, "", url);
+        var panel = next.querySelector(".wg-panel");
+        if (panel) {
+          // on a phone the panel sits above the grid, so bring it into view
+          if (panel.getBoundingClientRect().top < 0 || panel.getBoundingClientRect().top > window.innerHeight) {
+            panel.scrollIntoView({ block: "start" });
+          }
+          var first = panel.querySelector("select, input:not([type=hidden])");
+          if (first) first.focus({ preventScroll: true });
+        }
+      })
+      .catch(function () { location.href = url; });
+  }
 
   // "Select all on this page", and how many rows are ticked.
   document.querySelectorAll("input[data-select-all]").forEach(function (all) {

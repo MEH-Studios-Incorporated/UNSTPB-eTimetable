@@ -7,6 +7,7 @@ import io.ktor.http.Parameters
 import io.ktor.http.encodeURLParameter
 import io.ktor.server.html.respondHtml
 import io.ktor.server.routing.RoutingContext
+import kotlinx.datetime.LocalTime
 import kotlinx.html.FlowContent
 import kotlinx.html.FormMethod
 import kotlinx.html.SELECT
@@ -33,6 +34,7 @@ import net.mehstudios.etimetable.model.Activity
 import net.mehstudios.etimetable.model.Audience
 import net.mehstudios.etimetable.model.Dataset
 import net.mehstudios.etimetable.model.Enrollment
+import net.mehstudios.etimetable.model.WeeklySlot
 import net.mehstudios.etimetable.schedule.TeachingCalendar
 import net.mehstudios.etimetable.schedule.baseActivities
 import net.mehstudios.etimetable.schedule.overlaps
@@ -67,8 +69,9 @@ internal sealed interface WeekSelection {
 /** The blocks of [selection]'s week; each class links to [href]. */
 internal fun weekEntries(dataset: Dataset, selection: WeekSelection, href: (Activity) -> String): List<GridEntry> {
     val colours = subjectColours(dataset)
+    val calendar = TeachingCalendar(dataset.semester)
     fun professor(a: Activity) = dataset.professorsById[a.professorId]?.displayName?.trim()
-    return when (selection) {
+    val entries = when (selection) {
         is WeekSelection.OfGroup -> {
             val group = dataset.groupsById.getValue(selection.groupId)
             baseActivities(dataset, Enrollment.National(group.id, selection.halfGroupId)).map { a ->
@@ -89,6 +92,10 @@ internal fun weekEntries(dataset: Dataset, selection: WeekSelection, href: (Acti
                 classEntry(dataset, colours, a, href(a), who = audience(dataset, a))
             } + professor.officeHours.mapIndexed { i, hour -> officeEntry(dataset, professor, hour, i, "Consultații") }
         }
+    }
+    return entries.map { e ->
+        val activity = dataset.activitiesById[e.id] ?: return@map e
+        e.copy(clash = clashesOf(dataset, calendar, activity).isNotEmpty())
     }
 }
 
@@ -138,6 +145,12 @@ internal suspend fun RoutingContext.scheduleWeek(admin: Admin, dataset: Dataset)
     val path = "$base/schedule"
     val selection = WeekSelection.of(dataset, query)
     val selected = query["activity"]?.let { dataset.activitiesById[it] }
+    // "new=3-10:00": the empty hour clicked on the grid, Wednesday at 10:00
+    val newAt = query["new"]?.let { text ->
+        val day = text.substringBefore('-').toIntOrNull()?.takeIf { it in 1..7 }
+        val time = runCatching { LocalTime.parse(text.substringAfter('-')) }.getOrNull()
+        if (day != null && time != null) day to time else null
+    }
     val calendar = TeachingCalendar(dataset.semester)
     val current = when (selection) {
         is WeekSelection.OfGroup -> mapOf("group" to (selection.halfGroupId ?: selection.groupId))
@@ -157,6 +170,7 @@ internal suspend fun RoutingContext.scheduleWeek(admin: Admin, dataset: Dataset)
         .orEmpty()
     val classes = entries.filter { it.colour != null }
     val roomless = classes.count { it.roomless }
+    val clashing = classes.count { it.clash }
     call.respondHtml {
         adminPage(
             "Gestionare orar",
@@ -167,7 +181,8 @@ internal suspend fun RoutingContext.scheduleWeek(admin: Admin, dataset: Dataset)
                     selection?.title,
                     dataset.semester.name.ro,
                     "${classes.size} ${plural(classes.size, "activitate", "activități")}" +
-                        (if (roomless > 0) ", $roomless fără sală" else ""),
+                        (if (roomless > 0) ", $roomless fără sală" else "") +
+                        (if (clashing > 0) ", $clashing cu suprapuneri" else ""),
                 ).joinToString(" · ")
             },
             actions = {
@@ -193,9 +208,21 @@ internal suspend fun RoutingContext.scheduleWeek(admin: Admin, dataset: Dataset)
                 emptyState("Nicio grupă", "Importă orarul semestrului ca să apară grupele, sălile și profesorii.")
                 return@adminPage
             }
+            val newCells = NewCells(newAt?.takeIf { selected == null }) { day, time ->
+                linkTo(path, viewQuery, mapOf("new" to "$day-$time"))
+            }
             div("wg-layout") {
-                weekGrid(entries, calendar, path, viewQuery, selected?.id) {
+                weekGrid(entries, calendar, path, viewQuery, selected?.id, newCells) {
                     pickers(dataset, path, viewQuery, current)
+                }
+                if (selected == null && newAt != null) {
+                    newPanel(
+                        dataset,
+                        calendar,
+                        selection,
+                        newAt,
+                        back = linkTo(path, viewQuery, emptyMap()),
+                    )
                 }
                 if (selected != null) {
                     panel(
@@ -281,6 +308,66 @@ private fun FlowContent.picker(
             options()
         }
         noScript { button(classes = "secondary small") { +"Arată" } }
+    }
+}
+
+/**
+ * A new class at the clicked hour: the activity form with the day, the two usual hours and
+ * whose week it is filled in, and what is already busy then so a free room and professor
+ * can be picked before saving. Saving still checks every clash.
+ */
+private fun FlowContent.newPanel(
+    dataset: Dataset,
+    calendar: TeachingCalendar,
+    selection: WeekSelection,
+    at: Pair<Int, LocalTime>,
+    back: String,
+) {
+    val (day, start) = at
+    val end = LocalTime.fromSecondOfDay(minOf(start.toSecondOfDay() + 2 * 3600, 23 * 3600 + 59 * 60))
+    val slot = WeeklySlot(day, start, end)
+    val busy = dataset.activities.filter { calendar.overlaps(it.slot, slot) }
+    val rooms = busy.mapNotNull { dataset.roomsById[it.roomId]?.code }.distinct().sorted()
+    val professors = busy.mapNotNull { dataset.professorsById[it.professorId]?.displayName?.trim() }.distinct().sorted()
+    val prefill = Parameters.build {
+        append("day", day.toString())
+        append("start", start.toString())
+        append("end", end.toString())
+        when (selection) {
+            is WeekSelection.OfGroup ->
+                append("group", selection.halfGroupId ?: dataset.groupsById.getValue(selection.groupId).code)
+            is WeekSelection.OfRoom -> append("room", dataset.roomsById.getValue(selection.roomId).code)
+            is WeekSelection.OfProfessor -> append("professor", selection.professorId)
+        }
+    }
+    aside("wg-panel") {
+        attributes["aria-label"] = "Activitate nouă"
+        div("head") {
+            span("bar")
+            h2 { +"Activitate nouă" }
+            a(href = back, classes = "btn secondary small") {
+                attributes["aria-label"] = "Închide panoul"
+                +"Închide"
+            }
+        }
+        div("body") {
+            p("hint tnum") { +"${DAY_NAMES[day - 1]} $start - $end, ${selection.title}" }
+            div(if (busy.isEmpty()) "wg-check" else "wg-check bad") {
+                span("dot")
+                div {
+                    if (busy.isEmpty()) {
+                        +"Nicio activitate în facultate la această oră."
+                    } else {
+                        +"Ocupate la această oră, în cel puțin o săptămână:"
+                        ul {
+                            li { +"Săli: ${rooms.joinToString().ifEmpty { "niciuna" }}" }
+                            li { +"Profesori: ${professors.joinToString().ifEmpty { "niciunul" }}" }
+                        }
+                    }
+                }
+            }
+            activityForm(dataset, null, prefill, back, cancel = back)
+        }
     }
 }
 

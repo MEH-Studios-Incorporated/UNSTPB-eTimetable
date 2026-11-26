@@ -201,6 +201,70 @@ class AdminEditTest {
     }
 
     @Test
+    fun groupsAndHalfGroupsAreAdded() = withSemester { _, browser ->
+        val series = browser.dataset().series.first().id
+        browser.submitForm(
+            "$semester/groups",
+            parameters {
+                append("series", series)
+                append("code", "1549E")
+            },
+        )
+        assertEquals(series, browser.dataset().groupsById["1549E"]?.seriesId)
+        browser.submitForm("$semester/groups/1549E/halves", parameters { append("suffix", "A") })
+        assertEquals("1549E", browser.dataset().halfGroupsById["1549E/A"]?.groupId)
+        assertTrue("Adaugă grupa" in browser.get(semester).bodyAsText())
+        assertTrue("1549E/A" in browser.get("$semester/groups/1549E").bodyAsText())
+
+        // duplicates, bad codes and an unknown series change nothing
+        val before = browser.dataset()
+        browser.submitForm(
+            "$semester/groups",
+            parameters {
+                append("series", series)
+                append("code", "1549e")
+            },
+        )
+        browser.submitForm(
+            "$semester/groups",
+            parameters {
+                append("series", series)
+                append("code", "15 49")
+            },
+        )
+        browser.submitForm(
+            "$semester/groups",
+            parameters {
+                append("series", "nu-exista")
+                append("code", "1550E")
+            },
+        )
+        browser.submitForm("$semester/groups/1549E/halves", parameters { append("suffix", "a") })
+        browser.submitForm("$semester/groups/1549E/halves", parameters { append("suffix", "B/C") })
+        assertEquals(before.groups, browser.dataset().groups)
+        assertEquals(before.halfGroups, browser.dataset().halfGroups)
+
+        browser.submitForm("$semester/groups/1549E/rename", parameters { append("code", "1550E") })
+        assertEquals("1550E", browser.dataset().groupsById["1549E"]?.code)
+        browser.submitForm("$semester/groups/1549E/rename", parameters { append("code", "1541e") })
+        assertEquals("1550E", browser.dataset().groupsById["1549E"]?.code)
+
+        browser.submitForm("$semester/groups/1549E/halves/delete", parameters { append("half", "1549E/A") })
+        assertNull(browser.dataset().halfGroupsById["1549E/A"])
+        browser.submitForm("$semester/groups/1549E/delete", parameters { })
+        assertNull(browser.dataset().groupsById["1549E"])
+    }
+
+    @Test
+    fun aGroupInUseIsNotDeleted() = withSemester { _, browser ->
+        // 1541E/A has its own lab
+        browser.submitForm("$semester/groups/1541E/halves/delete", parameters { append("half", "1541E/A") })
+        assertTrue("1541E/A" in browser.dataset().halfGroupsById)
+        browser.submitForm("$semester/groups/1541E/delete", parameters { })
+        assertTrue("1541E" in browser.dataset().groupsById)
+    }
+
+    @Test
     fun subjectsAndBuildingsAreRenamed() = withSemester { _, browser ->
         browser.submitForm(
             "$semester/subjects/calit",
