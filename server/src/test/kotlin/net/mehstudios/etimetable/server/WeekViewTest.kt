@@ -170,17 +170,49 @@ class WeekViewTest {
                 append("professor", "marinescu")
                 append("room", "AN015")
                 append("audience", "1541E/A")
+                append("clashes_ok", "on")
             },
         )
         val page = browser.get("$week&activity=calit-l-1541A").bodyAsText()
         assertTrue("Se suprapune cu:" in page)
         assertTrue("aceeași sală, același profesor, aceleași grupe" in page)
+        assertTrue("clash" in blocks(page).single { "on" in it.classes }.classes)
+    }
+
+    @Test
+    fun aClashIsAskedAboutBeforeSaving() = withAdmin { services, browser ->
+        val form = parameters {
+            append("subject", "calit")
+            append("type", "LAB")
+            append("day", "3")
+            append("start", "09:00")
+            append("end", "11:00")
+            append("weeks", "toate")
+            append("professor", "marinescu")
+            append("room", "AN015")
+            append("audience", "1541E/A")
+        }
+        val asked = browser.submitForm("/admin/semesters/2026-1/activities/calit-l-1541A", form)
+        assertEquals(HttpStatusCode.UnprocessableEntity, asked.status)
+        assertTrue("clashes_ok" in asked.bodyAsText())
+        val unchanged = services.datasets.dataset("2026-1")!!.activitiesById.getValue("calit-l-1541A")
+        assertEquals("12:00", unchanged.slot.start.toString())
+    }
+
+    @Test
+    fun anEmptyHourOpensANewClassThere() = withAdmin { _, browser ->
+        val grid = browser.get("$week&group=1541E%2FA").bodyAsText()
+        assertTrue("new=1-08%3A00" in grid || "new=1-08:00" in grid)
+        val page = browser.get("$week&group=1541E%2FA&new=1-08:00").bodyAsText()
+        assertTrue("Activitate nouă" in page)
+        assertTrue("value=\"10:00\"" in page)
+        assertTrue("value=\"1541E/A\"" in page)
     }
 
     @Test
     fun groupRoomAndProfessorPagesUseTheGrid() = withAdmin { _, browser ->
         val base = "/admin/semesters/2026-1"
-        for (path in listOf("$base/groups/1541E", "$base/rooms/bn212b", "$base/professors/ilie")) {
+        for (path in listOf("$base/rooms/bn212b", "$base/professors/ilie")) {
             val page = browser.get(path).bodyAsText()
             assertTrue("class=\"wg\"" in page, path)
             assertFalse("class=\"week\"" in page, path)
@@ -189,8 +221,11 @@ class WeekViewTest {
             // an edit goes back to the same page
             assertTrue(links.all { "back=" + path.replace("/", "%2F") in it }, path)
         }
+        // the group page holds the group's settings and sends its week to Gestionare orar
         val group = browser.get("$base/groups/1541E").bodyAsText()
         assertTrue("1541E/A" in group)
+        assertFalse("class=\"wg\"" in group)
+        assertTrue("schedule?view=week&amp;group=1541E" in group)
         val professor = blocks(browser.get("$base/professors/marinescu").bodyAsText())
         assertEquals(1, professor.count { "office" in it.classes })
     }

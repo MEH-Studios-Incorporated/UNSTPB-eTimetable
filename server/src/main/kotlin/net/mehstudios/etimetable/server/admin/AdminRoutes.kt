@@ -31,6 +31,7 @@ import net.mehstudios.etimetable.model.ActivityType
 import net.mehstudios.etimetable.model.Announcement
 import net.mehstudios.etimetable.model.Dataset
 import net.mehstudios.etimetable.model.Enrollment
+import net.mehstudios.etimetable.model.Group
 import net.mehstudios.etimetable.model.Parity
 import net.mehstudios.etimetable.model.Semester
 import net.mehstudios.etimetable.model.WeekRule
@@ -229,12 +230,16 @@ private fun Route.semesterRoutes(services: Services) {
                 notice(call.parameters["msg"])
                 notice(call.parameters["err"], error = true)
 
-                h2 { +"Grupe" }
+                h2 {
+                    id = "groups"
+                    +"Grupe"
+                }
                 if (dataset.groups.isEmpty()) {
                     p("hint") { +"Grupele apar după primul import." }
                 } else {
                     div("card") { groupsBySeries(dataset) }
                 }
+                if (dataset.series.isNotEmpty()) newGroupForm(dataset)
 
                 h2 {
                     id = "import"
@@ -307,6 +312,7 @@ private fun Route.semesterRoutes(services: Services) {
         )
     }
 
+    // the group's settings; its week is edited in Gestionare orar, the one week view
     page("/semesters/{id}/groups/{group}", services) { admin ->
         val dataset =
             services.datasets.dataset(call.parameters["id"].orEmpty())
@@ -315,7 +321,8 @@ private fun Route.semesterRoutes(services: Services) {
             dataset.groupsById[call.parameters["group"].orEmpty()] ?: return@page call.respond(HttpStatusCode.NotFound)
         val series = dataset.series.firstOrNull { it.id == group.seriesId }
         val programme = dataset.programmes.firstOrNull { it.id == series?.programmeId }
-        val activities = baseActivities(dataset, Enrollment.National(group.id))
+        val classes = baseActivities(dataset, Enrollment.National(group.id)).size
+        val path = "/admin/semesters/${dataset.semester.id}/groups/${group.id.encodeURLParameter()}"
         call.respondHtml {
             adminPage(
                 "Grupa ${group.code}",
@@ -325,35 +332,98 @@ private fun Route.semesterRoutes(services: Services) {
                     a(href = "/admin/semesters/${dataset.semester.id}") { +dataset.semester.name.ro }
                     +listOfNotNull(programme?.code, series?.let { "anul ${it.year}, seria ${it.name}" })
                         .joinToString(prefix = " · ", separator = ", ")
+                    +" · $classes ${plural(classes, "activitate", "activități")}"
                 },
                 actions = {
-                    val back = "/admin/semesters/${dataset.semester.id}/groups/${group.id.encodeURLParameter()}"
                     a(
-                        href = "/admin/semesters/${dataset.semester.id}/activities/new?group=" +
-                            "${group.code.encodeURLParameter()}&back=${back.encodeURLParameter()}",
+                        href = "/admin/semesters/${dataset.semester.id}/schedule?view=week&group=" +
+                            group.id.encodeURLParameter(),
                         classes = "btn",
-                    ) { +"Adaugă activitate" }
+                    ) { +"Vezi și editează săptămâna" }
                 },
             ) {
-                val colours = subjectColours(dataset)
-                val path = "/admin/semesters/${dataset.semester.id}/groups/${group.id.encodeURLParameter()}"
-                val back = linkTo(path, call.request.queryParameters, emptyMap())
-                weekGrid(
-                    activities.map { a ->
-                        classEntry(
-                            dataset,
-                            colours,
-                            a,
-                            activityHref(dataset, a, back),
-                            halvesOf(dataset, group, a),
-                            who = dataset.professorsById[a.professorId]?.displayName?.trim(),
-                        )
-                    },
-                    TeachingCalendar(dataset.semester),
-                    path,
-                    call.request.queryParameters,
-                )
+                notice(call.parameters["msg"])
+                notice(call.parameters["err"], error = true)
+                form(action = "$path/rename", method = FormMethod.post, classes = "card") {
+                    field("code", "Codul grupei") {
+                        textInput(name = "code") {
+                            id = "code"
+                            required = true
+                            value = group.code
+                        }
+                    }
+                    p("hint") { +"Studenții și activitățile grupei rămân la ea." }
+                    div("form-actions") { button { +"Redenumește" } }
+                }
+                halvesCard(dataset, group, path)
+                form(action = "$path/delete", method = FormMethod.post, classes = "card") {
+                    onSubmit = "return confirm('Ștergi grupa ${group.code} și semigrupele ei?')"
+                    p {
+                        +"O grupă se poate șterge doar când nu mai are activități proprii și niciun student "
+                        +"nu a ales-o. Cursurile seriei nu contează."
+                    }
+                    div("form-actions") { button(classes = "danger") { +"Șterge grupa" } }
+                }
             }
+        }
+    }
+}
+
+/** A new group in an existing series, so a group the import did not have needs no new file. */
+private fun FlowContent.newGroupForm(dataset: Dataset) {
+    form(action = "/admin/semesters/${dataset.semester.id}/groups", method = FormMethod.post, classes = "card") {
+        p { strong { +"Adaugă o grupă" } }
+        field("series", "Seria") {
+            select {
+                id = "series"
+                name = "series"
+                dataset.series.forEach { series ->
+                    val programme = dataset.programmes.firstOrNull { it.id == series.programmeId }?.code
+                    option {
+                        value = series.id
+                        +"${programme ?: series.programmeId}, anul ${series.year}, seria ${series.name}"
+                    }
+                }
+            }
+        }
+        field("code", "Codul grupei") {
+            textInput(name = "code") {
+                id = "code"
+                required = true
+                placeholder = "1543E"
+            }
+        }
+        p("hint") { +"Semigrupele se adaugă din pagina grupei." }
+        div("form-actions") { button { +"Adaugă grupa" } }
+    }
+}
+
+/** The group's half-groups and a form for another one. */
+private fun FlowContent.halvesCard(dataset: Dataset, group: Group, path: String) {
+    val halves = dataset.halfGroups.filter { it.groupId == group.id }.sortedBy { it.suffix }
+    div("card") {
+        p { strong { +"Semigrupe" } }
+        if (halves.isEmpty()) p("hint") { +"Niciuna: grupa face laboratoarele împreună." }
+        halves.forEach { half ->
+            form(action = "$path/halves/delete", method = FormMethod.post, classes = "inline") {
+                onSubmit = "return confirm('Ștergi semigrupa ${group.code}/${half.suffix}?')"
+                hiddenInput(name = "half") { value = half.id }
+                +"${group.code}/${half.suffix} "
+                button(classes = "secondary small") { +"Șterge" }
+            }
+        }
+        form(action = "$path/halves", method = FormMethod.post) {
+            field("suffix", "Semigrupă nouă") {
+                textInput(name = "suffix") {
+                    id = "suffix"
+                    required = true
+                    placeholder = if (halves.isEmpty()) "A" else "B"
+                }
+            }
+            p("hint") {
+                +"Studenții grupei care nu și-au ales semigrupa văd laboratoarele tuturor semigrupelor."
+            }
+            div("form-actions") { button { +"Adaugă semigrupa" } }
         }
     }
 }

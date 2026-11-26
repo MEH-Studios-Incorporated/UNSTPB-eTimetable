@@ -6,6 +6,28 @@ Each section is also the text of the matching GitHub release.
 
 ### Added
 
+- Groups and half-groups are managed in the dashboard without importing the
+  timetable again: "Adaugă o grupă" on the semester page, and on each
+  group's page renaming it, adding and deleting half-groups and deleting the
+  group. Codes that already exist, also in other letter case, are refused;
+  a group or half-group with classes of its own, or chosen by a student, is
+  not deleted.
+- In the week view of Gestionare orar, clicking an empty hour opens a new
+  class there: the day, the hour, two hours of length and the group, room
+  or professor being viewed are filled in, and the panel lists the rooms
+  and professors already busy at that hour.
+- Saving a class that meets at the same time as another class of its room,
+  its professor or its students names each clash and asks for a
+  confirmation before saving. Classes with a clash are outlined in red on
+  the week grid, and the header counts them.
+- Clicking a class or an empty hour in the week view opens its panel
+  without loading the page again; the address still changes, so Back and
+  links to a class work as before.
+
+### Changed
+
+- A group's page in the dashboard holds its settings; its week opens in
+  Gestionare orar, the one week view with the editing panel.
 - The Android app tells you when the faculty changes one of your classes:
   a yellow tag on the class ("Sală schimbată, era BN 024", "Oră schimbată,
   era 10:00 - 12:00", "Profesor schimbat", "Nou în orarul tău") in the day

@@ -186,6 +186,25 @@ descarcă orarul actual înainte de a-l modifica în Excel.
   îl deconectează de pe toate telefoanele; spune-i parola pe altă cale.
   **Șterge** șterge contul de tot.
 
+## Grupe și semigrupe în timpul semestrului
+
+Nu e nevoie de un import nou. În pagina semestrului, sub **Grupe**,
+**Adaugă o grupă** cere seria și codul (de exemplu `1543E`). Pagina grupei
+are redenumirea, semigrupele (**Adaugă semigrupa** cere litera, `A` sau
+`B`) și ștergerea. O grupă sau o semigrupă se poate șterge doar când nu mai
+are activități proprii și niciun student nu a ales-o. Seriile și
+specializările noi vin încă din import.
+
+## Activități noi din săptămână
+
+În **Gestionare orar → Săptămână**, alege grupa, sala sau profesorul și dă
+clic pe o oră liberă. Panoul din dreapta are ziua și ora completate, cu
+două ore durata, și arată ce săli și profesori sunt ocupați atunci. Dacă
+activitatea se suprapune cu alta a aceleiași săli, a aceluiași profesor sau
+a acelorași grupe, la salvare apare lista suprapunerilor; bifează
+**Salvează și cu suprapunerea** dacă este voit (de exemplu două semigrupe în
+aceeași sală). Activitățile cu suprapuneri au un chenar roșu în săptămână.
+
 ## Fișierul cu orarul
 
 Un tabel (Excel, LibreOffice sau Google Sheets) salvat ca CSV, cu un rând pe

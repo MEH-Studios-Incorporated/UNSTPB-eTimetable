@@ -56,6 +56,8 @@ internal data class GridEntry(
     val colour: String? = null,
     val href: String? = null,
     val state: ChangeKind? = null,
+    /** Meets at the same time as another class of its room, professor or students. */
+    val clash: Boolean = false,
 )
 
 /**
@@ -192,6 +194,7 @@ internal fun FlowContent.weekGrid(
     path: String,
     query: Parameters,
     selected: String? = null,
+    newCell: NewCells? = null,
     controls: (FlowContent.() -> Unit)? = null,
 ) {
     val filter = WeekFilter.of(query)
@@ -243,6 +246,22 @@ internal fun FlowContent.weekGrid(
                         layout.days.forEach { day ->
                             div("wg-day") {
                                 attributes["aria-label"] = DAY_NAMES[day - 1]
+                                // before the blocks, so a class covers the cells under it
+                                if (newCell != null) {
+                                    (layout.firstHour until layout.lastHour).forEach { hour ->
+                                        val at = LocalTime(hour, 0)
+                                        val label = "${hour.toString().padStart(2, '0')}:00"
+                                        a(
+                                            href = newCell.href(day, at),
+                                            classes = if (newCell.selected == day to at) "wg-new on" else "wg-new",
+                                        ) {
+                                            style = "--at: ${hour - layout.firstHour}"
+                                            attributes["aria-label"] =
+                                                "Adaugă o activitate ${DAY_NAMES[day - 1]} la $label"
+                                            +"+ $label"
+                                        }
+                                    }
+                                }
                                 layout.blocks.filter { it.entry.slot.isoDay == day }
                                     .sortedBy { it.top }
                                     .forEach { block(it, filter, calendar, selected) }
@@ -263,11 +282,13 @@ private fun FlowContent.block(p: Placement, filter: WeekFilter, calendar: Teachi
         "office".takeIf { e.colour == null },
         "dim".takeUnless { runsIn(e.slot.weeks, filter.parity, calendar) },
         "on".takeIf { e.id == selected },
+        "clash".takeIf { e.clash },
         e.state?.let { "ch-${it.key}" },
     ).joinToString(" ")
     val time = "${e.slot.start} - ${e.slot.end}"
     val mark = weekMark(e.slot.weeks)
     val label = listOfNotNull(
+        "suprapunere".takeIf { e.clash },
         e.state?.label,
         e.kind,
         e.title,
@@ -280,6 +301,7 @@ private fun FlowContent.block(p: Placement, filter: WeekFilter, calendar: Teachi
         (e.colour?.let { "; --sc: $it" } ?: "")
     val content: FlowContent.() -> Unit = {
         if (e.state != null) span("wg-state") { +e.state.label }
+        if (e.clash) span("wg-clash") { +"Suprapunere" }
         if (e.kind != null || mark != null) {
             span("wg-kind") {
                 if (e.kind != null) +e.kind
@@ -348,6 +370,9 @@ private fun FlowContent.legend(entries: List<GridEntry>) {
         }
     }
 }
+
+/** Empty hours that open a new activity at [href] (day, hour); [selected] is the one open now. */
+internal class NewCells(val selected: Pair<Int, LocalTime>?, val href: (Int, LocalTime) -> String)
 
 /** The link to the full editor of [activity], returning to [back]. */
 internal fun activityHref(dataset: Dataset, activity: Activity, back: String) =
@@ -437,6 +462,13 @@ a.wg-block:hover { box-shadow: 0 2px 8px rgba(0, 0, 0, 0.14); z-index: 1; }
 .wg-check .dot { flex: none; margin-top: 5px; background: var(--ok); }
 .wg-check.bad .dot { background: var(--now); }
 .wg-check ul { margin: 4px 0 0; padding-left: 18px; }
+.wg-new { position: absolute; left: 0; right: 0; top: calc(var(--at) * var(--wg-hour)); height: var(--wg-hour);
+  padding: 4px 8px; font-size: 12px; line-height: 16px; color: transparent; text-decoration: none; }
+.wg-new:hover, .wg-new:focus-visible { background: color-mix(in srgb, var(--primary) 10%, transparent); color: var(--primary); }
+.wg-new.on { outline: 2px dashed var(--primary); outline-offset: -3px; color: var(--primary); }
+.wg-block.clash { box-shadow: inset 0 0 0 2px var(--now); }
+.wg-clash { display: block; font-size: 11px; line-height: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;
+  color: var(--now); }
 @media (max-width: 860px) {
   .wg-panel { order: -1; max-width: none; }
 }
